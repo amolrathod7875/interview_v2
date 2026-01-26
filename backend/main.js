@@ -12,6 +12,9 @@ import quizRoute from './routes/quizRoute.js'
 import userRoute from './routes/userRoute.js'
 import roadmapRoute from './routes/roadmapRoute.js'
 import buildRoutes from './routes/buildRoutes.js'
+// ... existing imports
+import codexCodeRoutes from './routes/codexCodeRoutes.js';
+import codexAiRoutes from './routes/codexAiRoutes.js';
 
 dotenv.config()
 const app = express()
@@ -33,6 +36,9 @@ app.use('/resume', uploadRoute)
 app.use('/quiz', quizRoute)
 app.use('/roadmap', roadmapRoute);
 app.use('/buildResume', buildRoutes);
+// ... existing routes
+app.use('/codex/code', codexCodeRoutes); // This enables http://localhost:3000/codex/code/execute
+app.use('/codex/ai', codexAiRoutes);     // This enables http://localhost:3000/codex/ai/generate
 app.get('/', (req, resp) => {
     resp.json("hello world");
 })

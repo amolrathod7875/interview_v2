@@ -20,7 +20,6 @@ using namespace std;
 
 int main() {
     // Write your solution here
-
     return 0;
 }
 `,
@@ -35,11 +34,9 @@ public class Main {
 `,
 
   javascript: `// Write your solution here
-
 function main() {
 
 }
-
 main();
 `
 };
@@ -53,8 +50,8 @@ const Codex = () => {
   const [loading, setLoading] = useState(false);
 
   // Resize state
-  const [leftWidth, setLeftWidth] = useState(40);   // %
-  const [editorHeight, setEditorHeight] = useState(65); // %
+  const [leftWidth, setLeftWidth] = useState(40);
+  const [editorHeight, setEditorHeight] = useState(65);
 
   const containerRef = useRef(null);
 
@@ -63,28 +60,58 @@ const Codex = () => {
     setCode(STARTER_CODE[language]);
   }, [language]);
 
+  /* ---------- Generate Problem ---------- */
   const handleGenerate = async () => {
     setLoading(true);
-    const p = await generateProblem();
-    setProblem(p);
-    setCode(STARTER_CODE[language]); // reset editor properly
-    setOutput(null);
-    setAnalysis("");
-    setLoading(false);
+    try {
+      const p = await generateProblem();
+      setProblem(p);
+      setCode(STARTER_CODE[language]);
+      setOutput(null);
+      setAnalysis("");
+    } catch (err) {
+      console.error("Generate problem failed:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /* ---------- Run Code ---------- */
   const handleRun = async () => {
     setLoading(true);
-    const res = await executeCode(language, code);
-    setOutput(res.run);
-    setLoading(false);
+    setOutput(null);
+
+    try {
+      const res = await executeCode(language, code);
+      setOutput(res.run);
+    } catch (err) {
+      console.error("Run error:", err);
+      setOutput({
+        stdout: "",
+        stderr: "Execution failed. Check backend or code.",
+        output: ""
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /* ---------- Analyze Code ---------- */
   const handleAnalyze = async () => {
+    if (!problem) return;
+
     setLoading(true);
-    const res = await analyzeCode(problem, code);
-    setAnalysis(res);
-    setLoading(false);
+    setAnalysis("");
+
+    try {
+      const res = await analyzeCode(problem, code);
+      setAnalysis(res);
+    } catch (err) {
+      console.error("Analyze error:", err);
+      setAnalysis("Analysis failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ---------- Resize Handlers ---------- */
@@ -159,6 +186,7 @@ const Codex = () => {
             setLanguage={setLanguage}
             onRun={handleRun}
             onAnalyze={handleAnalyze}
+            loading={loading}
           />
         </div>
 
