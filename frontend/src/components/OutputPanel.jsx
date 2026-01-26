@@ -1,5 +1,6 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown"; // Import this
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm"; // ✅ Import this
 
 const TABS = ["Output", "Errors", "Analysis"];
 
@@ -8,7 +9,6 @@ const OutputPanel = ({ output, analysis, loading }) => {
 
   return (
     <div className="mt-4 bg-[#1e1e1e] rounded-lg border border-gray-700 flex flex-col h-full overflow-hidden">
-
       {/* Tabs */}
       <div className="flex border-b border-gray-700 shrink-0">
         {TABS.map((tab) => (
@@ -28,10 +28,7 @@ const OutputPanel = ({ output, analysis, loading }) => {
 
       {/* Content */}
       <div className="p-4 text-sm flex-1 overflow-auto text-gray-200 font-mono">
-
-        {loading && (
-          <div className="text-gray-400 italic">Running...</div>
-        )}
+        {loading && <div className="text-gray-400 italic">Running...</div>}
 
         {!loading && activeTab === "Output" && (
           <div className="whitespace-pre-wrap">
@@ -45,19 +42,23 @@ const OutputPanel = ({ output, analysis, loading }) => {
           </div>
         )}
 
-        {/* ✅ FIXED: Render Markdown for Analysis */}
         {!loading && activeTab === "Analysis" && (
           <div className="markdown-body">
             {analysis ? (
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]} // ✅ Enable tables
                 components={{
-                  // Custom styling for markdown elements in dark mode
-                  strong: ({node, ...props}) => <span className="font-bold text-blue-400" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc pl-5 space-y-1 my-2" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal pl-5 space-y-1 my-2" {...props} />,
-                  li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                  code: ({node, ...props}) => <code className="bg-gray-700 px-1 py-0.5 rounded text-xs text-yellow-300" {...props} />
+                  // Text styling
+                  strong: ({ node, ...props }) => <span className="font-bold text-blue-400" {...props} />,
+                  p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                  code: ({ node, ...props }) => <code className="bg-gray-700 px-1 py-0.5 rounded text-xs text-yellow-300" {...props} />,
+                  ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1 my-2" {...props} />,
+                  
+                  // ✅ Table styling for Dark Mode
+                  table: ({ node, ...props }) => <table className="w-full text-left border-collapse my-4" {...props} />,
+                  thead: ({ node, ...props }) => <thead className="bg-[#2d2d2d] text-gray-300" {...props} />,
+                  th: ({ node, ...props }) => <th className="border border-gray-600 px-3 py-2 font-semibold" {...props} />,
+                  td: ({ node, ...props }) => <td className="border border-gray-600 px-3 py-2" {...props} />,
                 }}
               >
                 {analysis}
@@ -67,7 +68,6 @@ const OutputPanel = ({ output, analysis, loading }) => {
             )}
           </div>
         )}
-
       </div>
     </div>
   );
