@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 import cors from 'cors'
 import dotenv from 'dotenv'
 
-// Import Routes (existing)
+// Import Routes
 import uploadRoute from './routes/uploadRoute.js'
 import questionRoute from './routes/questionRoute.js'
 import answerRoute from './routes/answerRoutes.js'
@@ -15,29 +15,27 @@ import roadmapRoute from './routes/roadmapRoute.js'
 import buildRoutes from './routes/buildRoutes.js'
 import codexCodeRoutes from './routes/codexCodeRoutes.js'
 import codexAiRoutes from './routes/codexAiRoutes.js'
-
-// ✅ NEW: Kanban Job Routes
 import jobRoutes from './routes/jobRoutes.js'
 
 dotenv.config()
 const app = express()
 
+// -------------------- MIDDLEWARE --------------------
 app.use(express.json())
 
-// --- CORS CONFIGURATION (UNCHANGED & SAFE) ---
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://interview-v2.vercel.app',
     process.env.FRONTEND_URL
   ],
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }))
-// -------------------------------------------
+// ---------------------------------------------------
 
-// Existing Routes
+// -------------------- ROUTES ------------------------
 app.use('/questions', questionRoute)
 app.use('/interview', interviewRoute)
 app.use('/answers', answerRoute)
@@ -49,28 +47,51 @@ app.use('/roadmap', roadmapRoute)
 app.use('/buildResume', buildRoutes)
 app.use('/codex/code', codexCodeRoutes)
 app.use('/codex/ai', codexAiRoutes)
-
-// ✅ NEW: Kanban Job Tracker API
 app.use('/api/jobs', jobRoutes)
+// ---------------------------------------------------
 
-// Health Check (Render-safe)
-app.get('/', (req, resp) => {
-  resp.json({
-    status: "Active",
-    message: "Backend is running successfully 🚀"
+// -------------------- HEALTH CHECK ------------------
+app.get('/', (req, res) => {
+  res.json({
+    status: 'Active',
+    message: 'Backend is running successfully 🚀'
   })
 })
 
-// --- DATABASE CONNECTION (SAFE MODE) ---
-if (process.env.USE_DB === 'true') {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch(err => console.log("❌ DB Connection Error:", err))
-} else {
-  console.log("⚠️ MongoDB disabled — using local storage for jobs")
-}
-// ---------------------------------------
+// DB Health (VERY IMPORTANT for debugging)
+app.get('/health/db', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState
+    res.json({
+      mongoState: state === 1 ? 'connected' : 'not connected'
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+// ---------------------------------------------------
 
-// Start Server
+// -------------------- DATABASE ----------------------
+if (!process.env.MONGO_URI) {
+  console.error('❌ MONGO_URI missing in .env')
+  process.exit(1)
+}
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB Atlas connected'))
+  .catch(err => {
+    console.error('❌ MongoDB connection failed:', err.message)
+    process.exit(1)
+  })
+
+mongoose.connection.on('error', err => {
+  console.error('❌ Mongo runtime error:', err)
+})
+// ---------------------------------------------------
+
+// -------------------- SERVER ------------------------
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => console.log(`🔥 Server running on port ${PORT}`))
+app.listen(PORT, () => {
+  console.log(`🔥 Server running on port ${PORT}`)
+})
+// ---------------------------------------------------

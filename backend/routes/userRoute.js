@@ -1,65 +1,130 @@
 import express from "express";
-import { userModel } from "../models/userModel.js";
+import userModel from "../models/userModel.js";
 
 const router = express.Router();
 
-// 1. ADD USER
-router.post('/add', async (req, resp) => {
-    try {
-        // FIX: Used .create() instead of .insertOne()
-        const response = await userModel.create({
-            name: req.body.name,
-            email: req.body.email,
-            firebaseId: req.body.firebaseId
-        });
-        resp.json({ success: true, data: response });
-    } catch (e) {
-        console.error("Error in /add:", e.message);
-        resp.status(500).json({ success: false, Message: e.message });
+/* =========================================================
+   1. SYNC USER (AUTO CREATE ON LOGIN / SIGNUP)
+   ========================================================= */
+router.post("/sync", async (req, res) => {
+  try {
+    const { name, email, firebaseId, photoURL } = req.body;
+
+    if (!email || !firebaseId) {
+      return res.status(400).json({
+        success: false,
+        message: "email and firebaseId are required",
+      });
     }
-})
 
-// 2. GET USER
-router.get('/get/:uid', async (req, resp) => {
-    try {
-        const response = await userModel.findOne({ firebaseId: req.params.uid });
-        
-        if (response == null) {
-            return resp.status(404).json({ success: false, message: "user not found" })
-        }
-        resp.json({ success: true, data: response });
-    } catch (e) {
-        console.error("Error in /get:", e.message);
-        resp.status(500).json({ success: false, message: e.message });
+    let user = await userModel.findOne({ firebaseId });
+
+    // Create user if not exists
+    if (!user) {
+      user = await userModel.create({
+        name,
+        email,
+        firebaseId,
+        photoURL,
+      });
     }
-})
 
-// 3. UPDATE USER
-router.put('/update', async (req, resp) => {
-    try {
-        // FIX: Wrapped fields in $set to strictly update only these values
-        const response = await userModel.updateOne(
-            { firebaseId: req.body.userId },
-            {
-                $set: {
-                    name: req.body.name,
-                    dob: req.body.dob,
-                    linkedin: req.body.linkedin,
-                    github: req.body.github,
-                    leetcode: req.body.leetcode,
-                }
-            }
-        );
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (err) {
+    console.error("❌ USER SYNC ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "User sync failed",
+    });
+  }
+});
 
-        if (response.matchedCount === 0) {
-            return resp.status(404).json({ success: false, message: "User not found" })
-        }
+/* =========================================================
+   2. GET CURRENT USER PROFILE (SAFE)
+   ========================================================= */
+router.get("/me", async (req, res) => {
+  try {
+    const { firebaseId } = req.query;
 
-        resp.json({ success: true, data: response });
-    } catch (e) {
-        console.error("Error in /update:", e.message);
-        return resp.status(500).json({ success: false, message: e.message })
+    if (!firebaseId) {
+      return res.status(400).json({
+        success: false,
+        message: "firebaseId is required",
+      });
     }
-})
+
+    const user = await userModel.findOne({ firebaseId });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (err) {
+    console.error("❌ GET USER ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user",
+    });
+  }
+});
+
+/* =========================================================
+   3. UPDATE USER PROFILE
+   ========================================================= */
+router.put("/update", async (req, res) => {
+  try {
+    const { firebaseId } = req.body;
+
+    if (!firebaseId) {
+      return res.status(400).json({
+        success: false,
+        message: "firebaseId is required",
+      });
+    }
+
+    const updatedUser = await userModel.findOneAndUpdate(
+      { firebaseId },
+      {
+        $set: {
+          name: req.body.name,
+          dob: req.body.dob,
+          linkedin: req.body.linkedin,
+          github: req.body.github,
+          leetcode: req.body.leetcode,
+          kaggle: req.body.kaggle,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+    });
+  } catch (err) {
+    console.error("❌ UPDATE USER ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "User update failed",
+    });
+  }
+});
 
 export default router;
