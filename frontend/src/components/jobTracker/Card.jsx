@@ -9,20 +9,47 @@ const priorityStyles = {
   Low: "bg-green-100 text-green-700",
 };
 
+/* ---------- LOGO HELPERS (PAIN-FREE) ---------- */
+
+const getLogoUrl = (company) => {
+  if (!company) return null;
+
+  const domain = company
+    .toLowerCase()
+    .replace(/\s+/g, "");
+
+  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=64`;
+};
+
+const getAvatarColor = (company) => {
+  const colors = [
+    "bg-blue-500",
+    "bg-purple-500",
+    "bg-green-500",
+    "bg-orange-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+  ];
+  const index = company
+    ? company.charCodeAt(0) % colors.length
+    : 0;
+  return colors[index];
+};
+
+/* --------------------------------------------- */
+
 const Card = ({ job, index, onNotesSave, onDelete }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [draftNotes, setDraftNotes] = useState(job.notes || "");
   const [saving, setSaving] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   // ---------------- SAVE NOTES ----------------
   const handleSave = async () => {
     try {
       setSaving(true);
-
-      // 1️⃣ Save to backend
       await updateJobNotes(job.id, draftNotes);
 
-      // 2️⃣ Update Board state
       if (onNotesSave) {
         onNotesSave(job.id, draftNotes);
       }
@@ -46,11 +73,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
 
     try {
       await deleteJob(job.id);
-
-      // 🔥 Update Board state instantly
-      if (onDelete) {
-        onDelete(job.id);
-      }
+      if (onDelete) onDelete(job.id);
     } catch (err) {
       console.error("Failed to delete job", err);
       alert("Failed to delete job");
@@ -70,11 +93,37 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
         >
           {/* Header */}
           <div className="flex justify-between items-start">
-            <div>
-              <h4 className="font-medium text-gray-800">{job.company}</h4>
-              <p className="text-sm text-gray-500">{job.role || "—"}</p>
+            <div className="flex items-center gap-3">
+              {/* Logo / Avatar */}
+              {!logoError && job.company ? (
+                <img
+                  src={getLogoUrl(job.company)}
+                  alt={job.company}
+                  onError={() => setLogoError(true)}
+                  className="w-10 h-10 rounded-full object-contain bg-white border"
+                />
+              ) : (
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(
+                    job.company
+                  )}`}
+                >
+                  {job.company?.charAt(0).toUpperCase() || "🏢"}
+                </div>
+              )}
+
+              {/* Company + Role */}
+              <div>
+                <h4 className="font-medium text-gray-800 leading-tight">
+                  {job.company}
+                </h4>
+                <p className="text-sm text-gray-500">
+                  {job.role || "—"}
+                </p>
+              </div>
             </div>
 
+            {/* Priority + Delete */}
             <div className="flex items-center gap-2">
               <span
                 className={`text-xs px-2 py-1 rounded-full font-medium ${priorityStyles[job.priority]}`}
@@ -82,7 +131,6 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
                 {job.priority}
               </span>
 
-              {/* 🗑 Delete */}
               <button
                 onClick={handleDelete}
                 className="text-gray-400 hover:text-red-600"
