@@ -16,17 +16,22 @@ import SingleColumnATS from "./components/ui/SingleColumnATS";
 import AcademicSingleColumnATS from "./components/ui/AcademicSingleColumnATS";
 import BuildResume from './components/BuildResume'
 
-// ✅ NEW: CodeX
+// ✅ CodeX
 import Codex from './components/Codex'
+
+// ✅ NEW: Job Tracker (Kanban)
+import JobBoard from './components/jobTracker/Board'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path='/' element={<Starter />} />
         <Route path='/login' element={<Login />} />
         <Route path='/signup' element={<Signup />} />
 
+        {/* Protected Dashboard */}
         <Route
           path='/dashboard'
           element={
@@ -36,6 +41,7 @@ function App() {
           }
         />
 
+        {/* Other Features */}
         <Route path='/ai-interview' element={<AiInterview />} />
         <Route path='/postinterview' element={<PostInterview />} />
         <Route path='/quiz' element={<Quiz />} />
@@ -46,12 +52,22 @@ function App() {
         <Route path='/temp2' element={<AcademicSingleColumnATS />} />
         <Route path='/buildresume' element={<BuildResume />} />
 
-        {/* ✅ NEW: CodeX Route */}
+        {/* ✅ CodeX (Protected) */}
         <Route
           path='/codex'
           element={
             <ProtectedRoute>
               <Codex />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ Job Tracker / Kanban (Protected) */}
+        <Route
+          path='/jobs'
+          element={
+            <ProtectedRoute>
+              <JobBoard />
             </ProtectedRoute>
           }
         />

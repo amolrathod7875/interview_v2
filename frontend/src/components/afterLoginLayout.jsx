@@ -4,7 +4,8 @@ import {
   LayoutGrid,
   LogOut,
   Zap,
-  Code   // ✅ FIXED (capital C)
+  Code,
+  Briefcase   // ✅ NEW ICON for Job Tracker
 } from "lucide-react"
 
 import { useEffect, useState } from "react"
@@ -26,12 +27,16 @@ import Profile from "./profile"
 import Roadmap from "./roadmap"
 import Codex from "./Codex"
 
-// ✅ Sidebar items
+// ✅ NEW: Job Tracker (Kanban)
+import JobBoard from "./jobTracker/Board"
+
+// ✅ Sidebar items (UPDATED)
 const navItems = [
   { label: "Overview", icon: LayoutGrid },
   { label: "Mock Interview", icon: RiRobot3Line },
   { label: "Quiz", icon: MdOutlineQuiz },
-  { label: "CodeX", icon: Code },            // ✅ NOW WORKS
+  { label: "CodeX", icon: Code },
+  { label: "Job Tracker", icon: Briefcase }, // ✅ ADDED
   { label: "Analyse Resume", icon: MdOutlineFindInPage },
   { label: "Roadmap", icon: MdOutlineFindInPage },
   { label: "Profile", icon: FaRegUser },
@@ -125,22 +130,28 @@ const AfterLoginLayout = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {activeTab === "Overview" && <OverviewDashboard />}
+
         {activeTab === "Mock Interview" && (
           <div className="flex h-full">
             <div className="w-1/2"><AiInterviewForm /></div>
             <div className="w-1/2"><InterviewCards /></div>
           </div>
         )}
+
         {activeTab === "Quiz" && (
           <div className="flex h-full">
             <div className="w-1/2"><InterviewQuizForm /></div>
             <div className="w-1/2"><QuizCards /></div>
           </div>
         )}
+
         {activeTab === "Analyse Resume" && <AnalyseResume />}
         {activeTab === "Roadmap" && <Roadmap />}
         {activeTab === "Profile" && <Profile />}
         {activeTab === "CodeX" && <Codex />}
+
+        {/* ✅ NEW: Job Tracker */}
+        {activeTab === "Job Tracker" && <JobBoard />}
       </main>
     </div>
   )
