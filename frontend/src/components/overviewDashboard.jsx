@@ -6,8 +6,11 @@ import ScoreCircle from './ui/scoreCircle'
 import { Button } from './ui/button'
 import LoadingWave from './ui/LoadingWave'
 
-// ✅ NEW: Job Analytics
+// ✅ Job Analytics
 import JobAnalytics from './jobTracker/JobAnalytics'
+
+// ✅ GitHub Icon
+import { FaGithub } from 'react-icons/fa'
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -16,37 +19,59 @@ const OverviewDashboard = () => {
   const [quiz, setQuiz] = useState([])
   const [score, setScore] = useState(0)
   const [loading, setIsLoading] = useState(true)
+
+  // ✅ NEW: user profile
+  const [user, setUser] = useState(null)
+
   const navigate = useNavigate()
 
   useEffect(() => {
-    const func = async () => {
-      const resp = await axios.get(
-        `${API}/interview/getInterviewsForDashboard/${localStorage.getItem("userUid")}`
-      )
+    const fetchDashboard = async () => {
+      try {
+        const firebaseId = localStorage.getItem('userUid')
 
-      setIsLoading(false)
+        // 1️⃣ interviews + quiz
+        const interviewResp = await axios.get(
+          `${API}/interview/getInterviewsForDashboard/${firebaseId}`
+        )
 
-      const result = Array.isArray(resp.data.data)
-        ? resp.data.data
-        : Object.values(resp.data.data)
+        const result = Array.isArray(interviewResp.data.data)
+          ? interviewResp.data.data
+          : Object.values(interviewResp.data.data)
 
-      setData(result)
-      setScore(Math.round(resp.data.avgScore))
-      setQuiz(resp.data.quizResp)
+        setData(result)
+        setScore(Math.round(interviewResp.data.avgScore))
+        setQuiz(interviewResp.data.quizResp)
+
+        // 2️⃣ user profile (GitHub status)
+        const userResp = await axios.get(`${API}/user/me`, {
+          params: { firebaseId },
+        })
+
+        setUser(userResp.data.data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    func()
+    fetchDashboard()
   }, [])
 
   const getQuizResult = async (quizId, noOfQuestions) => {
     try {
       const resp = await axios.get(`${API}/quiz/results/${quizId}`)
       navigate('/quizResult', {
-        state: { score: resp.data.score, noOfQuestions }
+        state: { score: resp.data.score, noOfQuestions },
       })
     } catch (e) {
       console.log(e.message)
     }
+  }
+
+  const connectGithub = () => {
+    window.location.href = `${API}/auth/github`
   }
 
   if (loading) {
@@ -56,6 +81,8 @@ const OverviewDashboard = () => {
       </div>
     )
   }
+
+  const github = user?.github
 
   return (
     <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-9">
@@ -71,7 +98,59 @@ const OverviewDashboard = () => {
           </p>
         </div>
 
-        {/* ✅ JOB ANALYTICS */}
+        {/* ✅ GITHUB CARD (SMART) */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold text-black flex items-center gap-2">
+                <FaGithub />
+                GitHub Integration
+              </h3>
+
+              {!github?.connected ? (
+                <p className="text-sm text-gray-500 mt-1">
+                  Connect your GitHub account to use repositories in interviews and projects.
+                </p>
+              ) : (
+                <p className="text-sm text-green-600 mt-1">
+                  Connected Repo:{" "}
+                  <span className="font-medium text-black">
+                    {github.owner}/{github.repo}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            {!github?.connected ? (
+              <Button
+                onClick={connectGithub}
+                className="bg-black hover:bg-gray-900 text-white flex items-center gap-2"
+              >
+                <FaGithub />
+                Connect GitHub
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => navigate('/github-analysis')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Analyze Repository
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/github-repos')}
+                >
+                  Change Repository
+                </Button>
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* JOB ANALYTICS */}
         <JobAnalytics />
 
         {/* MAIN GRID */}
@@ -79,7 +158,7 @@ const OverviewDashboard = () => {
 
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-6">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center flex-col text-center">
                 <h3 className="text-xl font-semibold text-black mb-1">
                   Interview Readiness Score
@@ -99,10 +178,8 @@ const OverviewDashboard = () => {
             </div>
 
             <div
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
-              onClick={() =>
-                navigate("/dashboard", { state: { tab: "Analyse Resume" } })
-              }
+              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm cursor-pointer"
+              onClick={() => navigate('/analyseResume')}
             >
               <h3 className="text-xl font-semibold text-black mb-2">
                 Analyse Your Resume
@@ -117,13 +194,10 @@ const OverviewDashboard = () => {
           </div>
 
           {/* COMPLETED INTERVIEWS */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
             <h3 className="text-xl font-semibold text-black mb-1">
               Completed Interviews
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Your finished interviews
-            </p>
 
             <div className="space-y-3 overflow-y-auto">
               {data.filter(d => d.isCompleted).length > 0 ? (
@@ -131,24 +205,19 @@ const OverviewDashboard = () => {
                   <div
                     key={item._id}
                     onClick={() =>
-                      navigate("/postInterview", {
-                        state: { interviewId: item._id }
+                      navigate('/postInterview', {
+                        state: { interviewId: item._id },
                       })
                     }
-                    className="flex gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition cursor-pointer"
+                    className="flex gap-4 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer"
                   >
                     <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold">
                       {item.topic?.[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-black truncate">
-                        {item.topic}
-                      </p>
+                      <p className="font-semibold truncate">{item.topic}</p>
                       <p className="text-xs text-gray-500">
-                        Experience: {item.experience} year{item.experience > 1 ? "s" : ""}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        Skills: {item.skills.join(", ")}
+                        Skills: {item.skills.join(', ')}
                       </p>
                     </div>
                   </div>
@@ -162,13 +231,10 @@ const OverviewDashboard = () => {
           </div>
 
           {/* COMPLETED QUIZZES */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
             <h3 className="text-xl font-semibold text-black mb-1">
               Completed Quizzes
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Your finished quizzes
-            </p>
 
             <div className="space-y-3 overflow-y-auto">
               {quiz.filter(q => q.isCompleted).length > 0 ? (
@@ -176,17 +242,15 @@ const OverviewDashboard = () => {
                   <div
                     key={item._id}
                     onClick={() => getQuizResult(item._id, item.noOfQuestions)}
-                    className="flex gap-4 p-4 border border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition cursor-pointer"
+                    className="flex gap-4 p-4 border rounded-xl hover:bg-indigo-50 cursor-pointer"
                   >
                     <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
-                      {item.topic?.[0]?.toUpperCase() || "Q"}
+                      {item.topic?.[0]?.toUpperCase() || 'Q'}
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-black truncate">
-                        {item.topic}
-                      </p>
+                    <div>
+                      <p className="font-semibold">{item.topic}</p>
                       <p className="text-xs text-gray-500">
-                        No of Questions: {item.noOfQuestions}
+                        Questions: {item.noOfQuestions}
                       </p>
                     </div>
                   </div>

@@ -11,14 +11,14 @@ const userSchema = new mongoose.Schema(
     firebaseId: {
       type: String,
       required: true,
-      unique: true,        // 🔥 IMPORTANT
+      unique: true,
       index: true,
     },
 
     email: {
       type: String,
       required: true,
-      unique: true,        // 🔥 IMPORTANT
+      unique: true,
       lowercase: true,
       index: true,
     },
@@ -38,9 +38,20 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ✅ GitHub connection info
     github: {
-      type: String,
-      default: "",
+      connected: {
+        type: Boolean,
+        default: false,
+      },
+      owner: {
+        type: String,
+        default: "",
+      },
+      repo: {
+        type: String,
+        default: "",
+      },
     },
 
     leetcode: {
@@ -54,7 +65,7 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,     // 🔥 createdAt, updatedAt
+    timestamps: true, // createdAt & updatedAt
   }
 );
 

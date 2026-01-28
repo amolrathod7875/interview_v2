@@ -2,8 +2,9 @@ import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import cookieParser from 'cookie-parser'
 
-// Import Routes
+// -------------------- ROUTES --------------------
 import uploadRoute from './routes/uploadRoute.js'
 import questionRoute from './routes/questionRoute.js'
 import answerRoute from './routes/answerRoutes.js'
@@ -17,22 +18,31 @@ import codexCodeRoutes from './routes/codexCodeRoutes.js'
 import codexAiRoutes from './routes/codexAiRoutes.js'
 import jobRoutes from './routes/jobRoutes.js'
 
+// 🔥 GitHub
+import githubAuthRoutes from './routes/githubAuth.routes.js'
+import githubApiRoutes from './routes/githubApi.routes.js'
+import githubAiRoutes from './routes/githubAiRoutes.js'
+// ------------------------------------------------
+
 dotenv.config()
 const app = express()
 
 // -------------------- MIDDLEWARE --------------------
 app.use(express.json())
+app.use(cookieParser()) // ✅ only once
 
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://interview-v2.vercel.app',
-    process.env.FRONTEND_URL
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}))
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'https://interview-v2.vercel.app',
+      process.env.FRONTEND_URL,
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+)
 // ---------------------------------------------------
 
 // -------------------- ROUTES ------------------------
@@ -41,6 +51,7 @@ app.use('/interview', interviewRoute)
 app.use('/answers', answerRoute)
 app.use('/results', resultRoute)
 app.use('/user', userRoute)
+
 app.use('/resume', uploadRoute)
 app.use('/quiz', quizRoute)
 app.use('/roadmap', roadmapRoute)
@@ -48,22 +59,26 @@ app.use('/buildResume', buildRoutes)
 app.use('/codex/code', codexCodeRoutes)
 app.use('/codex/ai', codexAiRoutes)
 app.use('/api/jobs', jobRoutes)
+
+// 🔥 GitHub (FINAL & CORRECT)
+app.use('/auth', githubAuthRoutes)          // OAuth
+app.use('/api/github', githubApiRoutes)     // GitHub data
+app.use('/api/ai/github', githubAiRoutes)   // ✅ AI ANALYSIS
 // ---------------------------------------------------
 
 // -------------------- HEALTH CHECK ------------------
 app.get('/', (req, res) => {
   res.json({
     status: 'Active',
-    message: 'Backend is running successfully 🚀'
+    message: 'Backend is running successfully 🚀',
   })
 })
 
-// DB Health (VERY IMPORTANT for debugging)
 app.get('/health/db', async (req, res) => {
   try {
     const state = mongoose.connection.readyState
     res.json({
-      mongoState: state === 1 ? 'connected' : 'not connected'
+      mongoState: state === 1 ? 'connected' : 'not connected',
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -77,14 +92,15 @@ if (!process.env.MONGO_URI) {
   process.exit(1)
 }
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Atlas connected'))
-  .catch(err => {
+  .catch((err) => {
     console.error('❌ MongoDB connection failed:', err.message)
     process.exit(1)
   })
 
-mongoose.connection.on('error', err => {
+mongoose.connection.on('error', (err) => {
   console.error('❌ Mongo runtime error:', err)
 })
 // ---------------------------------------------------

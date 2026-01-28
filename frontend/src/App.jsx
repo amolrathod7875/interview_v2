@@ -1,39 +1,51 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import './App.css'
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import "./App.css";
 
-import Starter from './components/starter'
-import Login from './components/login'
-import Signup from './components/signup'
-import AiInterview from './components/aiInterview'
-import AfterLoginLayout from './components/afterLoginLayout'
-import ProtectedRoute from './components/ProjectedRoute'
-import PostInterview from './components/postInterview'
-import Quiz from './components/quiz'
-import AnalyseResume from './components/analyseResume'
-import QuizResult from './components/quizResult'
+// Public pages
+import Starter from "./components/starter";
+import Login from "./components/login";
+import Signup from "./components/signup";
+
+// Core layout & auth
+import AfterLoginLayout from "./components/afterLoginLayout";
+import ProtectedRoute from "./components/ProjectedRoute";
+
+// Features
+import AiInterview from "./components/aiInterview";
+import PostInterview from "./components/postInterview";
+import Quiz from "./components/quiz";
+import AnalyseResume from "./components/analyseResume";
+import QuizResult from "./components/quizResult";
+import BuildResume from "./components/BuildResume";
+
+// Resume templates
 import ClassicATS from "./components/ui/ClassicATS";
 import SingleColumnATS from "./components/ui/SingleColumnATS";
 import AcademicSingleColumnATS from "./components/ui/AcademicSingleColumnATS";
-import BuildResume from './components/BuildResume'
 
-// ✅ CodeX
-import Codex from './components/Codex'
+// CodeX
+import Codex from "./components/Codex";
 
-// ✅ NEW: Job Tracker (Kanban)
-import JobBoard from './components/jobTracker/Board'
+// Job Tracker
+import JobBoard from "./components/jobTracker/Board";
+
+// GitHub
+import GithubRepos from "./pages/GithubRepos";
+import GithubAnalysis from "./pages/GithubAnalysis"
+
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
-        <Route path='/' element={<Starter />} />
-        <Route path='/login' element={<Login />} />
-        <Route path='/signup' element={<Signup />} />
+        {/* ================= PUBLIC ROUTES ================= */}
+        <Route path="/" element={<Starter />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
-        {/* Protected Dashboard */}
+        {/* ================= DASHBOARD ================= */}
         <Route
-          path='/dashboard'
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <AfterLoginLayout />
@@ -41,20 +53,39 @@ function App() {
           }
         />
 
-        {/* Other Features */}
-        <Route path='/ai-interview' element={<AiInterview />} />
-        <Route path='/postinterview' element={<PostInterview />} />
-        <Route path='/quiz' element={<Quiz />} />
-        <Route path='/analyseResume' element={<AnalyseResume />} />
-        <Route path='/quizResult' element={<QuizResult />} />
-        <Route path='/temp' element={<ClassicATS />} />
-        <Route path='/temp1' element={<SingleColumnATS />} />
-        <Route path='/temp2' element={<AcademicSingleColumnATS />} />
-        <Route path='/buildresume' element={<BuildResume />} />
+        {/* ================= FEATURES ================= */}
+        <Route path="/ai-interview" element={<AiInterview />} />
+        <Route path="/postinterview" element={<PostInterview />} />
+        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/analyseResume" element={<AnalyseResume />} />
+        <Route path="/quizResult" element={<QuizResult />} />
+        <Route path="/buildresume" element={<BuildResume />} />
 
-        {/* ✅ CodeX (Protected) */}
+        {/* ================= RESUME TEMPLATES ================= */}
+        <Route path="/temp" element={<ClassicATS />} />
+        <Route path="/temp1" element={<SingleColumnATS />} />
+        <Route path="/temp2" element={<AcademicSingleColumnATS />} />
+
+        {/* ================= GITHUB ================= */}
         <Route
-          path='/codex'
+          path="/github-repos"
+          element={
+            <ProtectedRoute>
+              <GithubRepos />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/github-analysis"
+          element={
+            <ProtectedRoute>
+              <GithubAnalysis />
+            </ProtectedRoute>
+          }
+        />
+        {/* ================= CODEX ================= */}
+        <Route
+          path="/codex"
           element={
             <ProtectedRoute>
               <Codex />
@@ -62,9 +93,9 @@ function App() {
           }
         />
 
-        {/* ✅ Job Tracker / Kanban (Protected) */}
+        {/* ================= JOB TRACKER ================= */}
         <Route
-          path='/jobs'
+          path="/jobs"
           element={
             <ProtectedRoute>
               <JobBoard />
@@ -73,7 +104,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -19,7 +19,6 @@ router.post("/sync", async (req, res) => {
 
     let user = await userModel.findOne({ firebaseId });
 
-    // Create user if not exists
     if (!user) {
       user = await userModel.create({
         name,
@@ -43,7 +42,7 @@ router.post("/sync", async (req, res) => {
 });
 
 /* =========================================================
-   2. GET CURRENT USER PROFILE (SAFE)
+   2. GET CURRENT USER PROFILE
    ========================================================= */
 router.get("/me", async (req, res) => {
   try {
@@ -99,7 +98,7 @@ router.put("/update", async (req, res) => {
           name: req.body.name,
           dob: req.body.dob,
           linkedin: req.body.linkedin,
-          github: req.body.github,
+          github: req.body.github, // full object allowed
           leetcode: req.body.leetcode,
           kaggle: req.body.kaggle,
         },
@@ -123,6 +122,55 @@ router.put("/update", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "User update failed",
+    });
+  }
+});
+
+/* =========================================================
+   4. SAVE SELECTED GITHUB REPOSITORY
+   ========================================================= */
+router.post("/github/repo", async (req, res) => {
+  try {
+    const { firebaseId, owner, repo } = req.body;
+
+    if (!firebaseId || !owner || !repo) {
+      return res.status(400).json({
+        success: false,
+        message: "firebaseId, owner and repo are required",
+      });
+    }
+
+    const user = await userModel.findOneAndUpdate(
+      { firebaseId },
+      {
+        $set: {
+          github: {
+            connected: true,
+            owner,
+            repo,
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "GitHub repository saved successfully",
+      data: user.github,
+    });
+  } catch (err) {
+    console.error("❌ SAVE GITHUB REPO ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save GitHub repository",
     });
   }
 });

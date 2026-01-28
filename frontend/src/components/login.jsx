@@ -29,7 +29,6 @@ export default function Login() {
       localStorage.setItem("userUid", resp.uid)
       localStorage.setItem("name", resp.displayName || "")
 
-      // ✅ SYNC USER WITH MONGODB
       await axios.post(`${API}/user/sync`, {
         name: resp.displayName || "",
         email: resp.email,
@@ -55,7 +54,6 @@ export default function Login() {
       localStorage.setItem("userUid", resp.uid)
       localStorage.setItem("name", resp.displayName || "")
 
-      // ✅ SYNC USER WITH MONGODB (NEW FLOW)
       await axios.post(`${API}/user/sync`, {
         name: resp.displayName || "",
         email: resp.email,
@@ -73,7 +71,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-stretch bg-[#f8fafc]">
-      {/* Left: Login Form */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 animate-fadein">
         <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 border border-gray-200">
           <div className="flex flex-col items-center mb-8">
@@ -121,6 +118,7 @@ export default function Login() {
               <div className="flex-grow border-t" />
             </div>
 
+            {/* GOOGLE LOGIN */}
             <button
               type="button"
               onClick={handleSigninWithGoogle}
