@@ -68,10 +68,10 @@ const JobAnalytics = () => {
       <div className="bg-white p-4 rounded-xl border shadow-sm">
         <p className="text-sm text-gray-500">Conversion Funnel</p>
         <p className="mt-2 text-sm">
-          🎯 Interview Rate: <b>{interviewRate}%</b>
+          Interview Rate: <b>{interviewRate}%</b>
         </p>
         <p className="text-sm">
-          🏆 Offer Rate: <b>{offerRate}%</b>
+          Offer Rate: <b>{offerRate}%</b>
         </p>
       </div>
     </div>
