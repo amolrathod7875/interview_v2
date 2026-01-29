@@ -41,7 +41,7 @@ const Profile = () => {
           email: data.email || "",
           dob: data.dob || "",
           linkedin: data.linkedin || "",
-          github: data.github || "",
+          github: "",
           leetcode: data.leetcode || "",
         })
       } catch (err) {
@@ -92,9 +92,21 @@ const Profile = () => {
     )
   }
 
+  // -------- NORMALIZE GITHUB --------
+  const githubText =
+    typeof user.github === "object" && user.github?.owner && user.github?.repo
+      ? `${user.github.owner}/${user.github.repo}`
+      : user.github || null
+
+  const githubLink =
+    typeof user.github === "object" && user.github?.owner && user.github?.repo
+      ? `https://github.com/${user.github.owner}/${user.github.repo}`
+      : user.github || "https://github.com"
+
   return (
     <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-10">
       <div className="max-w-xl mx-auto space-y-8">
+
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -137,43 +149,59 @@ const Profile = () => {
 
               <SocialField
                 label="LinkedIn"
-                value={user.linkedin}
+                text={user.linkedin}
+                link={user.linkedin || "https://linkedin.com"}
                 Button={LinkedinButton}
-                fallback="https://linkedin.com"
               />
 
               <SocialField
                 label="GitHub"
-                value={user.github}
+                text={githubText}
+                link={githubLink}
                 Button={GithubButton}
-                fallback="https://github.com"
               />
 
               <SocialField
                 label="LeetCode"
-                value={user.leetcode}
+                text={user.leetcode}
+                link={user.leetcode || "https://leetcode.com"}
                 Button={LeetcodeButton}
-                fallback="https://leetcode.com"
               />
             </div>
           ) : (
             <div className="space-y-4">
-              <Input label="Name" value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })} />
+              <Input
+                label="Name"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+              />
 
               <Input label="Email" value={form.email} disabled />
 
-              <Input label="Date of Birth" type="date" value={form.dob}
-                onChange={e => setForm({ ...form, dob: e.target.value })} />
+              <Input
+                label="Date of Birth"
+                type="date"
+                value={form.dob}
+                onChange={e => setForm({ ...form, dob: e.target.value })}
+              />
 
-              <Input label="LinkedIn" value={form.linkedin}
-                onChange={e => setForm({ ...form, linkedin: e.target.value })} />
+              <Input
+                label="LinkedIn"
+                value={form.linkedin}
+                onChange={e => setForm({ ...form, linkedin: e.target.value })}
+              />
 
-              <Input label="GitHub" value={form.github}
-                onChange={e => setForm({ ...form, github: e.target.value })} />
+              <Input
+                label="GitHub"
+                value={form.github}
+                onChange={e => setForm({ ...form, github: e.target.value })}
+              />
 
-              <Input label="LeetCode" value={form.leetcode}
-                onChange={e => setForm({ ...form, leetcode: e.target.value })} />
+              <Input
+                label="LeetCode"
+                value={form.leetcode}
+                onChange={e => setForm({ ...form, leetcode: e.target.value })}
+              />
 
               <button
                 onClick={handleSave}
@@ -199,19 +227,21 @@ const Profile = () => {
 const Field = ({ label, value }) => (
   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
     <p className="text-xs text-gray-500 mb-1">{label}</p>
-    <p className="text-gray-900 font-medium break-all">{value}</p>
+    <p className="text-gray-900 font-medium break-all">
+      {value || "-"}
+    </p>
   </div>
 )
 
-const SocialField = ({ label, value, Button, fallback }) => (
+const SocialField = ({ label, text, link, Button }) => (
   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between">
     <div>
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className="text-gray-900 font-medium break-all">
-        {value || "Not added"}
+        {text || "Not added"}
       </p>
     </div>
-    <Button link={value || fallback} disabled={!value} />
+    <Button link={link} disabled={!text} />
   </div>
 )
 
