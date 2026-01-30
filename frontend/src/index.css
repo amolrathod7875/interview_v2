@@ -1,3 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 @keyframes voice-ripple {
   0% {
     transform: scale(1);

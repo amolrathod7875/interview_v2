@@ -1,20 +1,22 @@
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
   LayoutGrid,
   LogOut,
   Zap,
   Code,
-  Briefcase   // ✅ NEW ICON for Job Tracker
+  Briefcase,
+  BookOpen
 } from "lucide-react"
 
 import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
 import { RiRobot3Line } from "react-icons/ri"
 import { MdOutlineFindInPage, MdOutlineQuiz } from "react-icons/md"
 import { FaRegUser } from "react-icons/fa6"
 import { FcMenu } from "react-icons/fc"
-import { useLocation } from "react-router-dom"
+import {
+  useLocation,
+  useNavigate,
+  Outlet
+} from "react-router-dom"
 
 import AiInterviewForm from "./aiInterviewForm"
 import { logoutUser } from "@/services/authService"
@@ -26,27 +28,30 @@ import AnalyseResume from "./analyseResume"
 import Profile from "./profile"
 import Roadmap from "./roadmap"
 import Codex from "./Codex"
-
-// ✅ NEW: Job Tracker (Kanban)
 import JobBoard from "./jobTracker/Board"
 
-// ✅ Sidebar items (UPDATED)
+/* ================= SIDEBAR ITEMS ================= */
+
 const navItems = [
-  { label: "Overview", icon: LayoutGrid },
-  { label: "Mock Interview", icon: RiRobot3Line },
-  { label: "Quiz", icon: MdOutlineQuiz },
-  { label: "CodeX", icon: Code },
-  { label: "Job Tracker", icon: Briefcase }, // ✅ ADDED
-  { label: "Analyse Resume", icon: MdOutlineFindInPage },
-  { label: "Roadmap", icon: MdOutlineFindInPage },
-  { label: "Profile", icon: FaRegUser },
+  { label: "Overview", icon: LayoutGrid, type: "tab" },
+  { label: "Mock Interview", icon: RiRobot3Line, type: "tab" },
+  { label: "Quiz", icon: MdOutlineQuiz, type: "tab" },
+  { label: "CodeX", icon: Code, type: "tab" },
+  { label: "Job Tracker", icon: Briefcase, type: "tab" },
+  { label: "Study Companion", icon: BookOpen, type: "route", path: "/study" },
+  { label: "Analyse Resume", icon: MdOutlineFindInPage, type: "tab" },
+  { label: "Roadmap", icon: MdOutlineFindInPage, type: "tab" },
+  { label: "Profile", icon: FaRegUser, type: "tab" },
 ]
 
 const AfterLoginLayout = () => {
   const [activeTab, setActiveTab] = useState("Overview")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+
   const tab = location.state?.tab
+  const isStudyRoute = location.pathname === "/study"
 
   useEffect(() => {
     if (tab) {
@@ -60,7 +65,7 @@ const AfterLoginLayout = () => {
   }
 
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden bg-[#f8fafc]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f8fafc]">
 
       {/* Hover trigger */}
       <div
@@ -100,13 +105,19 @@ const AfterLoginLayout = () => {
               <button
                 key={item.label}
                 onClick={() => {
-                  setActiveTab(item.label)
                   setIsSidebarOpen(false)
+                  if (item.type === "route") {
+                    navigate(item.path)
+                  } else {
+                    setActiveTab(item.label)
+                  }
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl
-                ${activeTab === item.label
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100"}`}
+                ${
+                  activeTab === item.label && !isStudyRoute
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.label}</span>
@@ -127,31 +138,37 @@ const AfterLoginLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        {activeTab === "Overview" && <OverviewDashboard />}
+      {/* ================= MAIN CONTENT ================= */}
+      <main className="flex-1 overflow-hidden">
+        {isStudyRoute ? (
+          /* 🔥 FULL-PAGE WORKSPACE (Study Companion) */
+          <Outlet />
+        ) : (
+          /* DASHBOARD TABS */
+          <>
+            {activeTab === "Overview" && <OverviewDashboard />}
 
-        {activeTab === "Mock Interview" && (
-          <div className="flex h-full">
-            <div className="w-1/2"><AiInterviewForm /></div>
-            <div className="w-1/2"><InterviewCards /></div>
-          </div>
+            {activeTab === "Mock Interview" && (
+              <div className="flex h-full">
+                <div className="w-1/2"><AiInterviewForm /></div>
+                <div className="w-1/2"><InterviewCards /></div>
+              </div>
+            )}
+
+            {activeTab === "Quiz" && (
+              <div className="flex h-full">
+                <div className="w-1/2"><InterviewQuizForm /></div>
+                <div className="w-1/2"><QuizCards /></div>
+              </div>
+            )}
+
+            {activeTab === "Analyse Resume" && <AnalyseResume />}
+            {activeTab === "Roadmap" && <Roadmap />}
+            {activeTab === "Profile" && <Profile />}
+            {activeTab === "CodeX" && <Codex />}
+            {activeTab === "Job Tracker" && <JobBoard />}
+          </>
         )}
-
-        {activeTab === "Quiz" && (
-          <div className="flex h-full">
-            <div className="w-1/2"><InterviewQuizForm /></div>
-            <div className="w-1/2"><QuizCards /></div>
-          </div>
-        )}
-
-        {activeTab === "Analyse Resume" && <AnalyseResume />}
-        {activeTab === "Roadmap" && <Roadmap />}
-        {activeTab === "Profile" && <Profile />}
-        {activeTab === "CodeX" && <Codex />}
-
-        {/* ✅ NEW: Job Tracker */}
-        {activeTab === "Job Tracker" && <JobBoard />}
       </main>
     </div>
   )

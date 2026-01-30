@@ -9,7 +9,7 @@ import Signup from "./components/signup";
 // Core layout & auth
 import AfterLoginLayout from "./components/afterLoginLayout";
 import ProtectedRoute from "./components/ProjectedRoute";
-
+import StudyPage from "./pages/StudyPage"
 // Features
 import AiInterview from "./components/aiInterview";
 import PostInterview from "./components/postInterview";
@@ -65,6 +65,8 @@ function App() {
         <Route path="/temp" element={<ClassicATS />} />
         <Route path="/temp1" element={<SingleColumnATS />} />
         <Route path="/temp2" element={<AcademicSingleColumnATS />} />
+        <Route path="/study" element={<StudyPage />} />
+
 
         {/* ================= GITHUB ================= */}
         <Route

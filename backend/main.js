@@ -1,113 +1,133 @@
-import express from 'express'
-import mongoose from 'mongoose'
-import cors from 'cors'
-import dotenv from 'dotenv'
-import cookieParser from 'cookie-parser'
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
 // -------------------- ROUTES --------------------
-import uploadRoute from './routes/uploadRoute.js'
-import questionRoute from './routes/questionRoute.js'
-import answerRoute from './routes/answerRoutes.js'
-import interviewRoute from './routes/interviewRoutes.js'
-import resultRoute from './routes/resultRoutes.js'
-import quizRoute from './routes/quizRoute.js'
-import userRoute from './routes/userRoute.js'
-import roadmapRoute from './routes/roadmapRoute.js'
-import buildRoutes from './routes/buildRoutes.js'
-import codexCodeRoutes from './routes/codexCodeRoutes.js'
-import codexAiRoutes from './routes/codexAiRoutes.js'
-import jobRoutes from './routes/jobRoutes.js'
+import studyRoutes from "./routes/studyRoutes.js";
+import uploadRoute from "./routes/uploadRoute.js";
+import questionRoute from "./routes/questionRoute.js";
+import answerRoute from "./routes/answerRoutes.js";
+import interviewRoute from "./routes/interviewRoutes.js";
+import resultRoute from "./routes/resultRoutes.js";
+import quizRoute from "./routes/quizRoute.js";
+import userRoute from "./routes/userRoute.js";
+import roadmapRoute from "./routes/roadmapRoute.js";
+import buildRoutes from "./routes/buildRoutes.js";
+import codexCodeRoutes from "./routes/codexCodeRoutes.js";
+import codexAiRoutes from "./routes/codexAiRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
 
 // 🔥 GitHub
-import githubAuthRoutes from './routes/githubAuth.routes.js'
-import githubApiRoutes from './routes/githubApi.routes.js'
-import githubAiRoutes from './routes/githubAiRoutes.js'
+import githubAuthRoutes from "./routes/githubAuth.routes.js";
+import githubApiRoutes from "./routes/githubApi.routes.js";
+import githubAiRoutes from "./routes/githubAiRoutes.js";
 // ------------------------------------------------
 
-dotenv.config()
-const app = express()
+dotenv.config();
+const app = express();
 
-// -------------------- MIDDLEWARE --------------------
-app.use(express.json())
-app.use(cookieParser()) // ✅ only once
+/* ================= MIDDLEWARE ================= */
+
+// ⚠️ IMPORTANT
+// ❌ DO NOT parse multipart here
+// ✅ JSON only for non-file routes
+app.use(express.json({ limit: "10mb" }));
+app.use(cookieParser());
 
 app.use(
   cors({
     origin: [
-      'http://localhost:5173',
-      'https://interview-v2.vercel.app',
+      "http://localhost:5173",
+      "https://interview-v2.vercel.app",
       process.env.FRONTEND_URL,
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
-)
-// ---------------------------------------------------
+);
 
-// -------------------- ROUTES ------------------------
-app.use('/questions', questionRoute)
-app.use('/interview', interviewRoute)
-app.use('/answers', answerRoute)
-app.use('/results', resultRoute)
-app.use('/user', userRoute)
+// 🔍 DEBUG incoming requests (keep for now)
+app.use((req, _res, next) => {
+  console.log(`➡️ ${req.method} ${req.originalUrl}`);
+  next();
+});
 
-app.use('/resume', uploadRoute)
-app.use('/quiz', quizRoute)
-app.use('/roadmap', roadmapRoute)
-app.use('/buildResume', buildRoutes)
-app.use('/codex/code', codexCodeRoutes)
-app.use('/codex/ai', codexAiRoutes)
-app.use('/api/jobs', jobRoutes)
+/* ================= ROUTES ================= */
 
-// 🔥 GitHub (FINAL & CORRECT)
-app.use('/auth', githubAuthRoutes)          // OAuth
-app.use('/api/github', githubApiRoutes)     // GitHub data
-app.use('/api/ai/github', githubAiRoutes)   // ✅ AI ANALYSIS
-// ---------------------------------------------------
+// ✅ FILE UPLOAD ROUTE — MUST COME FIRST
+app.use("/api/study", studyRoutes);
 
-// -------------------- HEALTH CHECK ------------------
-app.get('/', (req, res) => {
+// Core routes
+app.use("/questions", questionRoute);
+app.use("/interview", interviewRoute);
+app.use("/answers", answerRoute);
+app.use("/results", resultRoute);
+app.use("/user", userRoute);
+
+app.use("/resume", uploadRoute);
+app.use("/quiz", quizRoute);
+app.use("/roadmap", roadmapRoute);
+app.use("/buildResume", buildRoutes);
+app.use("/codex/code", codexCodeRoutes);
+app.use("/codex/ai", codexAiRoutes);
+app.use("/api/jobs", jobRoutes);
+
+// GitHub
+app.use("/auth", githubAuthRoutes);
+app.use("/api/github", githubApiRoutes);
+app.use("/api/ai/github", githubAiRoutes);
+
+/* ================= HEALTH ================= */
+
+app.get("/", (_req, res) => {
   res.json({
-    status: 'Active',
-    message: 'Backend is running successfully 🚀',
-  })
-})
+    status: "Active",
+    message: "Backend is running successfully 🚀",
+  });
+});
 
-app.get('/health/db', async (req, res) => {
-  try {
-    const state = mongoose.connection.readyState
-    res.json({
-      mongoState: state === 1 ? 'connected' : 'not connected',
-    })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+/* ================= GLOBAL ERROR HANDLER ================= */
+/**
+ * 🔥 THIS IS THE KEY FIX
+ * Multer + Express errors will ALWAYS return JSON now
+ */
+app.use((err, _req, res, _next) => {
+  console.error("❌ GLOBAL ERROR:", err);
+
+  // Multer file errors
+  if (err.name === "MulterError") {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
   }
-})
-// ---------------------------------------------------
 
-// -------------------- DATABASE ----------------------
+  // Generic error
+  res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
+
+/* ================= DATABASE ================= */
+
 if (!process.env.MONGO_URI) {
-  console.error('❌ MONGO_URI missing in .env')
-  process.exit(1)
+  console.error("❌ MONGO_URI missing in .env");
+  process.exit(1);
 }
 
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB Atlas connected'))
+  .then(() => console.log("✅ MongoDB Atlas connected"))
   .catch((err) => {
-    console.error('❌ MongoDB connection failed:', err.message)
-    process.exit(1)
-  })
+    console.error("❌ MongoDB connection failed:", err.message);
+    process.exit(1);
+  });
 
-mongoose.connection.on('error', (err) => {
-  console.error('❌ Mongo runtime error:', err)
-})
-// ---------------------------------------------------
+/* ================= SERVER ================= */
 
-// -------------------- SERVER ------------------------
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🔥 Server running on port ${PORT}`)
-})
-// ---------------------------------------------------
+  console.log(`🔥 Server running on port ${PORT}`);
+});
