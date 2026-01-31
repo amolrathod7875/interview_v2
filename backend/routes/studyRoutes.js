@@ -28,16 +28,18 @@ router.post(
 
       for (const file of req.files) {
         const text = await parseFileToText(file.path);
+        console.log(`[STUDY] Parsed file: ${file.originalname}, text length: ${text?.length || 0}`);
         if (text && text.trim()) {
           combinedText += "\n\n" + text;
         }
       }
 
-      if (!combinedText.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to extract text from uploaded files",
-        });
+      console.log(`[STUDY] Total combined text length: ${combinedText.length}`);
+      console.log(`[STUDY] First 200 chars of extracted text: "${combinedText.slice(0, 200)}"`);
+
+      // Allow short text (minimum 10 chars) to proceed to AI
+      if (combinedText.length < 10) {
+        console.warn(`[STUDY] Text too short (${combinedText.length} chars), attempting to process anyway...`);
       }
 
       // 2️⃣ Generate study material

@@ -14,6 +14,9 @@ export const generateStudyMaterial = async (rawText) => {
     throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
+  console.log(`[AI] Received text length: ${rawText.length}`);
+  console.log(`[AI] First 100 chars: ${rawText.slice(0, 100)}`);
+
   const prompt = `
 You are an expert AI study assistant.
 
