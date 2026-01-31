@@ -19,7 +19,7 @@ export default function CTA() {
             size="lg"
             className="px-10 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            Create Free Account
+            Start Free
           </Button>
         </Link>
       </div>

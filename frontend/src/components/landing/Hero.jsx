@@ -28,7 +28,7 @@ export default function Hero() {
             <Link to="/signup">
               <Button
                 size="lg"
-                className="px-8 py-6 text-base bg-blue-600 hover:bg-blue-800 shadow-lg hover:shadow-xl transition-all duration-200"
+                className="px-8 py-6 text-base bg-blue-600 hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-blue-600/20 hover:ring-blue-600/40"
               >
                 Start Free
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -39,7 +39,7 @@ export default function Hero() {
               <Button
                 size="lg"
                 variant="outline"
-                className="px-8 py-6 text-base"
+                className="px-8 py-6 text-base border-slate-300 hover:border-slate-400"
               >
                 I have an account
               </Button>
@@ -77,7 +77,7 @@ export default function Hero() {
                     className={`rounded-md px-3 py-2 ${
                       i === 0
                         ? "bg-blue-100 text-blue-700 font-medium"
-                        : "text-slate-600"
+                        : "text-slate-700 font-medium"
                     }`}
                   >
                     {item}
@@ -93,7 +93,7 @@ export default function Hero() {
                   <h3 className="text-lg font-semibold text-slate-900">
                     Dashboard Overview
                   </h3>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-600">
                     Track your interview preparation progress
                   </p>
                 </div>
@@ -109,7 +109,7 @@ export default function Hero() {
                       key={i}
                       className="rounded-lg border border-slate-200 bg-slate-50 p-4"
                     >
-                      <p className="text-xs text-slate-500 mb-1">
+                      <p className="text-xs text-slate-600 font-medium mb-1">
                         {stat.label}
                       </p>
                       <p className="text-xl font-bold text-slate-900">
@@ -119,7 +119,7 @@ export default function Hero() {
                   ))}
                 </div>
 
-                {/* Feature Tiles — TEXT SAFE */}
+                {/* Feature Tiles — IMPROVED CONTRAST */}
                 <div className="grid grid-cols-2 gap-6 pt-2">
                   {[
                     "CodeX",
@@ -136,8 +136,8 @@ export default function Hero() {
                         px-5
                         pt-4
                         text-sm
-                        font-medium
-                        text-slate-700
+                        font-semibold
+                        text-slate-800
                         leading-snug
                         flex
                         items-start
