@@ -28,7 +28,7 @@ export default function Hero() {
             <Link to="/signup">
               <Button
                 size="lg"
-                className="px-8 py-6 text-base bg-blue-600 hover:bg-blue-700"
+                className="px-8 py-6 text-base bg-blue-600 hover:bg-blue-800 shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 Start Free
                 <ArrowRight className="ml-2 h-4 w-4" />

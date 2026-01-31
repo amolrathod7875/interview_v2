@@ -4,7 +4,7 @@ import {
   Zap,
   Code,
   Briefcase,
-  BookOpen
+  BookOpen,
 } from "lucide-react"
 
 import { useEffect, useState } from "react"
@@ -15,7 +15,7 @@ import { FcMenu } from "react-icons/fc"
 import {
   useLocation,
   useNavigate,
-  Outlet
+  Outlet,
 } from "react-router-dom"
 
 import AiInterviewForm from "./aiInterviewForm"
@@ -60,12 +60,17 @@ const AfterLoginLayout = () => {
     }
   }, [tab])
 
+  // Optional UX polish: close sidebar on navigation
+  useEffect(() => {
+    setIsSidebarOpen(false)
+  }, [activeTab, location.pathname])
+
   const handleLogout = async () => {
     await logoutUser()
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f8fafc]">
+    <div className="flex min-h-screen w-screen bg-[#f8fafc] overflow-x-hidden">
 
       {/* Hover trigger */}
       <div
@@ -105,7 +110,6 @@ const AfterLoginLayout = () => {
               <button
                 key={item.label}
                 onClick={() => {
-                  setIsSidebarOpen(false)
                   if (item.type === "route") {
                     navigate(item.path)
                   } else {
@@ -139,24 +143,23 @@ const AfterLoginLayout = () => {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-y-auto">
         {isStudyRoute ? (
-          /* 🔥 FULL-PAGE WORKSPACE (Study Companion) */
+          /* FULL-PAGE WORKSPACE (Study Companion) */
           <Outlet />
         ) : (
-          /* DASHBOARD TABS */
           <>
             {activeTab === "Overview" && <OverviewDashboard />}
 
             {activeTab === "Mock Interview" && (
-              <div className="flex h-full">
+              <div className="flex min-h-screen">
                 <div className="w-1/2"><AiInterviewForm /></div>
                 <div className="w-1/2"><InterviewCards /></div>
               </div>
             )}
 
             {activeTab === "Quiz" && (
-              <div className="flex h-full">
+              <div className="flex min-h-screen">
                 <div className="w-1/2"><InterviewQuizForm /></div>
                 <div className="w-1/2"><QuizCards /></div>
               </div>
