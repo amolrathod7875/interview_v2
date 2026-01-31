@@ -9,7 +9,8 @@ import Signup from "./components/signup";
 // Core layout & auth
 import AfterLoginLayout from "./components/afterLoginLayout";
 import ProtectedRoute from "./components/ProjectedRoute";
-import StudyPage from "./pages/StudyPage"
+import StudyPage from "./pages/StudyPage";
+
 // Features
 import AiInterview from "./components/aiInterview";
 import PostInterview from "./components/postInterview";
@@ -25,14 +26,14 @@ import AcademicSingleColumnATS from "./components/ui/AcademicSingleColumnATS";
 
 // CodeX
 import Codex from "./components/Codex";
+import ComplexityPage from "./pages/ComplexityPage"; // ✅ NEW
 
 // Job Tracker
 import JobBoard from "./components/jobTracker/Board";
 
 // GitHub
 import GithubRepos from "./pages/GithubRepos";
-import GithubAnalysis from "./pages/GithubAnalysis"
-
+import GithubAnalysis from "./pages/GithubAnalysis";
 
 function App() {
   return (
@@ -60,13 +61,12 @@ function App() {
         <Route path="/analyseResume" element={<AnalyseResume />} />
         <Route path="/quizResult" element={<QuizResult />} />
         <Route path="/buildresume" element={<BuildResume />} />
+        <Route path="/study" element={<StudyPage />} />
 
         {/* ================= RESUME TEMPLATES ================= */}
         <Route path="/temp" element={<ClassicATS />} />
         <Route path="/temp1" element={<SingleColumnATS />} />
         <Route path="/temp2" element={<AcademicSingleColumnATS />} />
-        <Route path="/study" element={<StudyPage />} />
-
 
         {/* ================= GITHUB ================= */}
         <Route
@@ -85,12 +85,23 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         {/* ================= CODEX ================= */}
         <Route
           path="/codex"
           element={
             <ProtectedRoute>
               <Codex />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ NEW: CODEX COMPLEXITY PAGE */}
+        <Route
+          path="/codex/complexity"
+          element={
+            <ProtectedRoute>
+              <ComplexityPage />
             </ProtectedRoute>
           }
         />

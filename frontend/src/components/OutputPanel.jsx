@@ -1,24 +1,25 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const TABS = ["Output", "Errors", "Analysis"];
 
 const OutputPanel = ({ output, analysis, running, analyzing }) => {
   const [activeTab, setActiveTab] = useState("Output");
+  const navigate = useNavigate();
 
   return (
     <div className="mt-4 bg-[#1e1e1e] rounded-lg border border-gray-700 flex flex-col h-full overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-gray-700 shrink-0">
-        {TABS.map((tab) => (
+        {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm transition
-              ${
-                activeTab === tab
-                  ? "bg-[#252526] text-white border-b-2 border-blue-500"
-                  : "text-gray-400 hover:text-white"
-              }`}
+            className={`px-4 py-2 text-sm transition ${
+              activeTab === tab
+                ? "bg-[#252526] text-white border-b-2 border-blue-500"
+                : "text-gray-400 hover:text-white"
+            }`}
           >
             {tab}
           </button>
@@ -39,9 +40,7 @@ const OutputPanel = ({ output, analysis, running, analyzing }) => {
         {/* Output */}
         {!running && activeTab === "Output" && (
           <div className="whitespace-pre-wrap">
-            {output?.output ? (
-              output.output
-            ) : (
+            {output?.output || (
               <span className="text-gray-500">No output</span>
             )}
           </div>
@@ -50,9 +49,7 @@ const OutputPanel = ({ output, analysis, running, analyzing }) => {
         {/* Errors */}
         {!running && activeTab === "Errors" && (
           <div className="whitespace-pre-wrap text-red-400">
-            {output?.error ? (
-              output.error
-            ) : (
+            {output?.error || (
               <span className="text-gray-500">No errors</span>
             )}
           </div>
@@ -60,7 +57,7 @@ const OutputPanel = ({ output, analysis, running, analyzing }) => {
 
         {/* Analysis */}
         {!analyzing && activeTab === "Analysis" && (
-          <div className="space-y-3 font-sans text-sm">
+          <div className="space-y-4 font-sans text-sm">
             {!analysis ? (
               <span className="text-gray-500">
                 Run analysis to see feedback
@@ -103,6 +100,20 @@ const OutputPanel = ({ output, analysis, running, analyzing }) => {
                   <span className="text-blue-400">
                     {analysis.spaceComplexity || "—"}
                   </span>
+                </div>
+
+                {/* View Graph Button */}
+                <div className="pt-2">
+                  <button
+                    onClick={() =>
+                      navigate("/codex/complexity", {
+                        state: { analysis }
+                      })
+                    }
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                  >
+                    View Complexity Graph 📊
+                  </button>
                 </div>
 
                 {/* Improvements */}
