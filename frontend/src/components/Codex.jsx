@@ -9,6 +9,7 @@ import {
 import ProblemPanel from "./ProblemPanel";
 import EditorPanel from "./EditorPanel";
 import OutputPanel from "./OutputPanel";
+import LoadingWave from "./ui/LoadingWave";
 
 /* ---------- Fallback Starter Code ---------- */
 const FALLBACK_CODE = {
@@ -178,18 +179,27 @@ const Codex = () => {
 
   return (
     <div ref={containerRef} className="h-full w-full flex bg-[#f8fafc]">
-      {/* Left: Problem */}
+      {/* Left: Problem / Loader */}
       <div style={{ width: `${leftWidth}%` }} className="h-full p-2">
-        <ProblemPanel
-          problem={problem}
-          topics={topics}
-          selectedTopic={selectedTopic}
-          setSelectedTopic={setSelectedTopic}
-          difficulty={difficulty}
-          setDifficulty={setDifficulty}
-          onGenerate={handleGenerate}
-          loading={generating}
-        />
+        {generating ? (
+          <div className="h-full flex flex-col items-center justify-center bg-white rounded-lg border">
+            <LoadingWave />
+            <p className="mt-4 text-sm text-gray-500">
+              Generating problem… please wait
+            </p>
+          </div>
+        ) : (
+          <ProblemPanel
+            problem={problem}
+            topics={topics}
+            selectedTopic={selectedTopic}
+            setSelectedTopic={setSelectedTopic}
+            difficulty={difficulty}
+            setDifficulty={setDifficulty}
+            onGenerate={handleGenerate}
+            loading={generating}
+          />
+        )}
       </div>
 
       <div
