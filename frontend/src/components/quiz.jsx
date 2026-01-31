@@ -1,9 +1,9 @@
 import axios from "axios"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Button } from "./ui/button"
 import LoadingWave from "./ui/LoadingWave"
-import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react"
+import { ArrowLeft, CheckCircle2, AlertCircle, Clock, AlertTriangle } from "lucide-react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -16,6 +16,9 @@ const Quiz = () => {
     const [answers, setAnswers] = useState({})
     const [error, setError] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    
+    const [timeRemaining, setTimeRemaining] = useState(600)
+    const [timerExpired, setTimerExpired] = useState(false)
 
     useEffect(() => {
         if (!quizId) return
@@ -42,11 +45,34 @@ const Quiz = () => {
         loadQuestions()
     }, [quizId])
 
+    useEffect(() => {
+        if (isLoading || error || timerExpired) return
+
+        const timer = setInterval(() => {
+            setTimeRemaining(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer)
+                    setTimerExpired(true)
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [isLoading, error, timerExpired])
+
+    useEffect(() => {
+        if (timerExpired) {
+            handleSubmit(true)
+        }
+    }, [timerExpired])
+
     const handleChange = (qIndex, option) => {
         setAnswers(prev => ({ ...prev, [qIndex]: option }))
     }
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async (autoSubmit = false) => {
         try {
             setIsLoading(true);
             const payload = {
@@ -67,11 +93,38 @@ const Quiz = () => {
             navigate("/quizResult", {
                 state: {
                     score: res.data.score,
-                    noOfQuestions: questions.length
+                    noOfQuestions: questions.length,
+                    autoSubmitted: autoSubmit
                 }
             })
         } catch (e) {
             console.log(e.message);
+            setIsLoading(false)
+        }
+    }, [questions, answers, quizId, navigate])
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    }
+
+    const getTimerColor = () => {
+        if (timeRemaining <= 60) return 'text-red-600'
+        if (timeRemaining <= 180) return 'text-orange-600'
+        return 'text-gray-700'
+    }
+
+    const getTimerBgColor = () => {
+        if (timeRemaining <= 60) return 'bg-red-50 border-red-200'
+        if (timeRemaining <= 180) return 'bg-orange-50 border-orange-200'
+        return 'bg-blue-50 border-blue-200'
+    }
+
+    const scrollToQuestion = (index) => {
+        const element = document.getElementById(`question-${index}`)
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
     }
 
@@ -105,75 +158,65 @@ const Quiz = () => {
         )
     }
 
-    const progressPercentage =
-        (Object.keys(answers).length / questions.length) * 100
+    const progressPercentage = (Object.keys(answers).length / questions.length) * 100
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-8">
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-
-                {/* Main Content */}
-                <div className="flex-1 space-y-6">
-
-                    {/* Header */}
+        <div className="min-h-screen bg-[#f8fafc] w-full py-8">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10">
+                
+                {/* Header Section */}
+                <div className="mb-8">
                     <button
                         onClick={() => navigate("/dashboard")}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm mb-4 font-semibold"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back to Dashboard
                     </button>
+                    <h1 className="text-3xl font-bold text-gray-900">Quiz</h1>
+                    <p className="text-gray-500 text-sm">Answer all questions to submit</p>
+                </div>
 
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                            Quiz
-                        </h1>
-                        <p className="text-gray-500">
-                            Answer all questions to submit the quiz
-                        </p>
-                    </div>
-
-                    {/* Questions */}
-                    <div className="space-y-4">
+                {/* Grid Container */}
+                <div className="flex flex-col lg:flex-row items-start gap-8">
+                    
+                    {/* Left: Questions Column */}
+                    <div className="w-full lg:flex-1 space-y-6">
                         {questions.map((q, qIndex) => (
                             <div
                                 key={q._id}
-                                className="bg-white border border-gray-200 rounded-2xl p-6"
+                                id={`question-${qIndex}`}
+                                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm scroll-mt-24"
                             >
-                                <div className="flex gap-3 mb-4">
-                                    <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold">
+                                <div className="flex gap-4 mb-6">
+                                    <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-bold flex-shrink-0">
                                         {qIndex + 1}
                                     </div>
-                                    <p className="text-gray-900 font-medium">
+                                    <p className="text-lg text-gray-900 font-semibold">
                                         {q.text.replace(/```/g, "")}
                                     </p>
                                 </div>
 
-                                <div className="space-y-3 ml-11">
+                                <div className="space-y-3">
                                     {q.options.map((option, oIndex) => (
                                         <label
                                             key={oIndex}
-                                            className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition
-                        ${answers[qIndex] === option
+                                            className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition-all
+                                                ${answers[qIndex] === option
                                                     ? "border-blue-500 bg-blue-50"
-                                                    : "border-gray-200 hover:border-gray-300"
+                                                    : "border-gray-100 hover:bg-gray-50"
                                                 }`}
                                         >
                                             <input
                                                 type="radio"
                                                 name={`q-${qIndex}`}
                                                 checked={answers[qIndex] === option}
-                                                onChange={() =>
-                                                    handleChange(qIndex, option)
-                                                }
-                                                className="accent-blue-600 mt-1"
+                                                onChange={() => handleChange(qIndex, option)}
+                                                className="mt-1 w-4 h-4 text-blue-600"
                                             />
-                                            <span className="text-sm text-gray-700 flex-1">
+                                            <span className="text-gray-700 font-medium">
                                                 {option}
                                             </span>
-                                            {answers[qIndex] === option && (
-                                                <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                                            )}
                                         </label>
                                     ))}
                                 </div>
@@ -181,54 +224,66 @@ const Quiz = () => {
                         ))}
                     </div>
 
-                    {/* Submit */}
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={Object.keys(answers).length === 0}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-                    >
-                        Submit Quiz
-                    </Button>
-                </div>
-
-                {/* Progress Sidebar */}
-                <div className="w-full lg:w-80 bg-white border border-gray-200 rounded-2xl p-6 h-fit sticky top-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Progress
-                    </h3>
-
-                    <div className="space-y-3 mb-6">
-                        <div className="flex justify-between text-sm text-gray-600">
-                            <span>Answered</span>
-                            <span className="font-medium">
-                                {Object.keys(answers).length} / {questions.length}
-                            </span>
-                        </div>
-
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className="h-2 rounded-full bg-blue-600 transition-all"
-                                style={{ width: `${progressPercentage}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-5 gap-2">
-                        {questions.map((_, i) => (
-                            <div
-                                key={i}
-                                className={`h-10 flex items-center justify-center rounded-lg text-sm font-medium
-                  ${answers[i]
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-gray-100 text-gray-500"
-                                    }`}
-                            >
-                                {i + 1}
+                    {/* Right: Sticky Sidebar (Timer & Navigator) */}
+                    <aside className="w-full lg:w-[350px] lg:sticky lg:top-8 space-y-4">
+                        
+                        {/* Timer Card */}
+                        <div className={`border-2 rounded-2xl p-6 shadow-sm ${getTimerBgColor()}`}>
+                            <div className="flex items-center gap-3">
+                                <Clock className={`h-6 w-6 ${getTimerColor()}`} />
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-1">Remaining</p>
+                                    <p className={`text-3xl font-black font-mono leading-none ${getTimerColor()}`}>
+                                        {formatTime(timeRemaining)}
+                                    </p>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
+                        </div>
 
+                        {/* Navigator Card */}
+                        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-sm font-bold text-gray-900 uppercase">Navigator</h3>
+                                <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">
+                                    {Object.keys(answers).length}/{questions.length}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-5 gap-2 mb-8">
+                                {questions.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => scrollToQuestion(i)}
+                                        className={`h-10 rounded-lg text-sm font-bold transition-all border
+                                            ${answers[i]
+                                                ? "bg-blue-600 border-blue-600 text-white"
+                                                : "bg-white border-gray-200 text-gray-400 hover:border-blue-400"
+                                            }`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                    <div
+                                        className="h-1.5 rounded-full bg-blue-600 transition-all duration-300"
+                                        style={{ width: `${progressPercentage}%` }}
+                                    />
+                                </div>
+                                <Button
+                                    onClick={() => handleSubmit(false)}
+                                    disabled={Object.keys(answers).length === 0}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-xl text-lg font-bold shadow-lg"
+                                >
+                                    Finish Quiz
+                                </Button>
+                            </div>
+                        </div>
+                    </aside>
+
+                </div>
             </div>
         </div>
     )

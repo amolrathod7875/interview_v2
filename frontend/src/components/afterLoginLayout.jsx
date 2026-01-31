@@ -60,7 +60,6 @@ const AfterLoginLayout = () => {
     }
   }, [tab])
 
-  // Optional UX polish: close sidebar on navigation
   useEffect(() => {
     setIsSidebarOpen(false)
   }, [activeTab, location.pathname])
@@ -70,7 +69,7 @@ const AfterLoginLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-screen bg-[#f8fafc] overflow-x-hidden">
+    <div className="flex min-h-screen w-full bg-[#f8fafc]">
 
       {/* Hover trigger */}
       <div
@@ -81,7 +80,7 @@ const AfterLoginLayout = () => {
       {/* Toggle button */}
       <button
         onMouseEnter={() => setIsSidebarOpen(true)}
-        className="fixed top-4 left-4 z-[70] p-2 rounded-lg bg-white border shadow-sm"
+        className="fixed top-4 left-4 z-[70] p-2 rounded-lg bg-white border shadow-sm hover:bg-gray-50 transition-colors"
       >
         <FcMenu className="w-5 h-5" />
       </button>
@@ -90,22 +89,19 @@ const AfterLoginLayout = () => {
       <aside
         onMouseEnter={() => setIsSidebarOpen(true)}
         onMouseLeave={() => setIsSidebarOpen(false)}
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r
-        transition-transform duration-300
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r shadow-xl
+        transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex flex-col h-full">
-
-          {/* Header */}
           <div className="px-6 py-5 flex items-center gap-3 border-b">
-            <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Zap className="h-5 w-5 text-blue-600" />
+            <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="font-semibold">Interview.io</span>
+            <span className="font-bold text-gray-900">Interview.io</span>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1">
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navItems.map(item => (
               <button
                 key={item.label}
@@ -116,52 +112,51 @@ const AfterLoginLayout = () => {
                     setActiveTab(item.label)
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
                 ${
                   activeTab === item.label && !isStudyRoute
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-blue-50 text-blue-700 font-semibold"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className={`h-5 w-5 ${activeTab === item.label ? "text-blue-600" : ""}`} />
                 <span>{item.label}</span>
               </button>
             ))}
           </nav>
 
-          {/* Logout */}
           <div className="px-4 py-4 border-t">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <LogOut className="h-5 w-5" />
-              Logout
+              <span className="font-medium">Logout</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <main className="flex-1 overflow-y-auto">
+      {/* FIXED: Removed flex-1 and used w-full to allow full-width grid layouts in children */}
+      <main className="w-full min-h-screen overflow-x-hidden">
         {isStudyRoute ? (
-          /* FULL-PAGE WORKSPACE (Study Companion) */
           <Outlet />
         ) : (
-          <>
+          <div className="w-full h-full">
             {activeTab === "Overview" && <OverviewDashboard />}
 
             {activeTab === "Mock Interview" && (
-              <div className="flex min-h-screen">
-                <div className="w-1/2"><AiInterviewForm /></div>
-                <div className="w-1/2"><InterviewCards /></div>
+              <div className="flex flex-col lg:flex-row min-h-screen w-full">
+                <div className="w-full lg:w-1/2 p-4"><AiInterviewForm /></div>
+                <div className="w-full lg:w-1/2 p-4"><InterviewCards /></div>
               </div>
             )}
 
             {activeTab === "Quiz" && (
-              <div className="flex min-h-screen">
-                <div className="w-1/2"><InterviewQuizForm /></div>
-                <div className="w-1/2"><QuizCards /></div>
+              <div className="flex flex-col lg:flex-row min-h-screen w-full">
+                <div className="w-full lg:w-1/2 p-4"><InterviewQuizForm /></div>
+                <div className="w-full lg:w-1/2 p-4"><QuizCards /></div>
               </div>
             )}
 
@@ -170,7 +165,7 @@ const AfterLoginLayout = () => {
             {activeTab === "Profile" && <Profile />}
             {activeTab === "CodeX" && <Codex />}
             {activeTab === "Job Tracker" && <JobBoard />}
-          </>
+          </div>
         )}
       </main>
     </div>

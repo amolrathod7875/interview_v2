@@ -2,33 +2,42 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true,
+  withCredentials: true
 });
+
+/* ---------------- TOPICS ---------------- */
+
+export const fetchTopics = async () => {
+  const res = await api.get("/codex/ai/topics");
+  return res.data;
+};
+
+/* ---------------- PROBLEM GENERATION ---------------- */
+
+export const generateProblem = async ({ topicId, difficulty }) => {
+  const res = await api.post("/codex/ai/generate", {
+    topicId,
+    difficulty
+  });
+  return res.data; // full problem object
+};
 
 /* ---------------- CODE EXECUTION ---------------- */
 
 export const executeCode = async (language, code) => {
   const res = await api.post("/codex/code/execute", {
     language,
-    code,
+    code
   });
   return res.data;
 };
 
-/* ---------------- PROBLEM GENERATION ---------------- */
-
-export const generateProblem = async () => {
-  const res = await api.post("/codex/ai/generate");
-  return res.data; // MUST be the full problem object
-};
-
 /* ---------------- CODE ANALYSIS ---------------- */
 
-export const analyzeCode = async (problem, code) => {
+export const analyzeCode = async ({ problemId, code }) => {
   const res = await api.post("/codex/ai/analyze", {
-    problem,
-    code,
+    problemId,
+    code
   });
-  return res.data.analysis;
+  return res.data; // structured analysis JSON
 };
-

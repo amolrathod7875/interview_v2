@@ -1,3 +1,5 @@
+import { Code2, Brain, TrendingUp } from "lucide-react"
+
 export default function HowItWorks() {
   return (
     <section className="py-32 px-4 bg-gradient-to-b from-slate-50 to-white">
@@ -13,15 +15,19 @@ export default function HowItWorks() {
           {[
             {
               step: "Choose your role & stack",
-              description: "Select your target role and tech stack to personalize your prep"
+              description: "Select your target role and tech stack to personalize your prep",
+              icon: Code2,
+              techStacks: ["React", "Python", "Java", "Node.js"]
             },
             {
               step: "Practice with AI",
-              description: "Engage with AI-powered mock interviews and adaptive quizzes"
+              description: "Engage with AI-powered mock interviews and adaptive quizzes",
+              icon: Brain
             },
             {
               step: "Get feedback & improve",
-              description: "Receive instant feedback and track your progress over time"
+              description: "Receive instant feedback and track your progress over time",
+              icon: TrendingUp
             }
           ].map((item, i) => (
             <div 
@@ -31,12 +37,31 @@ export default function HowItWorks() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-xl font-bold mb-6">
                 {i + 1}
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-3">
-                {item.step}
-              </h3>
-              <p className="text-slate-600 leading-relaxed">
+              
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <item.icon className="h-5 w-5 text-blue-600" />
+                <h3 className="text-xl font-semibold text-slate-900">
+                  {item.step}
+                </h3>
+              </div>
+              
+              <p className="text-slate-600 leading-relaxed mb-4">
                 {item.description}
               </p>
+
+              {/* Tech Stack Pills - Only for Step 1 */}
+              {item.techStacks && (
+                <div className="flex flex-wrap gap-2 justify-center mt-4">
+                  {item.techStacks.map((tech, idx) => (
+                    <span 
+                      key={idx}
+                      className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

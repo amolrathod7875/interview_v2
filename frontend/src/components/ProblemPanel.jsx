@@ -2,42 +2,95 @@ import { useState } from "react";
 
 const tabs = ["Description", "Examples", "Constraints"];
 
-const ProblemPanel = ({ problem, onGenerate }) => {
+const ProblemPanel = ({
+  problem,
+  topics,
+  selectedTopic,
+  setSelectedTopic,
+  difficulty,
+  setDifficulty,
+  onGenerate,
+  loading
+}) => {
   const [activeTab, setActiveTab] = useState("Description");
+
+  /* ---------- Header Controls ---------- */
+  const HeaderControls = () => (
+    <div className="flex gap-2 items-center">
+      {/* Topic Selector */}
+      <select
+        value={selectedTopic || ""}
+        onChange={(e) => setSelectedTopic(e.target.value)}
+        className="border rounded px-2 py-1 text-sm"
+      >
+        <option value="" disabled>
+          Select Topic
+        </option>
+        {topics.map((t) => (
+          <option key={t._id} value={t._id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Difficulty Selector */}
+      <select
+        value={difficulty}
+        onChange={(e) => setDifficulty(e.target.value)}
+        className="border rounded px-2 py-1 text-sm"
+      >
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+
+      {/* Generate Button */}
+      <button
+        onClick={onGenerate}
+        disabled={!selectedTopic || loading}
+        className={`px-4 py-1.5 rounded text-sm text-white transition ${
+          !selectedTopic || loading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        {loading ? "Generating..." : "Generate"}
+      </button>
+    </div>
+  );
 
   /* ---------- Empty State ---------- */
   if (!problem) {
     return (
       <div className="h-full flex flex-col bg-white rounded-lg border p-4">
-        <button
-          onClick={onGenerate}
-          className="self-end mb-3 px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-        >
-          New Problem
-        </button>
-        <div className="text-gray-500 text-sm">
-          Click <b>New Problem</b> to generate a coding question.
+        <div className="flex justify-end mb-4">
+          <HeaderControls />
+        </div>
+
+        <div className="text-gray-500 text-sm leading-relaxed">
+          <p className="mb-2">
+            Select a <b>topic</b> and <b>difficulty</b> to generate a problem.
+          </p>
+          <p>
+            This helps track your progress and unlock advanced skills.
+          </p>
         </div>
       </div>
     );
   }
 
+  /* ---------- Normal State ---------- */
   return (
     <div className="h-full flex flex-col bg-white rounded-lg border p-4 overflow-hidden">
-      {/* ---------- Header ---------- */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-3">
         <h2 className="font-semibold text-lg leading-tight">
           {problem.title || "Untitled Problem"}
         </h2>
-        <button
-          onClick={onGenerate}
-          className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-        >
-          New Problem
-        </button>
+        <HeaderControls />
       </div>
 
-      {/* ---------- Tabs ---------- */}
+      {/* Tabs */}
       <div className="flex gap-5 border-b mb-3 text-sm">
         {tabs.map((tab) => (
           <button
@@ -54,7 +107,7 @@ const ProblemPanel = ({ problem, onGenerate }) => {
         ))}
       </div>
 
-      {/* ---------- Content ---------- */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto text-sm whitespace-pre-wrap leading-relaxed pr-1">
         {activeTab === "Description" && (
           <>

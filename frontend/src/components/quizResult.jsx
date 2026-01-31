@@ -1,11 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom"
 import ScoreCircle from "./ui/scoreCircle"
 import { Button } from "./ui/button"
+import { AlertTriangle } from "lucide-react"
 
 const QuizResult = () => {
   const { state } = useLocation()
   const score = Number(state?.score ?? 0)
   const noOfQuestions = Number(state?.noOfQuestions ?? 0)
+  const autoSubmitted = state?.autoSubmitted ?? false
   const navigate = useNavigate()
 
   const percentage =
@@ -15,13 +17,28 @@ const QuizResult = () => {
     <div className="h-screen bg-[#f8fafc] flex items-center justify-center px-4">
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-10 max-w-md w-full text-center space-y-6">
 
+        {/* Auto-submit warning */}
+        {autoSubmitted && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3 text-left">
+            <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-orange-900 mb-1">
+                Time Expired
+              </p>
+              <p className="text-orange-700">
+                Your quiz was automatically submitted when the timer ran out.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-1">
             Quiz Result
           </h1>
           <p className="text-gray-500 text-sm">
-            Here’s how you performed
+            Here's how you performed
           </p>
         </div>
 
@@ -43,8 +60,8 @@ const QuizResult = () => {
         {/* Feedback */}
         <div className="text-sm text-gray-600">
           {percentage >= 80 && "Excellent work! You really know your stuff 👏"}
-          {percentage >= 50 && percentage < 80 && "Good job! A little more practice will make it perfect 👍"}
-          {percentage < 50 && "Keep practicing — you’ll improve fast 🚀"}
+          {percentage >= 50 && percentage < 80 && "Good job! A little more practice will make it perfect 💪"}
+          {percentage < 50 && "Keep practicing — you'll improve fast 🚀"}
         </div>
 
         {/* Actions */}

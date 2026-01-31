@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { executeCode, generateProblem, analyzeCode } from "./api";
+import {
+  executeCode,
+  generateProblem,
+  analyzeCode,
+  fetchTopics
+} from "./api";
+
 import ProblemPanel from "./ProblemPanel";
 import EditorPanel from "./EditorPanel";
 import OutputPanel from "./OutputPanel";
 
-/* ---------- Starter Code Templates ---------- */
-const STARTER_CODE = {
+/* ---------- Fallback Starter Code ---------- */
+const FALLBACK_CODE = {
   python: `# Write your solution here
 
 def main():
@@ -14,7 +20,6 @@ def main():
 if __name__ == "__main__":
     main()
 `,
-
   cpp: `#include <bits/stdc++.h>
 using namespace std;
 
@@ -23,7 +28,6 @@ int main() {
     return 0;
 }
 `,
-
   java: `import java.util.*;
 
 public class Main {
@@ -32,7 +36,6 @@ public class Main {
     }
 }
 `,
-
   javascript: `// Write your solution here
 function main() {
 
@@ -42,57 +45,90 @@ main();
 };
 
 const Codex = () => {
+  /* ---------------- Core State ---------------- */
   const [problem, setProblem] = useState(null);
-  const [language, setLanguage] = useState("python");
-  const [code, setCode] = useState(STARTER_CODE.python);
-  const [output, setOutput] = useState(null);
-  const [analysis, setAnalysis] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [difficulty, setDifficulty] = useState("easy");
 
-  // Resize state
+  const [language, setLanguage] = useState("python");
+  const [code, setCode] = useState(FALLBACK_CODE.python);
+
+  const [output, setOutput] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+
+  /* ---------------- Loading State ---------------- */
+  const [generating, setGenerating] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  /* ---------------- Layout State ---------------- */
   const [leftWidth, setLeftWidth] = useState(40);
   const [editorHeight, setEditorHeight] = useState(65);
 
   const containerRef = useRef(null);
 
-  /* ---------- Update editor when language changes ---------- */
+  /* ---------- Load Topics Once ---------- */
   useEffect(() => {
-    setCode(STARTER_CODE[language]);
-  }, [language]);
+    fetchTopics()
+      .then(setTopics)
+      .catch(() => console.error("Failed to load topics"));
+  }, []);
+
+  /* ---------- Update code on language OR problem change ---------- */
+  useEffect(() => {
+    if (problem?.starterCode?.[language]) {
+      setCode(problem.starterCode[language]);
+    } else {
+      setCode(FALLBACK_CODE[language]);
+    }
+  }, [language, problem]);
 
   /* ---------- Generate Problem ---------- */
   const handleGenerate = async () => {
-    setLoading(true);
+    if (!selectedTopic) return;
+
+    setGenerating(true);
+    setProblem(null);
+    setAnalysis(null);
+    setOutput(null);
+
     try {
-      const p = await generateProblem();
+      const p = await generateProblem({
+        topicId: selectedTopic,
+        difficulty
+      });
+
       setProblem(p);
-      setCode(STARTER_CODE[language]);
-      setOutput(null);
-      setAnalysis("");
+
+      if (p?.starterCode?.[language]) {
+        setCode(p.starterCode[language]);
+      } else {
+        setCode(FALLBACK_CODE[language]);
+      }
     } catch (err) {
-      console.error("Generate problem failed:", err);
+      console.error("Generate failed:", err);
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
 
   /* ---------- Run Code ---------- */
   const handleRun = async () => {
-    setLoading(true);
+    setRunning(true);
     setOutput(null);
 
     try {
       const res = await executeCode(language, code);
-      setOutput(res.run);
-    } catch (err) {
-      console.error("Run error:", err);
+      setOutput(res);
+    } catch {
       setOutput({
-        stdout: "",
-        stderr: "Execution failed. Check backend or code.",
-        output: ""
+        success: false,
+        output: "",
+        error: "Execution failed"
       });
     } finally {
-      setLoading(false);
+      setRunning(false);
     }
   };
 
@@ -100,84 +136,72 @@ const Codex = () => {
   const handleAnalyze = async () => {
     if (!problem) return;
 
-    setLoading(true);
-    setAnalysis("");
+    setAnalyzing(true);
+    setAnalysis(null);
 
     try {
-      const res = await analyzeCode(problem, code);
+      const res = await analyzeCode({
+        problemId: problem._id,
+        code
+      });
+
       setAnalysis(res);
-    } catch (err) {
-      console.error("Analyze error:", err);
-      setAnalysis("Analysis failed.");
+    } catch {
+      setAnalysis({ error: "Analysis failed" });
     } finally {
-      setLoading(false);
+      setAnalyzing(false);
     }
   };
 
   /* ---------- Resize Handlers ---------- */
-
   const startHorizontalResize = (e) => {
     e.preventDefault();
     document.onmousemove = (ev) => {
       const percent = (ev.clientX / window.innerWidth) * 100;
-      if (percent > 20 && percent < 70) {
-        setLeftWidth(percent);
-      }
+      if (percent > 20 && percent < 70) setLeftWidth(percent);
     };
-    document.onmouseup = () => {
-      document.onmousemove = null;
-    };
+    document.onmouseup = () => (document.onmousemove = null);
   };
 
   const startVerticalResize = (e) => {
     e.preventDefault();
-    const containerTop =
-      containerRef.current.getBoundingClientRect().top;
+    const top = containerRef.current.getBoundingClientRect().top;
 
     document.onmousemove = (ev) => {
       const percent =
-        ((ev.clientY - containerTop) /
-          containerRef.current.clientHeight) *
-        100;
-
-      if (percent > 40 && percent < 85) {
-        setEditorHeight(percent);
-      }
+        ((ev.clientY - top) / containerRef.current.clientHeight) * 100;
+      if (percent > 40 && percent < 85) setEditorHeight(percent);
     };
 
-    document.onmouseup = () => {
-      document.onmousemove = null;
-    };
+    document.onmouseup = () => (document.onmousemove = null);
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="h-full w-full flex bg-[#f8fafc]"
-    >
+    <div ref={containerRef} className="h-full w-full flex bg-[#f8fafc]">
       {/* Left: Problem */}
-      <div
-        style={{ width: `${leftWidth}%` }}
-        className="h-full p-2"
-      >
+      <div style={{ width: `${leftWidth}%` }} className="h-full p-2">
         <ProblemPanel
           problem={problem}
+          topics={topics}
+          selectedTopic={selectedTopic}
+          setSelectedTopic={setSelectedTopic}
+          difficulty={difficulty}
+          setDifficulty={setDifficulty}
           onGenerate={handleGenerate}
+          loading={generating}
         />
       </div>
 
-      {/* Vertical Divider */}
       <div
         onMouseDown={startHorizontalResize}
         className="w-1 cursor-col-resize bg-gray-300 hover:bg-blue-400"
       />
 
-      {/* Right Side */}
+      {/* Right */}
       <div
         style={{ width: `${100 - leftWidth}%` }}
         className="h-full flex flex-col p-2"
       >
-        {/* Editor */}
         <div style={{ height: `${editorHeight}%` }}>
           <EditorPanel
             code={code}
@@ -186,22 +210,22 @@ const Codex = () => {
             setLanguage={setLanguage}
             onRun={handleRun}
             onAnalyze={handleAnalyze}
-            loading={loading}
+            running={running}
+            analyzing={analyzing}
           />
         </div>
 
-        {/* Horizontal Divider */}
         <div
           onMouseDown={startVerticalResize}
           className="h-1 cursor-row-resize bg-gray-300 hover:bg-blue-400"
         />
 
-        {/* Output */}
         <div style={{ height: `${100 - editorHeight}%` }}>
           <OutputPanel
             output={output}
             analysis={analysis}
-            loading={loading}
+            running={running}
+            analyzing={analyzing}
           />
         </div>
       </div>

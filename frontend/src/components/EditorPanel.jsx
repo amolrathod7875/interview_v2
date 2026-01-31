@@ -6,8 +6,12 @@ const EditorPanel = ({
   language,
   setLanguage,
   onRun,
-  onAnalyze
+  onAnalyze,
+  running,
+  analyzing
 }) => {
+  const busy = running || analyzing;
+
   return (
     <div className="h-full flex flex-col bg-[#1e1e1e] rounded-lg border">
 
@@ -17,7 +21,8 @@ const EditorPanel = ({
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="bg-[#3c3c3c] text-white text-sm px-3 py-1 rounded outline-none"
+          disabled={busy}
+          className="bg-[#3c3c3c] text-white text-sm px-3 py-1 rounded outline-none disabled:opacity-60"
         >
           <option value="python">Python</option>
           <option value="javascript">JavaScript</option>
@@ -29,16 +34,26 @@ const EditorPanel = ({
         <div className="flex gap-3">
           <button
             onClick={onRun}
-            className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-1 rounded"
+            disabled={busy}
+            className={`text-white text-sm px-4 py-1 rounded transition ${
+              busy
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
           >
-            Run
+            {running ? "Running…" : "Run"}
           </button>
 
           <button
             onClick={onAnalyze}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1 rounded"
+            disabled={busy}
+            className={`text-white text-sm px-4 py-1 rounded transition ${
+              busy
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Analyze
+            {analyzing ? "Analyzing…" : "Analyze"}
           </button>
         </div>
       </div>
@@ -58,7 +73,8 @@ const EditorPanel = ({
             automaticLayout: true,
             tabSize: 2,
             wordWrap: "on",
-            lineNumbers: "on"
+            lineNumbers: "on",
+            readOnly: busy
           }}
         />
       </div>

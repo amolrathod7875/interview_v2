@@ -1,18 +1,43 @@
 import express from "express";
 import axios from "axios";
+import mongoose from "mongoose";
+import Topic from "../models/Topic.js";
+import Problem from "../models/Problem.js";
+import UserProgress from "../models/UserProgress.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
-
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-/**
- * POST /codex/ai/generate
- */
-router.post("/generate", async (req, res) => {
+/* -------------------------------------------------------------------------- */
+/*                        STARTER CODE NORMALIZER                              */
+/* -------------------------------------------------------------------------- */
+const normalizeStarterCode = (code = "") => {
+  if (!code) return "";
+
+  return code
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "  ")
+    .replace(/if __name__ == "__main__":[\s\S]*/g, "")
+    .replace(/print\(.*?\)/g, "")
+    .replace(/input\(.*?\)/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
+
+/* -------------------------------------------------------------------------- */
+/*                             GENERATE PROBLEM                               */
+/* -------------------------------------------------------------------------- */
+router.post("/generate", authMiddleware, async (req, res) => {
   try {
-    if (!process.env.OPENROUTER_API_KEY_amol) {
-      throw new Error("OPENROUTER_API_KEY_amol is missing");
+    const { topicId, difficulty } = req.body;
+
+    if (!topicId || !difficulty) {
+      return res.status(400).json({ error: "topicId and difficulty are required" });
     }
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) return res.status(404).json({ error: "Topic not found" });
 
     const response = await axios.post(
       OPENROUTER_URL,
@@ -23,29 +48,115 @@ router.post("/generate", async (req, res) => {
           {
             role: "system",
             content: `
-You are a competitive programming problem setter.
+You are a LeetCode-style problem generator.
 
-You MUST return VALID JSON.
-You MUST fill ALL fields with meaningful content.
-DO NOT leave any field empty.
-DO NOT add markdown.
-DO NOT add explanations.
-DO NOT add solutions.
+Return ONLY valid JSON.
 
-JSON FORMAT (STRICT):
+JSON FORMAT:
 {
   "title": "string",
   "description": "string",
   "input": "string",
   "output": "string",
   "constraints": "string",
-  "examples": "string"
+  "examples": "string",
+  "starterCode": {
+    "python": "string",
+    "javascript": "string",
+    "cpp": "string",
+    "java": "string"
+  }
 }
+
+starterCode rules:
+- Template only
+- NO main / input / print
+- NO implementation
+`
+          }
+        ]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const parsed = JSON.parse(response.data.choices[0].message.content);
+
+    const problem = await Problem.create({
+      title: parsed.title,
+      description: parsed.description,
+      input: parsed.input,
+      output: parsed.output,
+      constraints: parsed.constraints,
+      examples: parsed.examples,
+      starterCode: {
+        python: normalizeStarterCode(parsed.starterCode?.python),
+        javascript: normalizeStarterCode(parsed.starterCode?.javascript),
+        cpp: normalizeStarterCode(parsed.starterCode?.cpp),
+        java: normalizeStarterCode(parsed.starterCode?.java)
+      },
+      topic: topic._id,
+      difficulty,
+      generatedBy: "ai"
+    });
+
+    res.json(problem);
+  } catch (err) {
+    console.error("❌ Problem generation failed:", err.message);
+    res.status(500).json({ error: "Failed to generate problem" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                               ANALYZE CODE                                 */
+/* -------------------------------------------------------------------------- */
+router.post("/analyze", authMiddleware, async (req, res) => {
+  try {
+    const { problemId, code } = req.body;
+
+    if (!problemId || !code) {
+      return res.status(400).json({ error: "problemId and code are required" });
+    }
+
+    const problem = await Problem.findById(problemId).populate("topic");
+    if (!problem) return res.status(404).json({ error: "Problem not found" });
+
+    const response = await axios.post(
+      OPENROUTER_URL,
+      {
+        model: process.env.OPENROUTER_MODEL_amol,
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content: `
+You are a LeetCode solution evaluator.
+
+Return ONLY valid JSON.
+Judge logic only, not execution.
 `
           },
           {
             role: "user",
-            content: "Generate one medium-difficulty DSA coding problem."
+            content: `
+Problem:
+${problem.description}
+
+User Code:
+${code}
+
+JSON:
+{
+  "correct": true | false,
+  "timeComplexity": "O(...)",
+  "spaceComplexity": "O(...)",
+  "improvements": ["string"]
+}
+`
           }
         ]
       },
@@ -58,107 +169,66 @@ JSON FORMAT (STRICT):
     );
 
     const raw = response.data.choices[0].message.content;
+    const match = raw.match(/\{[\s\S]*\}/);
 
-    // ✅ SAFE JSON PARSE
-    let problem;
-    try {
-      problem = JSON.parse(raw);
-    } catch (e) {
-      console.error("Invalid JSON from OpenRouter:", raw);
-      return res.status(500).json({
-        error: "Invalid problem format returned by AI"
-      });
+    if (!match) {
+      return res.status(500).json({ error: "Invalid analysis response" });
     }
 
-    // ✅ FINAL GUARARD (never return empty fields)
-    const normalizedProblem = {
-      title: problem.title?.trim() || "Untitled Problem",
-      description: problem.description?.trim() || "No description provided.",
-      input: problem.input?.trim() || "No input description.",
-      output: problem.output?.trim() || "No output description.",
-      constraints: problem.constraints?.trim() || "No constraints provided.",
-      examples: problem.examples?.trim() || "No examples provided."
-    };
+    const analysis = JSON.parse(match[0]);
 
-    res.json(normalizedProblem);
+    /* ---------------- SAFE PROGRESS UPDATE ---------------- */
+    try {
+      const userId = req.user?.id;
 
+      if (analysis.correct === true && mongoose.Types.ObjectId.isValid(userId)) {
+        const progress = await UserProgress.findOneAndUpdate(
+          { userId, topic: problem.topic._id },
+          { $addToSet: { solvedProblems: problem._id } },
+          { upsert: true, new: true }
+        );
+
+        const totalProblems = await Problem.countDocuments({
+          topic: problem.topic._id
+        });
+
+        progress.completion =
+          progress.solvedProblems.length / totalProblems;
+
+        await progress.save();
+      }
+    } catch (progressErr) {
+      console.warn("⚠️ Progress update skipped:", progressErr.message);
+    }
+
+    res.json(analysis);
   } catch (err) {
-    console.error(
-      "Problem Generation Error:",
-      err.response?.data || err.message
-    );
-
-    res.status(500).json({
-      error: "Failed to generate problem"
-    });
+    console.error("❌ Code analysis failed:", err.message);
+    res.status(500).json({ error: "Failed to analyze code" });
   }
 });
 
-/**
- * POST /codex/ai/analyze
- */
-router.post("/analyze", async (req, res) => {
-  try {
-    const { problem, code } = req.body;
+/* -------------------------------------------------------------------------- */
+/*                               GET TOPICS                                   */
+/* -------------------------------------------------------------------------- */
+router.get("/topics", authMiddleware, async (req, res) => {
+  const topics = await Topic.find().sort({ order: 1 });
+  res.json(topics);
+});
 
-    if (!problem || !code) {
-      return res.status(400).json({
-        error: "problem and code are required"
-      });
-    }
+/* -------------------------------------------------------------------------- */
+/*                              GET PROBLEMS                                  */
+/* -------------------------------------------------------------------------- */
+router.get("/problems", authMiddleware, async (req, res) => {
+  const { topicId, difficulty } = req.query;
+  if (!topicId) return res.status(400).json({ error: "topicId is required" });
 
-    const response = await axios.post(
-      OPENROUTER_URL,
-      {
-        model: process.env.OPENROUTER_MODEL_amol,
-        temperature: 0.2,
-        messages: [
-          {
-            role: "system",
-            content: `
-You are a strict code reviewer.
+  const problems = await Problem.find({
+    topic: topicId,
+    ...(difficulty && { difficulty })
+  });
 
-Return:
-- Correctness (Yes/No)
-- Time Complexity
-- Space Complexity
-- Improvements (if any)
-`
-          },
-          {
-            role: "user",
-            content: `
-Problem:
-${JSON.stringify(problem, null, 2)}
-
-User Code:
-${code}
-`
-          }
-        ]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    res.json({
-      analysis: response.data.choices[0].message.content
-    });
-
-  } catch (err) {
-    console.error(
-      "Code Analysis Error:",
-      err.response?.data || err.message
-    );
-
-    res.status(500).json({
-      error: "Failed to analyze code"
-    });
-  }
+  res.json(problems);
 });
 
 export default router;

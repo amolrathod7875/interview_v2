@@ -14,13 +14,15 @@ const LANGUAGE_MAP = {
   cpp: "cpp"
 };
 
+/* -------------------------------------------------------------------------- */
+/*                            EXECUTE USER CODE                               */
+/* -------------------------------------------------------------------------- */
 /**
  * POST /codex/code/execute
  * body: { language, code }
  */
 router.post("/execute", async (req, res) => {
   console.log("🔥 /codex/code/execute HIT");
-  console.log("👉 BODY:", req.body);
 
   const { language, code } = req.body;
 
@@ -69,21 +71,18 @@ router.post("/execute", async (req, res) => {
     const run = pistonResponse.data.run;
 
     return res.json({
-      run: {
-        stdout: run.stdout,
-        stderr: run.stderr,
-        output: run.output,
-        code: run.code
-      }
+      success: run.code === 0,
+      output: run.stdout || "",
+      error: run.stderr || null
     });
 
   } catch (error) {
-    console.error("❌ PISTON ERROR");
-    console.error(error.response?.data || error.message);
+    console.error("❌ PISTON ERROR:", error.message);
 
     return res.status(500).json({
-      error: "Code execution failed",
-      details: error.response?.data || error.message
+      success: false,
+      output: "",
+      error: "Code execution failed"
     });
   }
 });
