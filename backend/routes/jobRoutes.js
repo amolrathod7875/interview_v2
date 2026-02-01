@@ -1,15 +1,13 @@
 import express from "express";
 import { v4 as uuid } from "uuid";
+import Job from "../models/Job.js";
 
 const router = express.Router();
-
-// TEMP IN-MEMORY STORE (SAFE FOR NOW)
-let jobs = [];
 
 /**
  * CREATE JOB
  */
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { userId, company, role, priority } = req.body;
 
   if (!userId || !company) {
@@ -18,79 +16,97 @@ router.post("/", (req, res) => {
     });
   }
 
-  const job = {
-    id: uuid(),
-    userId,
-    company,
-    role: role || "",
-    priority: priority || "Medium",
-    status: "Applied",
-    notes: "",
-    createdAt: new Date().toISOString(),
-  };
+  try {
+    const job = new Job({
+      userId,
+      company,
+      role: role || "",
+      priority: priority || "Medium",
+      status: "Applied",
+      notes: "",
+    });
 
-  jobs.push(job);
-  res.status(201).json(job);
+    await job.save();
+    res.status(201).json(job);
+  } catch (error) {
+    console.error("Error creating job:", error);
+    res.status(500).json({ error: "Failed to create job" });
+  }
 });
 
 /**
  * GET JOBS BY USER
  */
-router.get("/:userId", (req, res) => {
-  const userJobs = jobs.filter(
-    (job) => job.userId === req.params.userId
-  );
-  res.json(userJobs);
+router.get("/:userId", async (req, res) => {
+  try {
+    const userJobs = await Job.find({ userId: req.params.userId });
+    res.json(userJobs);
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    res.status(500).json({ error: "Failed to fetch jobs" });
+  }
 });
 
 /**
  * UPDATE JOB STATUS (Drag & Drop)
  */
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
   const { status } = req.body;
 
-  const job = jobs.find((j) => j.id === req.params.id);
-  if (!job) {
-    return res.status(404).json({ error: "Job not found" });
-  }
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
 
-  if (!status) {
-    return res.status(400).json({ error: "Status is required" });
-  }
+    if (!status) {
+      return res.status(400).json({ error: "Status is required" });
+    }
 
-  job.status = status;
-  res.json(job);
+    job.status = status;
+    await job.save();
+    res.json(job);
+  } catch (error) {
+    console.error("Error updating job status:", error);
+    res.status(500).json({ error: "Failed to update job status" });
+  }
 });
 
 /**
  * UPDATE JOB NOTES
  */
-router.put("/:id/notes", (req, res) => {
+router.put("/:id/notes", async (req, res) => {
   const { notes } = req.body;
 
-  const job = jobs.find((j) => j.id === req.params.id);
-  if (!job) {
-    return res.status(404).json({ error: "Job not found" });
-  }
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
 
-  job.notes = notes || "";
-  res.json(job);
+    job.notes = notes || "";
+    await job.save();
+    res.json(job);
+  } catch (error) {
+    console.error("Error updating job notes:", error);
+    res.status(500).json({ error: "Failed to update job notes" });
+  }
 });
 
 /**
  * DELETE JOB 🗑
  */
-router.delete("/:id", (req, res) => {
-  const index = jobs.findIndex(
-    (job) => job.id === req.params.id
-  );
-
-  if (index === -1) {
-    return res.status(404).json({ error: "Job not found" });
+router.delete("/:id", async (req, res) => {
+  try {
+    const job = await Job.findByIdAndDelete(req.params.id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting job:", error);
+    res.status(500).json({ error: "Failed to delete job" });
   }
-
-  jobs.splice(index, 1);
-  res.json({ success: true });
 });
 
 export default router;

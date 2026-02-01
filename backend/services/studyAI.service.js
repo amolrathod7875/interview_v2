@@ -62,10 +62,18 @@ QUALITY RULES (VERY IMPORTANT)
 
 SUMMARY:
 - Minimum **400–600 words**
-- Use clean markdown:
-  - Headings (##)
-  - Bullet points
-  - Short paragraphs
+- Use clean markdown with STRICT bullet-point format:
+  - Main section headings (##)
+  - ALL content under each heading MUST be in bullet points (-)
+  - Use nested bullets for sub-points
+  - Bold key terms using **term**
+  - NO paragraphs - everything must be bullet points
+  - Example format:
+    ## Section Name
+    - Main point with **bold key term**
+      - Sub-point detail
+      - Another sub-point
+    - Next main point
 - Explain concepts clearly as if teaching a beginner
 - No generic filler text
 

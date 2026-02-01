@@ -134,7 +134,7 @@ const Board = () => {
       <AddJobForm onAdd={handleAdd} />
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+        <div className="flex flex-col gap-6 mt-6">
           {COLUMNS.map((col) => (
             <Column
               key={col}

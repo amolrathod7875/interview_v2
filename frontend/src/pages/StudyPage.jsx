@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import FileUploader from "../components/study/FileUploader";
 import AudioPodcastPlayer from "../components/study/AudioPodcastPlayer";
 import FlashcardDeck from "../components/study/FlashcardDeck";
@@ -70,10 +72,11 @@ export default function StudyPage() {
               <h3 className="font-semibold mb-3 text-gray-800">
                 Summary
               </h3>
-              <div
-                className="prose max-w-none prose-slate"
-                dangerouslySetInnerHTML={{ __html: studyData.summary }}
-              />
+              <div className="prose max-w-none prose-slate prose-headings:font-semibold prose-h2:text-xl prose-h2:mb-2 prose-h2:mt-4 prose-p:my-2 prose-ul:list-disc prose-ul:ml-6 prose-ul:my-3 prose-li:my-1 prose-strong:font-semibold prose-strong:text-gray-900">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {studyData.summary}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
 
