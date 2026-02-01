@@ -9,6 +9,9 @@ import LoadingWave from './ui/LoadingWave'
 // ✅ Job Analytics
 import JobAnalytics from './jobTracker/JobAnalytics'
 
+// ✅ GitHub Analysis Card
+import GithubAnalysisCard from './dashboard/GithubAnalysisCard'
+
 // ✅ GitHub Icon
 import { FaGithub } from 'react-icons/fa'
 
@@ -98,57 +101,8 @@ const OverviewDashboard = () => {
           </p>
         </div>
 
-        {/* ✅ GITHUB CARD (SMART) */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold text-black flex items-center gap-2">
-                <FaGithub />
-                GitHub Integration
-              </h3>
-
-              {!github?.connected ? (
-                <p className="text-sm text-gray-500 mt-1">
-                  Connect your GitHub account to use repositories in interviews and projects.
-                </p>
-              ) : (
-                <p className="text-sm text-green-600 mt-1">
-                  Connected Repo:{" "}
-                  <span className="font-medium text-black">
-                    {github.owner}/{github.repo}
-                  </span>
-                </p>
-              )}
-            </div>
-
-            {!github?.connected ? (
-              <Button
-                onClick={connectGithub}
-                className="bg-black hover:bg-gray-900 text-white flex items-center gap-2"
-              >
-                <FaGithub />
-                Connect GitHub
-              </Button>
-            ) : (
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => navigate('/github-analysis')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Analyze Repository
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/github-repos')}
-                >
-                  Change Repository
-                </Button>
-              </div>
-            )}
-
-          </div>
-        </div>
+        {/* ✅ GITHUB ANALYSIS CARD */}
+        <GithubAnalysisCard />
 
         {/* JOB ANALYTICS */}
         <JobAnalytics />

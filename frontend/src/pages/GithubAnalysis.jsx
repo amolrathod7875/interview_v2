@@ -47,13 +47,21 @@ const GithubAnalysis = () => {
       setError(null)
       setAnalysis(null)
 
+      const firebaseId = localStorage.getItem("userUid")
+
       const res = await axios.post(
         `${API}/api/ai/github/analyze`, // ✅ FIXED PATH
         {
           owner: repo.owner,
           repo: repo.repo,
+          firebaseId,
         },
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       )
 
       if (!res.data?.success) {
@@ -62,8 +70,13 @@ const GithubAnalysis = () => {
 
       setAnalysis(res.data)
     } catch (err) {
-      console.error(err)
-      setError("GitHub analysis failed. Please try again.")
+      console.error("Analysis error:", err)
+      
+      if (err.response?.status === 401) {
+        setError("GitHub authentication required. Please reconnect your GitHub account from the dashboard.")
+      } else {
+        setError("GitHub analysis failed. Please try again.")
+      }
     } finally {
       setAnalyzing(false)
     }

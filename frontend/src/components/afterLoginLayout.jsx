@@ -17,6 +17,7 @@ import {
   useNavigate,
   Outlet,
 } from "react-router-dom"
+import axios from "axios"
 
 import AiInterviewForm from "./aiInterviewForm"
 import { logoutUser } from "@/services/authService"
@@ -29,6 +30,8 @@ import Profile from "./profile"
 import Roadmap from "./roadmap"
 import Codex from "./Codex"
 import JobBoard from "./jobTracker/Board"
+
+const API = import.meta.env.VITE_API_BASE_URL
 
 /* ================= SIDEBAR ITEMS ================= */
 
@@ -47,11 +50,29 @@ const navItems = [
 const AfterLoginLayout = () => {
   const [activeTab, setActiveTab] = useState("Overview")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [user, setUser] = useState(null)
   const location = useLocation()
   const navigate = useNavigate()
 
   const tab = location.state?.tab
   const isStudyRoute = location.pathname === "/study"
+  const firebaseId = localStorage.getItem("userUid")
+
+  // Fetch user profile for avatar
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`${API}/user/me`, {
+          params: { firebaseId },
+        })
+        setUser(res.data.data)
+      } catch (err) {
+        console.error("Failed to fetch user:", err)
+      }
+    }
+
+    if (firebaseId) fetchUser()
+  }, [firebaseId])
 
   useEffect(() => {
     if (tab) {
@@ -84,6 +105,39 @@ const AfterLoginLayout = () => {
       >
         <FcMenu className="w-5 h-5" />
       </button>
+
+      {/* Top Navigation Bar with Profile */}
+      <header className="fixed top-0 right-0 left-0 z-40 bg-white border-b shadow-sm">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-3 ml-16">
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Zap className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-bold text-gray-900 text-lg">Interview.io</span>
+          </div>
+          
+          <button
+            onClick={() => setActiveTab("Profile")}
+            className="flex items-center gap-3 hover:bg-gray-50 rounded-full pr-4 pl-1 py-1 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+              {user?.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{user?.name?.charAt(0)?.toUpperCase() || "U"}</span>
+              )}
+            </div>
+            <div className="text-left hidden sm:block">
+              <p className="text-sm font-semibold text-gray-900">{user?.name || "User"}</p>
+              <p className="text-xs text-gray-500">View Profile</p>
+            </div>
+          </button>
+        </div>
+      </header>
 
       {/* Sidebar */}
       <aside
@@ -139,7 +193,7 @@ const AfterLoginLayout = () => {
 
       {/* ================= MAIN CONTENT ================= */}
       {/* FIXED: Removed flex-1 and used w-full to allow full-width grid layouts in children */}
-      <main className="w-full min-h-screen overflow-x-hidden">
+      <main className="w-full min-h-screen overflow-x-hidden pt-16">
         {isStudyRoute ? (
           <Outlet />
         ) : (

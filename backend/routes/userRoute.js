@@ -101,6 +101,7 @@ router.put("/update", async (req, res) => {
           github: req.body.github, // full object allowed
           leetcode: req.body.leetcode,
           kaggle: req.body.kaggle,
+          photoURL: req.body.photoURL,
         },
       },
       { new: true }

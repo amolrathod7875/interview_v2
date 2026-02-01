@@ -1,142 +1,181 @@
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ============================================
 // CONFIG: Update this array to add/remove companies
 // ============================================
 const COMPANIES = [
-  { name: "Google", color: "#4285F4" },
-  { name: "Microsoft", color: "#00A4EF" },
-  { name: "Amazon", color: "#FF9900" },
-  { name: "Meta", color: "#0668E1" },
-  { name: "Apple", color: "#555555" },
-  { name: "Netflix", color: "#E50914" },
-  { name: "Spotify", color: "#1DB954" },
-  { name: "Adobe", color: "#FF0000" },
-  { name: "Salesforce", color: "#00A1E0" },
-  { name: "Oracle", color: "#F80000" },
-  { name: "IBM", color: "#006699" },
-  { name: "Intel", color: "#0071C5" },
-]
-
-// ============================================
-// Sub-components for modularity
-// ============================================
+  { name: "Google", logo: "https://img.icons8.com/color/96/google-logo.png" },
+  { name: "Microsoft", logo: "https://img.icons8.com/color/96/microsoft.png" },
+  { name: "Amazon", logo: "https://img.icons8.com/color/96/amazon.png" },
+  { name: "Meta", logo: "https://img.icons8.com/color/96/meta.png" },
+  { name: "Apple", logo: "https://img.icons8.com/ios-filled/100/mac-os.png" },
+  { name: "Netflix", logo: "https://img.icons8.com/color/96/netflix.png" },
+  { name: "Spotify", logo: "https://img.icons8.com/color/96/spotify.png" },
+  { name: "Adobe", logo: "https://img.icons8.com/color/96/adobe-creative-cloud.png" },
+  { name: "Salesforce", logo: "https://img.icons8.com/color/96/salesforce.png" },
+  { name: "Oracle", logo: "https://img.icons8.com/color/96/oracle-logo.png" },
+  { name: "IBM", logo: "https://img.icons8.com/color/96/ibm.png" },
+  { name: "Intel", logo: "https://upload.wikimedia.org/wikipedia/commons/7/7d/Intel_logo_%282006-2020%29.svg" },
+  { name: "Tesla", logo: "https://img.icons8.com/color/96/tesla-model-x.png" },
+  { name: "Uber", logo: "https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" },
+  { name: "LinkedIn", logo: "https://img.icons8.com/color/96/linkedin.png" },
+  { name: "Airbnb", logo: "https://img.icons8.com/color/96/airbnb.png" },
+];
 
 /**
- * Company Logo Card
- * Individual company card with soft shadow and blue border
+ * Animated Company Logo Card with floating effect
  */
-function CompanyCard({ company, index }) {
+function CompanyLogoCard({ company, index }) {
+  const randomDelay = Math.random() * 2;
+  const randomDuration = 3 + Math.random() * 2;
+  const randomY = -10 - Math.random() * 15;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        y: [0, randomY, 0],
+      }}
       transition={{
-        duration: 0.5,
-        delay: index * 0.1,
-        ease: [0.25, 0.1, 0.25, 1]
+        opacity: { duration: 0.6, delay: index * 0.05 },
+        scale: { duration: 0.6, delay: index * 0.05 },
+        y: {
+          duration: randomDuration,
+          repeat: Infinity,
+          repeatType: "reverse",
+          ease: "easeInOut",
+          delay: randomDelay,
+        },
       }}
       whileHover={{
-        y: -8,
-        scale: 1.02,
-        transition: { duration: 0.3, ease: "easeOut" }
+        scale: 1.15,
+        rotate: [0, -3, 3, 0],
+        transition: { duration: 0.4, ease: "easeOut" },
       }}
-      className="group relative flex flex-col items-center justify-center p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-100/50 transition-all duration-300"
+      className="group relative flex-shrink-0"
     >
-      {/* Subtle blue glow on hover */}
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-50/50 to-blue-100/30" />
+      <div className="relative flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-white border-2 border-blue-100/50 shadow-lg shadow-blue-100/20 hover:shadow-2xl hover:shadow-blue-200/40 hover:border-blue-300 transition-all duration-300">
+        {/* Blue glow effect on hover */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Company Logo */}
+        <img
+          src={company.logo}
+          alt={`${company.name} logo`}
+          className="relative z-10 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
+        />
+
+        {/* Bouncy indicator dot */}
+        <motion.div
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.5, 1, 0.5],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100"
+        />
       </div>
-
-      {/* Blue border accent on hover */}
-      <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-blue-200 transition-all duration-300" />
-
-      {/* Logo placeholder - replace with actual logo */}
-      <div
-        className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-lg mb-3 shadow-md"
-        style={{ backgroundColor: company.color }}
-      >
-        {company.name.charAt(0)}
-      </div>
-
-      <span className="text-sm font-medium text-slate-600 group-hover:text-blue-600 transition-colors duration-300">
-        {company.name}
-      </span>
     </motion.div>
-  )
+  );
 }
 
 /**
- * Floating Logo Row
- * A row of logos that floats up and down with staggered animation
+ * Infinite Scrolling Row with smooth animation
  */
-function FloatingLogoRow({ companies, rowIndex, duration = 4 }) {
-  const rowVariants = {
-    animate: {
-      y: [0, -15, 0],
-      transition: {
-        duration: duration,
-        repeat: Infinity,
-        ease: [0.45, 0, 0.55, 1],
-        delay: rowIndex * 0.5
-      }
-    }
-  }
+function ScrollingRow({ companies, direction = "left", speed = 40 }) {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOffset((prev) => {
+        const newOffset = direction === "left" ? prev - 1 : prev + 1;
+        const cardWidth = 112; // width + gap (approx)
+        const maxOffset = companies.length * cardWidth;
+        
+        if (direction === "left" && newOffset <= -maxOffset) {
+          return 0;
+        } else if (direction === "right" && newOffset >= maxOffset) {
+          return 0;
+        }
+        return newOffset;
+      });
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [companies.length, direction, speed]);
+
+  // Triple the companies for seamless loop
+  const duplicatedCompanies = [...companies, ...companies, ...companies];
 
   return (
-    <motion.div
-      className="flex gap-6"
-      variants={rowVariants}
-      animate="animate"
-    >
-      {companies.map((company, index) => (
-        <motion.div
-          key={`${rowIndex}-${index}`}
-          initial={{ opacity: 0.6, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          whileHover={{
-            y: -6,
-            scale: 1.05,
-            transition: { duration: 0.2 }
-          }}
-          className="flex-shrink-0"
-        >
-          <div
-            className="w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-lg hover:border-blue-200 flex items-center justify-center transition-all duration-300 cursor-pointer"
-            style={{ backgroundColor: company.color }}
-          >
-            <span className="text-white font-bold text-sm md:text-base">
-              {company.name.charAt(0)}
-            </span>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
-  )
+    <div className="relative overflow-hidden w-full">
+      <motion.div
+        className="flex gap-6 md:gap-8"
+        style={{
+          transform: `translateX(${offset}px)`,
+        }}
+      >
+        {duplicatedCompanies.map((company, index) => (
+          <CompanyLogoCard
+            key={`${company.name}-${index}`}
+            company={company}
+            index={index}
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
 }
 
-// ============================================
-// Main Component
-// ============================================
-
+/**
+ * Main Featured Companies Component with gradient mask
+ */
 export default function FeaturedCompanies() {
-  // Split companies into rows for floating animation
-  const rowSize = 6
-  const rows = []
-  for (let i = 0; i < COMPANIES.length; i += rowSize) {
-    rows.push(COMPANIES.slice(i, i + rowSize))
-  }
+  // Split companies into rows for staggered effect
+  const row1 = COMPANIES.slice(0, 8);
+  const row2 = COMPANIES.slice(8, 16);
+  const navigate = useNavigate();
 
   return (
-    <section className="relative py-24 bg-white overflow-hidden">
+    <section className="relative py-20 bg-gradient-to-b from-slate-50 via-white to-slate-50 overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-100 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-100 to-transparent" />
-      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] opacity-30 pointer-events-none" />
+      
+      {/* Floating orbs */}
+      <motion.div
+        animate={{
+          y: [0, -30, 0],
+          opacity: [0.3, 0.6, 0.3],
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="absolute top-20 left-10 w-72 h-72 bg-blue-200/20 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{
+          y: [0, 30, 0],
+          opacity: [0.2, 0.5, 0.2],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="absolute bottom-20 right-10 w-96 h-96 bg-blue-300/15 rounded-full blur-3xl"
+      />
 
-      <div className="container mx-auto max-w-6xl px-4">
+      <div className="relative container mx-auto px-4">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -145,103 +184,71 @@ export default function FeaturedCompanies() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Trusted by Developers at
-            <span className="text-blue-600"> Top Companies</span>
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="inline-block px-4 py-2 mb-4 text-sm font-semibold text-blue-600 bg-blue-50 rounded-full border border-blue-100"
+          >
+            Trusted by Industry Leaders
+          </motion.span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+            Featured Companies
           </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Join thousands of engineers who have mastered their interview skills with interview.io
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-4">
+            Join thousands of candidates preparing for interviews at top tech companies
           </p>
         </motion.div>
 
-        {/* Grid Layout - Responsive */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6">
-          {COMPANIES.map((company, index) => (
-            <CompanyCard
-              key={company.name}
-              company={company}
-              index={index}
-            />
-          ))}
+        {/* Animated Logo Grid with Gradient Mask */}
+        <div className="relative">
+          {/* Top gradient mask for fade in */}
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-white via-white/80 to-transparent z-10 pointer-events-none" />
+          
+          {/* Bottom gradient mask for fade out */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none" />
+
+          {/* Left edge fade */}
+          <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-white via-white/50 to-transparent z-10 pointer-events-none" />
+
+          {/* Right edge fade */}
+          <div className="absolute top-0 bottom-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-white via-white/50 to-transparent z-10 pointer-events-none" />
+
+          {/* Scrolling Rows */}
+          <div className="space-y-8 py-8">
+            <ScrollingRow companies={row1} direction="left" speed={30} />
+            <ScrollingRow companies={row2} direction="right" speed={35} />
+          </div>
         </div>
 
-        {/* Floating Marquee Row - Alternate Animation */}
-        <div className="mt-16 overflow-hidden">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative"
-          >
-            {/* Fade masks at edges */}
-            <div className="absolute left-0 top-0 bottom-0 w-20 md:w-32 z-10 bg-gradient-to-r from-white to-transparent pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 z-10 bg-gradient-to-l from-white to-transparent pointer-events-none" />
-
-            {/* Infinite scrolling marquee */}
-            <div className="flex gap-8 py-4">
-              <motion.div
-                className="flex gap-8"
-                animate={{ x: [0, -500] }}
-                transition={{
-                  duration: 20,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              >
-                {/* Double the companies for seamless loop */}
-                {[...COMPANIES, ...COMPANIES].map((company, index) => (
-                  <div
-                    key={`marquee-${index}`}
-                    className="flex-shrink-0 flex items-center gap-3 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 shadow-sm"
-                  >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                      style={{ backgroundColor: company.color }}
-                    >
-                      {company.name.charAt(0)}
-                    </div>
-                    <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
-                      {company.name}
-                    </span>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Stats / Social Proof */}
+        {/* CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="text-center mt-16"
         >
-          {[
-            { value: "10K+", label: "Interviews Practiced" },
-            { value: "50K+", label: "Questions Solved" },
-            { value: "95%", label: "Success Rate" },
-            { value: "500+", label: "Companies Represented" }
-          ].map((stat, index) => (
-            <div key={index} className="space-y-1">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">
-                {stat.value}
-              </div>
-              <div className="text-sm text-slate-600">{stat.label}</div>
-            </div>
-          ))}
+          <p className="text-slate-600 mb-6">
+            Start preparing for your dream company today
+          </p>
+          <motion.button
+            whileHover={{ 
+              scale: 1.05, 
+              boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)" 
+            }}
+            onClick={() => navigate('/signup')}
+            whileTap={{ scale: 0.95 }}
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300"
+          >
+            Get Started Now
+          </motion.button>
         </motion.div>
       </div>
-
-      {/* Bottom gradient overlay */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
     </section>
-  )
+  );
 }
 
-// ============================================
-// Export for easy customization
-// ============================================
-export { COMPANIES }
+// Export for customization
+export { COMPANIES };

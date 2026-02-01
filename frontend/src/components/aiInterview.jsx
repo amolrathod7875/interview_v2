@@ -7,6 +7,7 @@ import { PhoneOff, Mic, ArrowLeft, Zap } from "lucide-react"
 import { Spinner } from "./ui/spinner"
 import { motion } from "framer-motion"
 import LoadingWave from "./ui/LoadingWave"
+import AIAvatarSphere from "./AIAvatarSphere"
 
 const messages = [
     "Generating Results...",
@@ -28,10 +29,27 @@ export default function AiInterview() {
     const [userSpeaking, setUserSpeaking] = useState(false)
     const [msgIndex, setMsgIndex] = useState(0)
     const [loading, setLoading] = useState(false)
+    const [user, setUser] = useState(null)
 
 
     const navigate = useNavigate()
     const interviewId = state?.interviewId
+
+    // Fetch user profile for avatar
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const firebaseId = localStorage.getItem("userUid")
+                const res = await axios.get(`${API}/user/me`, {
+                    params: { firebaseId },
+                })
+                setUser(res.data.data)
+            } catch (err) {
+                console.error("Failed to fetch user:", err)
+            }
+        }
+        fetchUser()
+    }, [])
 
     useEffect(() => {
         if (!isCompleted) return
@@ -279,67 +297,240 @@ Key Guidelines:
 
 
     return (
-        <div className="h-screen w-screen bg-[#f8fafc] flex flex-col">
+        <div className="fixed inset-0 h-screen w-screen bg-white flex flex-col font-['Inter',sans-serif] overflow-hidden">
 
-            {/* Header */}
-            <div className="flex justify-between items-center px-8 py-4 bg-white border-b border-gray-200">
+            {/* Header - Professional Clean Design */}
+            <div className="flex justify-between items-center px-6 py-3 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <Zap className="h-5 w-5 text-blue-600" />
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#1A2B4B] to-[#007BFF] flex items-center justify-center shadow-md">
+                        <Zap className="h-5 w-5 text-white" />
                     </div>
-                    <h1 className="text-xl font-semibold text-gray-900">
+                    <h1 className="text-xl font-semibold text-[#1A2B4B] tracking-tight">
                         AI Interview Session
                     </h1>
                 </div>
 
-                <div className="text-sm text-gray-600">
-                    Topic: <span className="font-medium">{interview.topic}</span>
+                <div className="px-4 py-2 bg-[#007BFF] text-white text-sm font-medium rounded-full shadow-sm">
+                    Topic: {interview.topic}
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 grid grid-cols-2 gap-6 p-8">
+            {/* Main Content - Clean Professional Layout */}
+            <div className="flex-1 grid grid-cols-2 gap-4 p-4 bg-[#F8F9FA] overflow-hidden">
 
-                {/* AI */}
-                <div className="bg-white border border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-4">
-                    <div
-                        className={`h-24 w-24 rounded-full flex items-center justify-center text-xl font-semibold
-          ${aiSpeaking ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
-                    >
-                        AI
+                {/* AI Agent Card - Professional White Design */}
+                <div className="bg-white rounded-2xl flex flex-col items-center justify-center gap-6 relative overflow-hidden shadow-lg border border-gray-100">
+                    
+                    {/* Subtle Blue Accent Background */}
+                    <div className="absolute inset-0">
+                        {aiSpeaking && (
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-br from-[#007BFF]/5 to-transparent"
+                                animate={{
+                                    opacity: [0.3, 0.5, 0.3],
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                            />
+                        )}
                     </div>
 
-                    <p className="text-gray-600 text-sm">
-                        {aiSpeaking ? "AI is speaking" : "AI is listening"}
-                    </p>
+
+                    
+
+
+                    {/* AI Avatar Sphere */}
+                    <div className="relative z-10 h-[350px] w-[350px]">
+                        <AIAvatarSphere status={aiSpeaking ? 'active' : 'idle'} type="ai" />
+                    </div>
+
+                    {/* Voice Waveform Visualizer - Professional Blue */}
+                    {aiSpeaking && (
+                        <div className="flex gap-2 items-center h-16 relative z-10">
+                            {[...Array(9)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="w-2 rounded-full shadow-sm"
+                                    style={{
+                                        background: `linear-gradient(to top, #007BFF, #1A2B4B)`,
+                                    }}
+                                    animate={{
+                                        height: ["20px", "64px", "32px", "64px", "20px"],
+                                        opacity: [0.5, 1, 0.7, 1, 0.5],
+                                    }}
+                                    transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        delay: i * 0.12,
+                                        ease: "easeInOut",
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Status Text - Professional */}
+                    <motion.div
+                        className="relative z-10 text-center"
+                        animate={{
+                            opacity: [1, 0.8, 1],
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: aiSpeaking ? Infinity : 0,
+                        }}
+                    >
+                        <p className="text-lg font-semibold text-[#1A2B4B] mb-2">
+                            {aiSpeaking ? "AI is Speaking" : "AI is Listening"}
+                        </p>
+                        {aiSpeaking && (
+                            <motion.div
+                                className="flex gap-1.5 justify-center"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                {[...Array(3)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="w-2.5 h-2.5 rounded-full bg-[#007BFF]"
+                                        animate={{
+                                            scale: [1, 1.8, 1],
+                                            opacity: [0.4, 1, 0.4],
+                                        }}
+                                        transition={{
+                                            duration: 1.2,
+                                            repeat: Infinity,
+                                            delay: i * 0.2,
+                                        }}
+                                    />
+                                ))}
+                            </motion.div>
+                        )}
+                    </motion.div>
                 </div>
 
-                {/* User */}
-                <div className="bg-white border border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-4">
-                    <div
-                        className={`h-24 w-24 rounded-full flex items-center justify-center text-xl font-semibold
-          ${userSpeaking ? "bg-green-600 text-white" : "bg-gray-100 text-gray-700"}`}
-                    >
-                        {localStorage.getItem("name")?.charAt(0).toUpperCase() || "U"}
+                {/* User Card - Professional White Design */}
+                <div className="bg-white rounded-2xl flex flex-col items-center justify-center gap-6 relative overflow-hidden shadow-lg border border-gray-100">
+                    
+                    {/* Subtle Blue Accent Background */}
+                    <div className="absolute inset-0">
+                        {userSpeaking && (
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-br from-[#007BFF]/5 to-transparent"
+                                animate={{
+                                    opacity: [0.3, 0.5, 0.3],
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                            />
+                        )}
                     </div>
 
-                    <p className="text-gray-600 text-sm">
-                        {userSpeaking ? "You are speaking" : "You are listening"}
-                    </p>
+
+                    
+
+
+                    {/* User Avatar Sphere */}
+                    <div className="relative z-10 h-[350px] w-[350px]">
+                        <AIAvatarSphere status={userSpeaking ? 'active' : 'idle'} type="user" />
+                    </div>
+
+                    {/* Voice Waveform Visualizer - Professional Blue */}
+                    {userSpeaking && (
+                        <div className="flex gap-2 items-center h-16 relative z-10">
+                            {[...Array(9)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="w-2 rounded-full shadow-sm"
+                                    style={{
+                                        background: `linear-gradient(to top, #007BFF, #1A2B4B)`,
+                                    }}
+                                    animate={{
+                                        height: ["20px", "64px", "32px", "64px", "20px"],
+                                        opacity: [0.5, 1, 0.7, 1, 0.5],
+                                    }}
+                                    transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        delay: i * 0.12,
+                                        ease: "easeInOut",
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Status Text - Professional */}
+                    <motion.div
+                        className="relative z-10 text-center"
+                        animate={{
+                            opacity: [1, 0.8, 1],
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: userSpeaking ? Infinity : 0,
+                        }}
+                    >
+                        <p className="text-lg font-semibold text-[#1A2B4B] mb-2">
+                            {userSpeaking ? "You are Speaking" : "You are Listening"}
+                        </p>
+                        {userSpeaking && (
+                            <motion.div
+                                className="flex gap-1.5 justify-center"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                {[...Array(3)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="w-2.5 h-2.5 rounded-full bg-[#007BFF]"
+                                        animate={{
+                                            scale: [1, 1.8, 1],
+                                            opacity: [0.4, 1, 0.4],
+                                        }}
+                                        transition={{
+                                            duration: 1.2,
+                                            repeat: Infinity,
+                                            delay: i * 0.2,
+                                        }}
+                                    />
+                                ))}
+                            </motion.div>
+                        )}
+                    </motion.div>
                 </div>
             </div>
 
-            {/* Controls */}
-            <div className="flex flex-col items-center gap-4 pb-8">
+            {/* Live Transcript Section */}
+            <div className="px-4 pb-2 flex-shrink-0">
+                <div className="bg-gradient-to-r from-[#007BFF]/5 to-[#1A2B4B]/5 rounded-xl p-4 max-h-32 overflow-y-auto border border-[#007BFF]/10">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-[#007BFF] animate-pulse" />
+                        <p className="text-xs font-semibold text-[#1A2B4B] uppercase tracking-wide">Live Transcript</p>
+                    </div>
+                    <div className="text-sm text-gray-600 leading-relaxed">
+                        {currentAnswer || "Waiting for conversation..."}
+                    </div>
+                </div>
+            </div>
+
+            {/* Professional Footer Controls */}
+            <div className="flex flex-col items-center gap-2 py-3 bg-white border-t border-gray-100 flex-shrink-0">
                 <button
                     onClick={hangUpInterview}
-                    className="h-14 w-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition"
+                    className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white flex items-center justify-center transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                    <PhoneOff className="h-6 w-6" />
+                    <PhoneOff className="h-7 w-7" />
                 </button>
 
-                <p className="text-gray-500 text-sm">
-                    Interview in progress
+                <p className="text-gray-500 text-sm font-medium">
+                    Interview in progress...
                 </p>
             </div>
 

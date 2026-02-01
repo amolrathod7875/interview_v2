@@ -96,10 +96,13 @@ ${JSON.stringify(techStack)}
 File Structure:
 ${paths.slice(0, 80).join("\n")}
 
-Return JSON with:
-- projectSummary (string)
-- resumeBulletPoints (array of strings)
-- interviewQuestions (array of strings)
+Return JSON with exactly these fields:
+{
+  "projectSummary": "A comprehensive 2-3 sentence summary of what this project does and its purpose",
+  "resumeBulletPoints": ["array of 3-5 professional resume bullet points highlighting achievements and technical implementation"],
+  "interviewQuestions": ["array of 5-7 technical interview questions based on this project's stack and architecture"],
+  "keyImprovements": "A paragraph suggesting 3-5 concrete improvements for code quality, architecture, testing, documentation, or features"
+}
 `,
           },
         ],
@@ -126,6 +129,7 @@ Return JSON with:
         projectSummary: content,
         resumeBulletPoints: [],
         interviewQuestions: [],
+        keyImprovements: "",
       };
     }
 
@@ -133,7 +137,10 @@ Return JSON with:
       success: true,
       repo: `${owner}/${repo}`,
       techStack,
-      ...parsed,
+      projectSummary: parsed.projectSummary || "",
+      resumeBulletPoints: parsed.resumeBulletPoints || [],
+      interviewQuestions: parsed.interviewQuestions || [],
+      keyImprovements: parsed.keyImprovements || "",
     });
   } catch (err) {
     console.error(

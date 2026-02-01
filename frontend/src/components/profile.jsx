@@ -1,6 +1,6 @@
 import axios from "axios"
-import { useEffect, useState } from "react"
-import { FaPencilAlt } from "react-icons/fa"
+import { useEffect, useState, useRef } from "react"
+import { FaPencilAlt, FaCamera, FaDice } from "react-icons/fa"
 import LoadingWave from "./ui/LoadingWave"
 import LinkedinButton from "./ui/LinkedinButton"
 import GithubButton from "./ui/GithubButton"
@@ -13,6 +13,9 @@ const Profile = () => {
   const [user, setUser] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [showAvatarOptions, setShowAvatarOptions] = useState(false)
+  const fileInputRef = useRef(null)
 
   const [form, setForm] = useState({
     name: "",
@@ -21,6 +24,7 @@ const Profile = () => {
     linkedin: "",
     github: "",
     leetcode: "",
+    photoURL: "",
   })
 
   const firebaseId = localStorage.getItem("userUid")
@@ -43,6 +47,7 @@ const Profile = () => {
           linkedin: data.linkedin || "",
           github: "",
           leetcode: data.leetcode || "",
+          photoURL: data.photoURL || "",
         })
       } catch (err) {
         console.error("Profile fetch failed:", err)
@@ -65,12 +70,94 @@ const Profile = () => {
         linkedin: form.linkedin,
         github: form.github,
         leetcode: form.leetcode,
+        photoURL: form.photoURL,
       })
 
       setUser(res.data.data)
       setEditMode(false)
     } catch (err) {
       console.error("Profile update failed:", err)
+    }
+  }
+
+  // ---------------- UPLOAD PROFILE PICTURE ----------------
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("File size must be less than 2MB")
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please select an image file")
+      return
+    }
+
+    try {
+      setUploadingAvatar(true)
+      
+      // Convert image to base64
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64String = reader.result
+        
+        setForm({ ...form, photoURL: base64String })
+        
+        // Auto-save after upload
+        await axios.put(`${API}/user/update`, {
+          firebaseId,
+          photoURL: base64String,
+        })
+        
+        setUser({ ...user, photoURL: base64String })
+        setShowAvatarOptions(false)
+        setUploadingAvatar(false)
+      }
+      
+      reader.onerror = () => {
+        console.error("File reading failed")
+        alert("Failed to read file. Please try again.")
+        setUploadingAvatar(false)
+      }
+      
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error("Avatar upload failed:", err)
+      alert("Failed to upload avatar. Please try again.")
+      setUploadingAvatar(false)
+    }
+  }
+
+  // ---------------- GENERATE AI AVATAR ----------------
+  const generateAIAvatar = async () => {
+    try {
+      setUploadingAvatar(true)
+      
+      // DiceBear API with random style
+      const styles = ["avataaars", "bottts", "personas", "lorelei", "notionists", "adventurer"]
+      const randomStyle = styles[Math.floor(Math.random() * styles.length)]
+      const seed = user.name || user.email || Date.now()
+      const avatarUrl = `https://api.dicebear.com/7.x/${randomStyle}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9`
+      
+      setForm({ ...form, photoURL: avatarUrl })
+      
+      // Auto-save after generation
+      await axios.put(`${API}/user/update`, {
+        firebaseId,
+        photoURL: avatarUrl,
+      })
+      
+      setUser({ ...user, photoURL: avatarUrl })
+      setShowAvatarOptions(false)
+    } catch (err) {
+      console.error("Avatar generation failed:", err)
+      alert("Failed to generate avatar. Please try again.")
+    } finally {
+      setUploadingAvatar(false)
     }
   }
 
@@ -119,6 +206,75 @@ const Profile = () => {
 
         {/* Profile Card */}
         <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+          
+          {/* Avatar Section */}
+          <div className="flex flex-col items-center mb-8 pb-8 border-b border-gray-200">
+            <div className="relative group">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{user.name?.charAt(0)?.toUpperCase() || "U"}</span>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setShowAvatarOptions(!showAvatarOptions)}
+                className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+                disabled={uploadingAvatar}
+              >
+                {uploadingAvatar ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <FaCamera className="text-sm" />
+                )}
+              </button>
+            </div>
+
+            {/* Avatar Options Popup */}
+            {showAvatarOptions && !uploadingAvatar && (
+              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 w-full max-w-xs">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700 font-medium"
+                >
+                  <FaCamera />
+                  Upload Photo
+                </button>
+                
+                <button
+                  onClick={generateAIAvatar}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition font-medium"
+                >
+                  <FaDice />
+                  Generate AI Avatar
+                </button>
+                
+                <button
+                  onClick={() => setShowAvatarOptions(false)}
+                  className="w-full px-4 py-2 text-gray-600 text-sm hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            <h3 className="mt-4 text-2xl font-bold text-gray-900">{user.name}</h3>
+            <p className="text-gray-500 text-sm">{user.email}</p>
+          </div>
+
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">
               Your Details

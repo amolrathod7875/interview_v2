@@ -1,6 +1,6 @@
 import Navbar from "@/components/landing/Navbar"
 import Hero from "@/components/landing/Hero"
-import SocialProof from "@/components/landing/SocialProof"
+import FeaturedCompanies from "@/components/landing/FeaturedCompanies"
 import Features from "@/components/landing/Features"
 import HowItWorks from "@/components/landing/HowItWorks"
 import CTA from "@/components/landing/CTA"
@@ -12,7 +12,7 @@ export default function Starter() {
       <Navbar />
       <main>
         <Hero />
-        <SocialProof />
+        <FeaturedCompanies />
         <Features />
         <HowItWorks />
         <CTA />
