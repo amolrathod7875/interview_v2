@@ -39,6 +39,7 @@ const getAvatarColor = (company) => {
 /* --------------------------------------------- */
 
 const Card = ({ job, index, onNotesSave, onDelete }) => {
+  const jobId = job.id || job._id;
   const [showNotes, setShowNotes] = useState(false);
   const [draftNotes, setDraftNotes] = useState(job.notes || "");
   const [saving, setSaving] = useState(false);
@@ -48,10 +49,10 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await updateJobNotes(job.id, draftNotes);
+      await updateJobNotes(jobId, draftNotes);
 
       if (onNotesSave) {
-        onNotesSave(job.id, draftNotes);
+        onNotesSave(jobId, draftNotes);
       }
 
       setShowNotes(false);
@@ -72,8 +73,8 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
     if (!confirmDelete) return;
 
     try {
-      await deleteJob(job.id);
-      if (onDelete) onDelete(job.id);
+      await deleteJob(jobId);
+      if (onDelete) onDelete(jobId);
     } catch (err) {
       console.error("Failed to delete job", err);
       alert("Failed to delete job");
@@ -82,7 +83,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
   // -------------------------------------------
 
   return (
-    <Draggable draggableId={job.id} index={index}>
+    <Draggable draggableId={String(job.id || job._id)} index={index}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}

@@ -30,10 +30,47 @@ export default function AiInterview() {
     const [msgIndex, setMsgIndex] = useState(0)
     const [loading, setLoading] = useState(false)
     const [user, setUser] = useState(null)
+    const [timeLeft, setTimeLeft] = useState(0)
+    const [noOfQuestions, setNoOfQuestions] = useState(5)
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
 
     const navigate = useNavigate()
     const interviewId = state?.interviewId
+
+    // Initialize timer and question config
+    useEffect(() => {
+        if (state?.timeInMinutes) {
+            setTimeLeft(state.timeInMinutes * 60) // Convert to seconds
+        }
+        if (state?.noOfQuestions) {
+            setNoOfQuestions(state.noOfQuestions)
+        }
+    }, [state])
+
+    // Timer countdown
+    useEffect(() => {
+        if (!isActive || timeLeft <= 0) return
+
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    hangUpInterview() // Auto end when time is up
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [isActive, timeLeft])
+
+    // Format time as MM:SS
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
 
     // Fetch user profile for avatar
     useEffect(() => {
@@ -122,9 +159,14 @@ export default function AiInterview() {
                     text.toLowerCase().startsWith("when") ||
                     text.toLowerCase().startsWith("why")
 
-                if (looksLikeQuestion && currentAnswer.trim()) {
-                    setAnswers(prev => [...prev, currentAnswer.trim()])
-                    setCurrentAnswer("")
+                if (looksLikeQuestion) {
+                    // Save previous answer if exists
+                    if (currentAnswer.trim()) {
+                        setAnswers(prev => [...prev, currentAnswer.trim()])
+                        setCurrentAnswer("")
+                    }
+                    // Increment question counter immediately when new question is asked
+                    setCurrentQuestionIndex(prev => prev + 1)
                 }
             }
         }
@@ -153,9 +195,10 @@ export default function AiInterview() {
 
     useEffect(() => {
         if (questions.length) {
-            parsedQuestionsRef.current = questions.map(q => (q.text))
+            // Limit to exact number of questions specified by user
+            parsedQuestionsRef.current = questions.slice(0, noOfQuestions).map(q => (q.text))
         }
-    }, [questions])  //uncomment to start interview
+    }, [questions, noOfQuestions])  //uncomment to start interview
 
     useEffect(() => {
         const func = async () => {
@@ -202,7 +245,11 @@ export default function AiInterview() {
 You are an AI voice assistant conducting interviews.
 Your job is to ask candidates provided interview questions, assess their responses.
 
-Ask one question at a time and wait for the candidate's response before proceeding. Keep the questions clear and concise. Below are the questions which you need to ask one by one to the candidate:
+🚨 CRITICAL RULE: Ask EXACTLY ${noOfQuestions} questions. NOT ${noOfQuestions + 1}, NOT ${noOfQuestions - 1}. EXACTLY ${noOfQuestions}. Count each question you ask and STOP at ${noOfQuestions}.
+
+You have EXACTLY ${noOfQuestions} questions available. DO NOT create new questions. ONLY use the provided questions below.
+
+Ask one question at a time and wait for the candidate's response before proceeding. Keep the questions clear and concise. Below are the ONLY questions you must ask:
 Questions: ${parsedQuestionsRef.current}  
 
 If the candidate struggles, offer hints or rephrase the question without giving away the direct answer. Example:
@@ -214,7 +261,7 @@ Provide brief 1-2 lined (30-40 worded), encouraging feedback after each answer. 
 
 Keep the conversation natural and engaging — use casual phrases like "Alright, next up..." or "Let's tackle a tricky one!"
 
-After 8-9 questions, wrap up the interview smoothly by summarizing their performance. Example:
+After EXACTLY ${noOfQuestions} questions (count them: 1, 2, 3... up to ${noOfQuestions}), IMMEDIATELY wrap up the interview. Do NOT ask any more questions after reaching ${noOfQuestions}. Example:
 "That was great! You handled some tough questions well. Keep sharpening your skills!"
 
 After ending with questions, provide feedback based upon user's answers, communication skills, and completeness of answers also, rate user's overall performance out of 100 and let user know that.
@@ -310,8 +357,25 @@ Key Guidelines:
                     </h1>
                 </div>
 
-                <div className="px-4 py-2 bg-[#007BFF] text-white text-sm font-medium rounded-full shadow-sm">
-                    Topic: {interview.topic}
+                <div className="flex items-center gap-4">
+                    {/* Question Progress */}
+                    <div className="px-4 py-2 bg-[#007BFF]/10 text-[#1A2B4B] text-sm font-medium rounded-lg">
+                        Question: {currentQuestionIndex}/{noOfQuestions}
+                    </div>
+
+                    {/* Timer */}
+                    <div className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                        timeLeft < 60 ? 'bg-red-100 text-red-700' : 
+                        timeLeft < 180 ? 'bg-orange-100 text-orange-700' : 
+                        'bg-gray-100 text-gray-700'
+                    }`}>
+                        Time: {formatTime(timeLeft)}
+                    </div>
+
+                    {/* Topic Badge */}
+                    <div className="px-4 py-2 bg-[#007BFF] text-white text-sm font-medium rounded-full shadow-sm">
+                        Topic: {interview.topic}
+                    </div>
                 </div>
             </div>
 

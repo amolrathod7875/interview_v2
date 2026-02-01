@@ -12,10 +12,12 @@ router.post('/add', async (req, resp) => {
             topic: req.body.topic,
             experience: req.body.experience,
             skills: req.body.skills,
-            isCompleted: false
+            isCompleted: false,
+            noOfQuestions: req.body.noOfQuestions || 5,
+            timeInMinutes: req.body.timeInMinutes || 15
         })
         console.log(response._id);
-        const questionResp = await generateQuestions(req.body.topic, req.body.experience, req.body.skills, response._id);
+        const questionResp = await generateQuestions(req.body.topic, req.body.experience, req.body.skills, response._id, req.body.noOfQuestions || 5);
         resp.json({ success: true, data: response, message: "questions saved to database" });
     }
     catch (e) {

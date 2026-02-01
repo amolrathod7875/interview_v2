@@ -34,7 +34,12 @@ const Board = () => {
     };
 
     jobs.forEach((job) => {
-      grouped[job.status].push(job);
+      // Normalize MongoDB _id to id
+      const normalizedJob = {
+        ...job,
+        id: job.id || job._id
+      };
+      grouped[normalizedJob.status].push(normalizedJob);
     });
 
     setData(grouped);
@@ -65,9 +70,10 @@ const Board = () => {
     const updated = {};
 
     Object.keys(data).forEach((col) => {
-      updated[col] = data[col].map((job) =>
-        job.id === jobId ? { ...job, notes } : job
-      );
+      updated[col] = data[col].map((job) => {
+        const currentId = String(job.id || job._id);
+        return currentId === String(jobId) ? { ...job, notes } : job;
+      });
     });
 
     setData(updated);
@@ -79,7 +85,10 @@ const Board = () => {
     const updated = {};
 
     Object.keys(data).forEach((col) => {
-      updated[col] = data[col].filter((job) => job.id !== jobId);
+      updated[col] = data[col].filter((job) => {
+        const currentId = String(job.id || job._id);
+        return currentId !== String(jobId);
+      });
     });
 
     setData(updated);
@@ -128,13 +137,13 @@ const Board = () => {
   // -----------------------------------------------------
 
   return (
-    <div className="p-6 h-full">
+    <div className="p-6 h-full flex flex-col">
       <h1 className="text-2xl font-semibold mb-6">Job Tracker</h1>
 
       <AddJobForm onAdd={handleAdd} />
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex flex-col gap-6 mt-6">
+        <div className="flex flex-row gap-6 mt-6 overflow-x-auto pb-4">
           {COLUMNS.map((col) => (
             <Column
               key={col}

@@ -7,18 +7,22 @@ dotenv.config()
 const router = e.Router()
 
 
-const getPrompt = (post, experience, skills) => 
-`
+const getPrompt = (post, experience, skills, numQuestions = 9) => {
+const questionsList = Array.from({ length: numQuestions }, (_, i) => 
+  `  { "qNo": ${i + 1}, "text": "question here?" }`
+).join(',\n');
+
+return `
 You are an AI interview engine.
 
-Generate exactly 9 high-quality technical interview questions for the role of ${post}, for a candidate with ${experience} years of experience and skills in ${skills}.
+Generate exactly ${numQuestions} high-quality technical interview questions for the role of ${post}, for a candidate with ${experience} years of experience and skills in ${skills}.
 
 STRICT OUTPUT RULES — THESE MUST BE FOLLOWED EXACTLY:
 
 1. Output MUST be a valid JSON array.
-2. The array MUST contain exactly 9 objects.
+2. The array MUST contain exactly ${numQuestions} objects.
 3. Each object MUST have ONLY these fields:
-   - "qNo": number from 1 to 9
+   - "qNo": number from 1 to ${numQuestions}
    - "text": a single interview question as a string
 4. DO NOT include any explanations, comments, markdown, backticks, or additional text.
 5. DO NOT wrap the output in code blocks.
@@ -28,25 +32,18 @@ STRICT OUTPUT RULES — THESE MUST BE FOLLOWED EXACTLY:
 The JSON must follow this exact format:
 
 [
-  { "qNo": 1, "text": "question here?" },
-  { "qNo": 2, "text": "question here?" },
-  { "qNo": 3, "text": "question here?" },
-  { "qNo": 4, "text": "question here?" },
-  { "qNo": 5, "text": "question here?" },
-  { "qNo": 6, "text": "question here?" },
-  { "qNo": 7, "text": "question here?" },
-  { "qNo": 8, "text": "question here?" },
-  { "qNo": 9, "text": "question here?" }
+${questionsList}
 ]
 `;
+};
 
 
-export const generateQuestions = async (topic, experience, skills, interviewId) => {
+export const generateQuestions = async (topic, experience, skills, interviewId, numQuestions = 9) => {
     try {
         const ai = new GoogleGenAI({
             apiKey: process.env.GEMINI_API_KEY
         })
-        const prompt = getPrompt(topic, experience, skills);
+        const prompt = getPrompt(topic, experience, skills, numQuestions);
         const geminiResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash-lite",
             contents: prompt,

@@ -17,6 +17,8 @@ const AiInterviewForm = () => {
   const [interviewTopic, setInterviewTopic] = useState("")
   const [experience, setExperience] = useState("")
   const [skills, setSkills] = useState("")
+  const [noOfQuestions, setNoOfQuestions] = useState(5)
+  const [timeInMinutes, setTimeInMinutes] = useState(15)
   const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [msgIndex, setMsgIndex] = useState(0)
@@ -44,12 +46,18 @@ const AiInterviewForm = () => {
       userId: localStorage.getItem("userUid"),
       topic: interviewTopic,
       experience,
-      skills
+      skills,
+      noOfQuestions,
+      timeInMinutes
     })
 
     setTrigger()
     navigate("/ai-interview", {
-      state: { interviewId: resp.data.data._id }
+      state: { 
+        interviewId: resp.data.data._id,
+        noOfQuestions,
+        timeInMinutes
+      }
     })
   }
 
@@ -123,6 +131,42 @@ const AiInterviewForm = () => {
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Number of Questions
+                </label>
+                <input
+                  type="number"
+                  value={noOfQuestions}
+                  onChange={(e) => setNoOfQuestions(Number(e.target.value))}
+                  min="3"
+                  max="15"
+                  placeholder="5"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Time Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  value={timeInMinutes}
+                  onChange={(e) => setTimeInMinutes(Number(e.target.value))}
+                  min="5"
+                  max="60"
+                  placeholder="15"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
             </div>
 
             <div className="pt-4">
