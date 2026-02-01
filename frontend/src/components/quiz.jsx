@@ -10,6 +10,8 @@ const API = import.meta.env.VITE_API_BASE_URL
 const Quiz = () => {
     const { state } = useLocation()
     const quizId = state?.quizId
+    const timeInMinutes = state?.timeInMinutes || 10
+    const totalQuestions = state?.noOfQuestions || 10
     const navigate = useNavigate()
 
     const [questions, setQuestions] = useState([])
@@ -17,7 +19,7 @@ const Quiz = () => {
     const [error, setError] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     
-    const [timeRemaining, setTimeRemaining] = useState(600)
+    const [timeRemaining, setTimeRemaining] = useState(timeInMinutes * 60)
     const [timerExpired, setTimerExpired] = useState(false)
 
     useEffect(() => {
@@ -166,15 +168,40 @@ const Quiz = () => {
                 
                 {/* Header Section */}
                 <div className="mb-8">
-                    <button
-                        onClick={() => navigate("/dashboard")}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm mb-4 font-semibold"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to Dashboard
-                    </button>
-                    <h1 className="text-3xl font-bold text-gray-900">Quiz</h1>
-                    <p className="text-gray-500 text-sm">Answer all questions to submit</p>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <button
+                                onClick={() => navigate("/dashboard")}
+                                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm mb-4 font-semibold"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                Back to Dashboard
+                            </button>
+                            <h1 className="text-3xl font-bold text-gray-900">Quiz</h1>
+                            <p className="text-gray-500 text-sm">Answer all questions to submit</p>
+                        </div>
+                        
+                        {/* Timer & Question Count - Top Right */}
+                        <div className="flex items-center gap-4">
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2">
+                                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Questions</p>
+                                <p className="text-xl font-bold text-gray-900">
+                                    {Object.keys(answers).length}/{questions.length}
+                                </p>
+                            </div>
+                            <div className={`border-2 rounded-xl px-4 py-2 ${getTimerBgColor()}`}>
+                                <div className="flex items-center gap-2">
+                                    <Clock className={`h-5 w-5 ${getTimerColor()}`} />
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Time Left</p>
+                                        <p className={`text-xl font-bold font-mono ${getTimerColor()}`}>
+                                            {formatTime(timeRemaining)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Grid Container */}
@@ -224,21 +251,8 @@ const Quiz = () => {
                         ))}
                     </div>
 
-                    {/* Right: Sticky Sidebar (Timer & Navigator) */}
+                    {/* Right: Sticky Sidebar (Navigator) */}
                     <aside className="w-full lg:w-[350px] lg:sticky lg:top-8 space-y-4">
-                        
-                        {/* Timer Card */}
-                        <div className={`border-2 rounded-2xl p-6 shadow-sm ${getTimerBgColor()}`}>
-                            <div className="flex items-center gap-3">
-                                <Clock className={`h-6 w-6 ${getTimerColor()}`} />
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-1">Remaining</p>
-                                    <p className={`text-3xl font-black font-mono leading-none ${getTimerColor()}`}>
-                                        {formatTime(timeRemaining)}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Navigator Card */}
                         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">

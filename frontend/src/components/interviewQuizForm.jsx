@@ -15,6 +15,7 @@ const messages = [
 const InterviewQuizForm = () => {
   const [topic, setTopic] = useState("")
   const [noOfQuestions, setNoOfQuestions] = useState(10)
+  const [timeInMinutes, setTimeInMinutes] = useState(10)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [msgIndex, setMsgIndex] = useState(0)
 
@@ -32,7 +33,13 @@ const InterviewQuizForm = () => {
       })
 
       if (resp.data.success) {
-        navigate("/quiz", { state: { quizId: resp.data.data._id } })
+        navigate("/quiz", { 
+          state: { 
+            quizId: resp.data.data._id,
+            timeInMinutes: parseInt(timeInMinutes),
+            noOfQuestions: parseInt(noOfQuestions)
+          } 
+        })
       }
     } catch (e) {
       console.error(e)
@@ -113,6 +120,26 @@ const InterviewQuizForm = () => {
               />
               <p className="text-xs text-gray-500 mt-1">
                 Choose between 1 and 50 questions
+              </p>
+            </div>
+
+            {/* Time Duration */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Time Duration (minutes)
+              </label>
+              <input
+                type="number"
+                value={timeInMinutes}
+                onChange={(e) => setTimeInMinutes(e.target.value)}
+                min="1"
+                max="120"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Choose between 1 and 120 minutes
               </p>
             </div>
 
