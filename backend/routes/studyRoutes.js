@@ -49,7 +49,6 @@ router.post(
       return res.status(200).json({
         success: true,
         summary: studyData.summary,
-        podcast_script: studyData.podcast_script,
         flashcards: studyData.flashcards,
         quiz: studyData.quiz,
       });

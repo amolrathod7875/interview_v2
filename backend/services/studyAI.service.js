@@ -14,8 +14,15 @@ export const generateStudyMaterial = async (rawText) => {
     throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
+  console.log(`[AI] Using model: ${MODEL}`);
+  console.log(`[AI] API Key present: ${OPENROUTER_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`[AI] API Key length: ${OPENROUTER_API_KEY?.length}`);
   console.log(`[AI] Received text length: ${rawText.length}`);
   console.log(`[AI] First 100 chars: ${rawText.slice(0, 100)}`);
+
+  if (rawText.length < 50) {
+    throw new Error("Text too short. Please provide at least 50 characters of content.");
+  }
 
   const prompt = `
 You are an expert AI study assistant.
@@ -40,10 +47,6 @@ The JSON MUST strictly follow this structure:
 
 {
   "summary": "<DETAILED markdown summary>",
-  "podcast_script": [
-    { "speaker": "Host", "text": "..." },
-    { "speaker": "Expert", "text": "..." }
-  ],
   "flashcards": [
     { "front": "...", "back": "..." }
   ],
@@ -77,12 +80,6 @@ SUMMARY:
 - Explain concepts clearly as if teaching a beginner
 - No generic filler text
 
-PODCAST SCRIPT:
-- Minimum **6–8 turns**
-- Conversational, natural, educational
-- Host asks thoughtful questions
-- Expert explains clearly with examples
-
 FLASHCARDS:
 - Minimum **8 flashcards**
 - Each card must test a key concept from the content
@@ -104,6 +101,13 @@ STRICT RULES
 
 BEGIN.
 `;
+
+  console.log("[AI] Sending request to OpenRouter...");
+  console.log("[AI] Request details:", {
+    model: MODEL,
+    promptLength: prompt.length,
+    temperature: 0.35
+  });
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -132,14 +136,24 @@ BEGIN.
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`OpenRouter error: ${err}`);
+    console.error("❌ OpenRouter API error:", response.status, err);
+    throw new Error(`OpenRouter error (${response.status}): ${err}`);
   }
 
   const data = await response.json();
+  console.log("[AI] Response received:", {
+    hasChoices: !!data.choices,
+    choicesLength: data.choices?.length,
+    hasMessage: !!data.choices?.[0]?.message,
+    hasContent: !!data.choices?.[0]?.message?.content,
+    finishReason: data.choices?.[0]?.finish_reason
+  });
+
   const content = data?.choices?.[0]?.message?.content;
 
   if (!content) {
-    throw new Error("Empty response from OpenRouter");
+    console.error("❌ Empty response. Full data:", JSON.stringify(data, null, 2));
+    throw new Error("Empty response from OpenRouter. Check API key and model availability.");
   }
 
   // 🔥 Clean & parse JSON safely
@@ -149,7 +163,19 @@ BEGIN.
       .replace(/```/g, "")
       .trim();
 
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    
+    // 🔥 Debug: Log what we got
+    console.log("[AI] Generated content structure:", {
+      hasSummary: !!parsed.summary,
+      summaryLength: parsed.summary?.length,
+      hasFlashcards: !!parsed.flashcards,
+      flashcardsCount: parsed.flashcards?.length,
+      hasQuiz: !!parsed.quiz,
+      quizCount: parsed.quiz?.length
+    });
+
+    return parsed;
   } catch (err) {
     console.error("❌ Invalid JSON from AI:\n", content);
     throw new Error("AI returned invalid JSON");

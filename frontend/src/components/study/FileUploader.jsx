@@ -39,11 +39,17 @@ export default function FileUploader({ onStart, onSuccess }) {
         throw new Error(json.message || "Processing failed");
       }
 
+      // ✅ Debug log to check what we received
+      console.log("Received study data:", {
+        hasSummary: !!json.summary,
+        hasFlashcards: !!json.flashcards,
+        hasQuiz: !!json.quiz
+      });
+
       // ✅ Send clean data to StudyPage
       onSuccess?.({
         studyData: {
           summary: json.summary,
-          podcast_script: json.podcast_script,
           flashcards: json.flashcards,
           quiz: json.quiz,
         },

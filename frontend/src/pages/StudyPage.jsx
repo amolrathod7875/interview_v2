@@ -82,7 +82,10 @@ export default function StudyPage() {
 
           {studyData && studioMode === "audio" && (
             <div className="bg-white rounded-xl border p-6">
-              <AudioPodcastPlayer script={studyData.podcast_script} />
+              <h3 className="font-semibold mb-4 text-gray-800">
+                Audio Summary
+              </h3>
+              <AudioPodcastPlayer summaryText={studyData.summary} />
             </div>
           )}
 
