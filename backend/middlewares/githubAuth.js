@@ -3,6 +3,9 @@ export const githubAuth = (req, res, next) => {
     // 🔍 Cookie must exist (set during OAuth callback)
     const token = req.cookies?.github_token;
 
+    console.log("🔍 GitHub Auth Middleware - Cookies:", req.cookies);
+    console.log("🔍 GitHub Token:", token ? "Present" : "Missing");
+
     if (!token) {
       return res.status(401).json({
         success: false,

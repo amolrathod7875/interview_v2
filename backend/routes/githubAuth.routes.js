@@ -29,10 +29,12 @@ router.get("/github/callback", async (req, res) => {
 
     const accessToken = tokenRes.data.access_token
 
+    const isProduction = process.env.NODE_ENV === "production";
+    
     res.cookie("github_token", accessToken, {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     })
 
