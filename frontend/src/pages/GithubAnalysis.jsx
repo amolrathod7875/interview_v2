@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { Button } from "../components/ui/button"
 import { FaGithub } from "react-icons/fa"
+import { ArrowLeft } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import LoadingWave from "../components/ui/LoadingWave"
 
 const API = import.meta.env.VITE_API_BASE_URL
@@ -12,6 +14,7 @@ const GithubAnalysis = () => {
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   /* ===============================
      Fetch connected repo
@@ -124,6 +127,15 @@ const GithubAnalysis = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] px-6 py-10">
       <div className="max-w-5xl mx-auto space-y-8">
+
+        {/* BACK BUTTON */}
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back to Dashboard</span>
+        </button>
 
         {/* HEADER */}
         <div>
