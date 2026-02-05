@@ -48,9 +48,21 @@ const GithubAnalysis = () => {
       setAnalysis(null)
 
       const firebaseId = localStorage.getItem("userUid")
+      const sessionId = localStorage.getItem('gh_session')
+
+      if (!sessionId) {
+        setError("GitHub session expired. Please reconnect your GitHub account.")
+        setAnalyzing(false)
+        return
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionId}`
+      }
 
       const res = await axios.post(
-        `${API}/api/ai/github/analyze`, // ✅ FIXED PATH
+        `${API}/api/ai/github/analyze`,
         {
           owner: repo.owner,
           repo: repo.repo,
@@ -58,9 +70,7 @@ const GithubAnalysis = () => {
         },
         { 
           withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          headers
         }
       )
 
@@ -74,6 +84,7 @@ const GithubAnalysis = () => {
       
       if (err.response?.status === 401) {
         setError("GitHub authentication required. Please reconnect your GitHub account from the dashboard.")
+        localStorage.removeItem('gh_session')
       } else {
         setError("GitHub analysis failed. Please try again.")
       }
