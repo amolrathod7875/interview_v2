@@ -3,7 +3,7 @@ import { useState } from "react"
 import LoadingWave from "./ui/LoadingWave"
 import RoadmapTimeline from "./ui/RoadmapTimeline"
 
-const API = "http://localhost:3000"
+const API = import.meta.env.VITE_API_BASE_URL
 
 // ✅ Clean formatter for hover content
 const formatHoverContent = (text) => {

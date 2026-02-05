@@ -37,10 +37,8 @@ const generateRoadmap = async (topic) => {
         apiKey: process.env.GEMINI_API_KEY
     })
 
-    const geminiResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
-        contents: prompt,
-    });
+    const model = ai.models.get("gemini-2.0-flash-lite");
+    const geminiResponse = await model.generateContent(prompt);
     console.log(geminiResponse);
     return geminiResponse
 }

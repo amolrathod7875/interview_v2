@@ -61,10 +61,11 @@ const AnalyseResume = () => {
   /* ---------------- Build Resume ---------------- */
   const handleBuildResume = async () => {
     try {
-      const existing = await axios.get(`http://localhost:3000/buildResume/${userId}`)
+      const API = import.meta.env.VITE_API_BASE_URL;
+      const existing = await axios.get(`${API}/buildResume/${userId}`)
 
       if (existing.data.length === 0) {
-        await axios.post('http://localhost:3000/buildResume/', {
+        await axios.post(`${API}/buildResume/`, {
           userId: resume.userId,
           fileUrl: resume.fileUrl,
           fileName: resume.fileName,

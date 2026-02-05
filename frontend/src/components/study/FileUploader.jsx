@@ -5,8 +5,7 @@ export default function FileUploader({ onStart, onSuccess }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
-  const API_BASE_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
   const handleFiles = async (files) => {
     if (!files || files.length === 0 || uploading) return;
