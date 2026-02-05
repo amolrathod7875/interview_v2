@@ -36,15 +36,16 @@ router.get("/github/callback", async (req, res) => {
     // Generate a session ID
     const sessionId = crypto.randomBytes(32).toString('hex')
     
-    // Store token with session ID (expires in 1 hour)
+    // Store token with session ID (expires in 7 days)
     tokenStore.set(sessionId, {
       token: accessToken,
-      expires: Date.now() + 60 * 60 * 1000
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
     })
 
     const isProduction = process.env.NODE_ENV === "production";
     
     console.log("🔑 Session ID created:", sessionId);
+    console.log("⏰ Session expires in 7 days");
     
     // Instead of cookie, pass session ID via URL
     const redirectUrl = `${process.env.FRONTEND_URL}/github-repos?session=${sessionId}`;
@@ -66,7 +67,7 @@ setInterval(() => {
       console.log("🗑️ Cleaned up expired session:", sessionId)
     }
   }
-}, 10 * 60 * 1000) // Every 10 minutes
+}, 60 * 60 * 1000) // Every 1 hour
 
 export { tokenStore }
 export default router
