@@ -2,10 +2,11 @@ import { tokenStore } from "../routes/githubAuth.routes.js";
 
 export const githubAuth = (req, res, next) => {
   try {
-    // Get session ID from cookie
-    const sessionId = req.cookies?.gh_session;
+    // Try to get session ID from Authorization header first, then from cookie
+    const authHeader = req.headers.authorization;
+    const sessionId = authHeader?.replace('Bearer ', '') || req.cookies?.gh_session;
 
-    console.log("🔍 GitHub Auth Middleware - Cookies:", req.cookies);
+    console.log("🔍 GitHub Auth Middleware - Authorization header:", authHeader ? "Present" : "Missing");
     console.log("🔍 Session ID:", sessionId ? "Present" : "Missing");
 
     if (!sessionId) {

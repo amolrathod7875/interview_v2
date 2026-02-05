@@ -44,21 +44,13 @@ router.get("/github/callback", async (req, res) => {
 
     const isProduction = process.env.NODE_ENV === "production";
     
-    console.log("🍪 Setting session cookie - Production:", isProduction);
-    console.log("🔑 Session ID:", sessionId);
+    console.log("🔑 Session ID created:", sessionId);
     
-    // Set session ID in cookie
-    res.cookie("gh_session", sessionId, {
-      httpOnly: true,
-      sameSite: isProduction ? "none" : "lax",
-      secure: isProduction,
-      maxAge: 60 * 60 * 1000, // 1 hour
-      path: "/",
-    })
-
-    console.log("✅ Session set, redirecting to:", `${process.env.FRONTEND_URL}/github-repos`);
+    // Instead of cookie, pass session ID via URL
+    const redirectUrl = `${process.env.FRONTEND_URL}/github-repos?session=${sessionId}`;
+    console.log("✅ Redirecting to:", redirectUrl);
     
-    res.redirect(`${process.env.FRONTEND_URL}/github-repos`)
+    res.redirect(redirectUrl)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: "GitHub OAuth failed" })

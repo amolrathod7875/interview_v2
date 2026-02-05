@@ -13,6 +13,17 @@ const GithubRepoSelector = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Check for session ID in URL (from OAuth callback)
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session');
+    
+    if (sessionId) {
+      // Store session ID in localStorage
+      localStorage.setItem('gh_session', sessionId);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     const loadRepos = async () => {
       try {
         const data = await fetchGithubRepos();
@@ -22,7 +33,8 @@ const GithubRepoSelector = () => {
         console.error("Repo fetch failed:", err);
         if (err.message.includes("401") || err.message.includes("Unauthorized")) {
           setIsAuthenticated(false);
-          setError(null); // Don't show error if just not authenticated
+          localStorage.removeItem('gh_session'); // Clear invalid session
+          setError(null);
         } else {
           setError("Failed to load GitHub repositories");
         }
