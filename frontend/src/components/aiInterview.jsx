@@ -285,7 +285,9 @@ Key Guidelines:
             await vapi.start(assistantOptions)
             setIsActive(true)
         } catch (e) {
-            console.log(e.message)
+            console.error("Failed to start VAPI:", e)
+            setLoading(false)
+            alert("Failed to start voice interview. Please check your VAPI configuration or try again.")
         }
     }
 
