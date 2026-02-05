@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchJobs } from "@/services/jobService";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/authContext";
 
 const StatCard = ({ label, value, color }) => (
   <div className="bg-white p-4 rounded-xl border shadow-sm">

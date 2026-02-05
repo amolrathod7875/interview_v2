@@ -7,7 +7,7 @@ import {
   addJob,
   updateJobStatus,
 } from "../../services/jobService";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/authContext";
 
 const COLUMNS = ["Applied", "Interview", "Offer", "Rejected"];
 
