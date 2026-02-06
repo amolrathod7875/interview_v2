@@ -3,7 +3,7 @@
 An intelligent full-stack web application that helps users prepare for technical interviews through AI-powered mock interviews, quizzes, real-time evaluation, and detailed feedback.
 
 ---
-## Live Link: [https://ai-interview-frontend-2.vercel.app/](https://ai-interview-frontend-2.vercel.app/)
+## Live Link: [https://interview-v2.vercel.app/](https://interview-v2.vercel.app/)
 ##  Features
 
 -  **AI Mock Interview** (voice & text based)
@@ -53,6 +53,11 @@ AWS_REGION=your_aws_s3_region
 AWS_BUCKET=your_s3_bucket_name
 OCR_API_KEY=your_ocr_api_key
 OPEN_ROUTER_API_KEY=your_open_router_api_key
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_CALLBACK_URL=http://localhost:3000/auth/github/callback
+PORT=3000
+FRONTEND_URL=http://localhost:5173
 ```
 
 ### Frontend `.env`
@@ -65,12 +70,13 @@ VITE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_APP_ID=your_firebase_app_id
 VITE_MEASUREMENT_ID=your_firebase_measurment_id
 VITE_VAPI_PUBLIC_KEY=your_vapi_api_public_key
+VITE_API_BASE_URL=http://localhost:3000
 ```
 ## 🖥️ Setup Instructions
 
 ### 1️⃣ Clone the Repository
 
-git clone [https://github.com/nileshkashani/ai-interview-app.git](https://github.com/nileshkashani/ai-interview-app.git)
+git clone [https://github.com/amolrathod7875/interview_v2.git](https://github.com/amolrathod7875/interview_v2.git)
 
 cd ai-interview-platform  
 
@@ -121,6 +127,9 @@ Evaluation Engine → AI scoring, feedback & improvement suggestions
 Resume Analyzer → Uploads and parses resumes
 Roadmap Generator → Generated detailed roadmap to given input
 Dashboard → User performance & history  
+Codex → User DSA Practice Arena
+Job Tracker → User Job Tracking Buddy
+
 
 ---
 
@@ -135,4 +144,4 @@ AI career roadmap generator
 
 ## Author
 
-Developed by Nilesh Kashani and team
+Developed by Amol Rathod and team
