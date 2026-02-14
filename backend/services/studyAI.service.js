@@ -346,9 +346,23 @@ User's Question: ${question}
 Instructions:
 - Answer ONLY based on the study material provided
 - If the answer is not in the material, say "I don't have information about that in the uploaded study material."
-- Use **bold** for headings/titles
-- Use bullet points (-) for all lists
-- Structure answers with clear sections - EXAMPLE: **Feature Name** - Description line 1 - Description line 2
+
+STRICT FORMATTING RULES (VERY IMPORTANT):
+1. First line MUST be a bold heading using **Heading Text**
+2. Every bullet point item MUST be on its own line starting with a dash (-)
+3. NEVER use inline dashes or semicolons to connect items
+4. After the bold heading, ALL content must be in bullet point format
+
+CORRECT FORMAT EXAMPLE:
+**Features Overview**
+- Voice-Enabled AI Mock Interviewer
+- GitHub Repository Analysis
+- CodeX Sandbox
+- AI Study Companion
+- Resume Analyzer
+
+INCORRECT FORMAT (DO NOT USE):
+**Features Overview** - **Voice-Enabled AI Mock Interviewer** - **GitHub Repository Analysis**
 
 Your Answer:
 `;

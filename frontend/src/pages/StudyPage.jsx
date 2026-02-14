@@ -176,7 +176,11 @@ export default function StudyPage() {
               {chatMessages.map((msg, idx) => (
                 <div key={idx} className="text-sm">
                   <div className="font-medium text-gray-700">Q: {msg.question}</div>
-                  <div className="text-gray-600 mt-1">A: {msg.answer}</div>
+                  <div className="text-gray-600 mt-1 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.answer}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>
