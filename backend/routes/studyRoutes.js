@@ -1,7 +1,8 @@
 import express from "express";
 import { upload } from "../middlewares/upload.middleware.js";
 import { parseFileToText } from "../services/fileParser.service.js";
-import { generateStudyMaterial, generateQuiz } from "../services/studyAI.service.js";
+import { generateStudyMaterial, generateQuiz, answerQuestion } from "../services/studyAI.service.js";
+import StudySession from "../models/StudySession.js";
 import audioService from "../services/audio.service.js";
 import crypto from "crypto";
 import fs from "fs";
@@ -13,7 +14,8 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// In-memory store for study sessions (in production, use Redis or database)
+// In-memory store for study sessions (backup - can be removed after full DB migration)
+// Keeping for backward compatibility during transition
 const studySessions = new Map();
 
 /**
@@ -71,8 +73,26 @@ router.post(
 
       // Generate a session ID for this study session
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Store the combined text for quiz regeneration
+
+      // 3️⃣ Save to database for persistence
+      try {
+        const studySession = new StudySession({
+          sessionId,
+          files: parsedFiles,
+          combinedText,
+          summary: studyData.summary,
+          flashcards: studyData.flashcards,
+          quiz: studyData.quiz,
+          chatHistory: [],
+        });
+        await studySession.save();
+        console.log(`[STUDY] Session saved to database: ${sessionId}`);
+      } catch (dbError) {
+        console.error(`[STUDY] Database save error:`, dbError.message);
+        // Continue even if DB save fails - still return data to user
+      }
+
+      // Also keep in memory as backup
       studySessions.set(sessionId, {
         text: combinedText,
         createdAt: new Date(),
@@ -85,9 +105,10 @@ router.post(
         summary: studyData.summary,
         flashcards: studyData.flashcards,
         quiz: studyData.quiz,
+        text: combinedText, // Return original text for QnA
       };
 
-      // 3️⃣ Return FLAT JSON (frontend expects this)
+      // 4️⃣ Return FLAT JSON (frontend expects this)
       return res.status(200).json(responseData);
     } catch (error) {
       console.error("STUDY PROCESS ERROR:", error);
@@ -118,19 +139,36 @@ router.post("/quiz", async (req, res) => {
 
     let combinedText = "";
 
+    // Try to get from database first
     if (sessionId) {
-      // Retrieve text from existing session
-      const session = studySessions.get(sessionId);
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          message: "Session not found. Please upload files again.",
-        });
+      try {
+        const session = await StudySession.findOne({ sessionId });
+        if (session) {
+          combinedText = session.combinedText;
+        }
+      } catch (dbError) {
+        console.warn(`[STUDY] DB lookup failed, falling back to memory:`, dbError.message);
       }
-      combinedText = session.text;
-    } else if (text) {
-      // Use provided text directly
+    }
+    
+    // Fallback to memory if not in DB
+    if (!combinedText && sessionId) {
+      const session = studySessions.get(sessionId);
+      if (session) {
+        combinedText = session.text;
+      }
+    }
+
+    // Or use provided text directly
+    if (!combinedText && text) {
       combinedText = text;
+    }
+
+    if (!combinedText) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found. Please upload files again.",
+      });
     }
 
     if (combinedText.length < 50) {
@@ -168,20 +206,42 @@ router.post("/quiz", async (req, res) => {
  */
 router.get("/session/:sessionId", async (req, res) => {
   const { sessionId } = req.params;
-  const session = studySessions.get(sessionId);
+  
+  // Try database first
+  let session = null;
+  try {
+    session = await StudySession.findOne({ sessionId }).select('-chatHistory');
+  } catch (dbError) {
+    console.warn(`[STUDY] DB lookup failed:`, dbError.message);
+  }
 
+  // Fallback to memory
   if (!session) {
-    return res.status(404).json({
-      success: false,
-      message: "Session not found",
+    const memSession = studySessions.get(sessionId);
+    if (!memSession) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      session: {
+        textLength: memSession.text.length,
+        createdAt: memSession.createdAt,
+        source: 'memory'
+      },
     });
   }
 
   return res.status(200).json({
     success: true,
     session: {
-      textLength: session.text.length,
+      textLength: session.combinedText.length,
+      files: session.files.map(f => f.name),
       createdAt: session.createdAt,
+      chatHistoryCount: session.chatHistory?.length || 0,
+      source: 'database'
     },
   });
 });
@@ -275,6 +335,106 @@ router.post("/audio", async (req, res) => {
       success: false,
       message: "Failed to generate audio",
       error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/study/chat
+ * Answer questions about the uploaded study material
+ */
+router.post("/chat", async (req, res) => {
+  try {
+    const { sessionId, question, text } = req.body;
+
+    // Input validation
+    if (!question || !question.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Question is required",
+      });
+    }
+
+    if (question.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Question is too long. Please limit to 1000 characters.",
+      });
+    }
+
+    let studyText = text;
+    let dbSession = null;
+    
+    // Try to get text from database first
+    if (!studyText && sessionId) {
+      try {
+        dbSession = await StudySession.findOne({ sessionId });
+        if (dbSession) {
+          studyText = dbSession.combinedText;
+        }
+      } catch (dbError) {
+        console.warn(`[CHAT] DB lookup failed, falling back to memory:`, dbError.message);
+      }
+    }
+
+    // Fallback to memory if not in DB
+    if (!studyText && sessionId) {
+      const memSession = studySessions.get(sessionId);
+      if (memSession) {
+        studyText = memSession.text;
+      }
+    }
+
+    if (!studyText) {
+      return res.status(400).json({
+        success: false,
+        message: "No study material available. Please upload files first.",
+      });
+    }
+
+    console.log(`[CHAT] Answering question...`);
+    console.log(`[CHAT] Question: ${question}`);
+    console.log(`[CHAT] Study text length: ${studyText.length} chars`);
+
+    // Get answer from AI
+    const answer = await answerQuestion(studyText, question);
+
+    // Save chat to database if session exists
+    if (dbSession) {
+      try {
+        dbSession.chatHistory.push({
+          question: question.trim(),
+          answer: answer,
+          timestamp: new Date()
+        });
+        await dbSession.save();
+        console.log(`[CHAT] Chat saved to database`);
+      } catch (saveError) {
+        console.warn(`[CHAT] Failed to save chat to database:`, saveError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      answer,
+    });
+  } catch (error) {
+    console.error("[CHAT] Error:", error);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to get answer";
+    if (error.message.includes("API key")) {
+      errorMessage = "AI service configuration error. Please contact support.";
+    } else if (error.message.includes("rate limit")) {
+      errorMessage = "Too many requests. Please wait a moment and try again.";
+    } else if (error.message.includes("timeout")) {
+      errorMessage = "Request timed out. Please try again.";
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: errorMessage,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });

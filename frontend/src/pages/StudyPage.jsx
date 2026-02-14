@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileUploader from "../components/study/FileUploader";
@@ -6,18 +7,80 @@ import AudioPodcastPlayer from "../components/study/AudioPodcastPlayer";
 import FlashcardDeck from "../components/study/FlashcardDeck";
 import QuizMode from "../components/study/QuizMode";
 import Loader from "../components/study/Loader";
+import axios from "axios";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default function StudyPage() {
   const [studyData, setStudyData] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [studioMode, setStudioMode] = useState("summary");
+  const navigate = useNavigate();
+  
+  // Chat state
+  const [studyText, setStudyText] = useState(""); // Store the original text for QnA
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]); // [{question, answer}]
+  const [chatError, setChatError] = useState(null);
+
+  // Handle sending chat question
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatQuestion.trim() || chatLoading) return;
+
+    const question = chatQuestion.trim();
+    setChatQuestion("");
+    setChatLoading(true);
+    setChatError(null);
+
+    try {
+      // Pass the study text directly instead of sessionId
+      const response = await axios.post(`${API_BASE}/api/study/chat`, {
+        text: studyText,
+        question,
+      });
+
+      if (response.data.success) {
+        setChatMessages(prev => [
+          ...prev,
+          { question, answer: response.data.answer }
+        ]);
+      } else {
+        setChatError(response.data.message || "Failed to get answer");
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+      // Handle different error types
+      if (error.code === "ERR_NETWORK" || error.message.includes("Network")) {
+        setChatError("Cannot connect to server. Please make sure the backend is running on port 3000.");
+      } else if (error.response?.data?.message) {
+        setChatError(error.response.data.message);
+      } else {
+        setChatError("Failed to get answer. Please try again.");
+      }
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#f8fafc] text-gray-800">
 
       {/* ================= LEFT: SOURCES ================= */}
       <div className="w-[22%] min-w-[260px] border-r bg-white p-4">
+        {/* Back to Dashboard Button */}
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Dashboard
+        </button>
+
         <h2 className="text-sm font-semibold mb-4 text-gray-700">
           Sources
         </h2>
@@ -25,9 +88,10 @@ export default function StudyPage() {
         <FileUploader
           multiple
           onStart={() => setLoading(true)}
-          onSuccess={({ studyData, files }) => {
+          onSuccess={({ studyData, files, text }) => {
             setStudyData(studyData);
             setUploadedFiles(files);
+            setStudyText(text || ""); // Store the original text for QnA
             setLoading(false);
             setStudioMode("summary");
           }}
@@ -98,12 +162,43 @@ export default function StudyPage() {
           )}
         </div>
 
-        <div className="border-t bg-white p-4">
-          <input
-            disabled
-            placeholder="Ask questions about your sources (coming soon)"
-            className="w-full bg-gray-100 rounded-lg px-4 py-3 text-sm text-gray-500"
-          />
+        <div className="border-t bg-white p-4 space-y-3">
+          {/* Error Message */}
+          {chatError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+              {chatError}
+            </div>
+          )}
+
+          {/* Chat Messages Display */}
+          {chatMessages.length > 0 && (
+            <div className="max-h-48 overflow-y-auto space-y-3 mb-2">
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className="text-sm">
+                  <div className="font-medium text-gray-700">Q: {msg.question}</div>
+                  <div className="text-gray-600 mt-1">A: {msg.answer}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Chat Input */}
+          <form onSubmit={handleChatSubmit} className="flex gap-2">
+            <input
+              value={chatQuestion}
+              onChange={(e) => setChatQuestion(e.target.value)}
+              placeholder={studyData ? "Ask questions about your sources..." : "Upload files first to ask questions"}
+              disabled={!studyData || chatLoading}
+              className="flex-1 bg-gray-100 rounded-lg px-4 py-3 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={!studyData || chatLoading || !chatQuestion.trim()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition"
+            >
+              {chatLoading ? "..." : "Send"}
+            </button>
+          </form>
         </div>
       </div>
 

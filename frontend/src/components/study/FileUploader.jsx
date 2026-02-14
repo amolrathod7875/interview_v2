@@ -53,6 +53,8 @@ export default function FileUploader({ onStart, onSuccess }) {
           quiz: json.quiz,
         },
         files: Array.from(files).map((f) => f.name),
+        sessionId: json.sessionId,
+        text: json.text, // Pass original text for QnA
       });
     } catch (err) {
       console.error("Upload error:", err);

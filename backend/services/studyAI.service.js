@@ -12,10 +12,11 @@ const MODEL =
 // Constants for content chunking
 const MAX_CHUNK_SIZE = 12000; // Leave room for prompt overhead
 const CHUNK_OVERLAP = 500; // Overlap between chunks for context continuity
+const QA_CHUNK_SIZE = 8000; // Smaller chunks for Q&A to improve context
 
 // Content chunking function for large texts
-const chunkContent = (text) => {
-  if (text.length <= MAX_CHUNK_SIZE) {
+const chunkContent = (text, maxSize = MAX_CHUNK_SIZE) => {
+  if (text.length <= maxSize) {
     return [text];
   }
 
@@ -23,7 +24,7 @@ const chunkContent = (text) => {
   let startIndex = 0;
 
   while (startIndex < text.length) {
-    let endIndex = startIndex + MAX_CHUNK_SIZE;
+    let endIndex = startIndex + maxSize;
     
     // Try to break at a natural boundary (paragraph or sentence)
     if (endIndex < text.length) {
@@ -49,7 +50,7 @@ const chunkContent = (text) => {
     }
   }
 
-  console.log(`[AI] Split content into ${chunks.length} chunks`);
+  console.log(`[AI] Split content into ${chunks.length} chunks (maxSize: ${maxSize})`);
   return chunks;
 };
 
@@ -320,3 +321,49 @@ BEGIN.
 
   return parsed.quiz;
 };
+
+/**
+ * Answer a question about the uploaded study material
+ * @param {string} rawText - The original study text
+ * @param {string} question - The question to answer
+ * @returns {Promise<string>} The answer
+ */
+export const answerQuestion = async (rawText, question) => {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+  }
+
+  const prompt = `
+You are a helpful study assistant. Based ONLY on the following study material, answer the user's question.
+
+Study Material:
+====================
+${rawText}
+====================
+
+User's Question: ${question}
+
+Instructions:
+- Answer ONLY based on the study material provided
+- If the answer is not in the material, say "I don't have information about that in the uploaded study material."
+- Use **bold** for headings/titles
+- Use bullet points (-) for all lists
+- Structure answers with clear sections - EXAMPLE: **Feature Name** - Description line 1 - Description line 2
+
+Your Answer:
+`;
+
+  console.log("[AI] Answering question about study material...");
+  console.log("[AI] Question:", question);
+  
+  const answer = await callOpenRouter(
+    prompt,
+    "You are a helpful study assistant that answers questions based ONLY on the provided study material. Be concise, accurate, and use proper formatting with bold for titles."
+  );
+
+  console.log("[AI] Answer generated successfully");
+  
+  return answer;
+};
+
+
