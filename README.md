@@ -144,4 +144,4 @@ AI career roadmap generator
 
 ## Author
 
-Developed by Amol Rathod and team
+Developed by Amol Rathods and team
