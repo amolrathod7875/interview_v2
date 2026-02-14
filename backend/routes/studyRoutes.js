@@ -223,6 +223,18 @@ router.post("/audio", async (req, res) => {
       }
     }
 
+    // Clean text: remove markdown formatting before audio generation
+    textToSynthesize = textToSynthesize
+      .replace(/^#{1,6}\s+/gm, '') // Remove headers (# Header -> Header)
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold (**text** -> text)
+      .replace(/\*([^*]+)\*/g, '$1') // Remove italic (*text* -> text)
+      .replace(/`([^`]+)`/g, '$1') // Remove inline code (`code` -> code)
+      .replace(/^[\-\*]\s+/gm, '') // Remove bullet points (- or * at start)
+      .replace(/\n{3,}/g, '\n\n') // Clean excessive newlines
+      .trim();
+
+    console.log(`[AUDIO] Cleaned text for audio: ${textToSynthesize.length} characters.`);
+
     // Generate unique filename based on content hash (use synthesized text for cache key)
     const hash = crypto.createHash("md5").update(textToSynthesize).digest("hex");
     const filename = `study_audio_${hash}.mp3`;

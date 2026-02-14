@@ -222,7 +222,7 @@ export default function AiInterview() {
         setLoading(true)
         const assistantOptions = {
             name: "AI Recruiter",
-            firstMessage: `Hi ${localStorage.getItem("user") || 'John Doe'}, how are you? Ready for your interview on ${interview.topic || 'for your selected topic'}?`,
+            firstMessage: `Hi ${user?.name || user?.firstName || 'there'}, how are you? Ready for your interview on ${interview.topic || 'for your selected topic'}?`,
 
             transcriber: {
                 provider: "deepgram",
