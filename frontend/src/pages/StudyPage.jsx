@@ -1,263 +1,321 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import FileUploader from "../components/study/FileUploader";
+import { useState, useCallback } from "react";
+import axios from "axios";
+
+import ThreePaneLayout from "../components/study/ThreePaneLayout";
+import SourcesPanel from "../components/study/SourcesPanel";
+import ChatPanel from "../components/study/ChatPanel";
+import StudioPanel from "../components/study/StudioPanel";
 import AudioPodcastPlayer from "../components/study/AudioPodcastPlayer";
 import FlashcardDeck from "../components/study/FlashcardDeck";
 import QuizMode from "../components/study/QuizMode";
 import Loader from "../components/study/Loader";
-import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default function StudyPage() {
+  // Study data state
   const [studyData, setStudyData] = useState(null);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [studioMode, setStudioMode] = useState("summary");
-  const navigate = useNavigate();
   
   // Chat state
-  const [studyText, setStudyText] = useState(""); // Store the original text for QnA
+  const [studyText, setStudyText] = useState("");
   const [chatQuestion, setChatQuestion] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]); // [{question, answer}]
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatError, setChatError] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  console.log("chatError:", chatError);
+  
+  // Studio state
+  const [studioMode, setStudioMode] = useState("summary");
+  
+  // Activity log state
+  const [activities, setActivities] = useState([]);
 
-  // Handle sending chat question
+  // Add activity to log
+  const addActivity = useCallback((title, description, status = "pending") => {
+    const activity = {
+      title,
+      description,
+      status,
+      timestamp: new Date().toISOString(),
+    };
+    setActivities((prev) => [activity, ...prev]);
+    return activity;
+  }, []);
+
+  // Update activity status
+  const updateActivity = useCallback((index, status) => {
+    setActivities((prev) =>
+      prev.map((activity, i) =>
+        i === index ? { ...activity, status } : activity
+      )
+    );
+  }, []);
+
+  // Handle file upload
+  const handleAddSource = async ({ studyData: newStudyData, files, text }) => {
+    setLoading(true);
+    
+    const activity = addActivity(
+      `Processing ${files[0]}`,
+      "Extracting content and generating summary",
+      "in-progress"
+    );
+
+    try {
+      // If we already have study data, merge the new content
+      const existingText = studyText || "";
+      const combinedText = existingText ? `${existingText}\n\n${text}` : text;
+      
+      setStudyData(newStudyData);
+      setStudyText(combinedText);
+      
+      // Add source to sources list
+      const newSource = {
+        fileName: files[0],
+        summary: newStudyData.summary,
+        topics: extractTopics(newStudyData.summary),
+        previewUrl: null,
+      };
+      
+      setSources((prev) => [...prev, newSource]);
+      
+      // Update activity
+      const activityIndex = activities.indexOf(activity);
+      if (activityIndex >= 0) {
+        updateActivity(activityIndex, "completed");
+      }
+      
+      // Add new activities for background tasks
+      addActivity("Generating flashcards", "Creating key concept cards", "pending");
+      addActivity("Generating quiz", "Creating test questions", "pending");
+      
+    } catch (error) {
+      console.error("Upload error:", error);
+      const activityIndex = activities.indexOf(activity);
+      if (activityIndex >= 0) {
+        updateActivity(activityIndex, "failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle topic click from Source Card
+  const handleTopicClick = (topic) => {
+    setChatQuestion(`Tell me more about ${topic}`);
+    setStudioMode("chat");
+  };
+
+  // Handle suggested question click
+  const handleSuggestionClick = (suggestion) => {
+    setChatQuestion(suggestion);
+  };
+
+  // Handle chat submit
   const handleChatSubmit = async (e) => {
-    e.preventDefault();
-    if (!chatQuestion.trim() || chatLoading) return;
+    e?.preventDefault();
+    if (!chatQuestion.trim() || chatLoading || !studyText) return;
 
     const question = chatQuestion.trim();
     setChatQuestion("");
     setChatLoading(true);
     setChatError(null);
 
+    // Add user message
+    setChatMessages((prev) => [...prev, { role: "user", content: question }]);
+
+    addActivity("Getting answer", "Processing your question", "in-progress");
+
     try {
-      // Pass the study text directly instead of sessionId
       const response = await axios.post(`${API_BASE}/api/study/chat`, {
         text: studyText,
         question,
       });
 
       if (response.data.success) {
-        setChatMessages(prev => [
+        setChatMessages((prev) => [
           ...prev,
-          { question, answer: response.data.answer }
+          { role: "assistant", content: response.data.answer }
         ]);
+        
+        // Update activity
+        const lastActivity = activities[0];
+        if (lastActivity) {
+          const index = activities.indexOf(lastActivity);
+          updateActivity(index, "completed");
+        }
       } else {
         setChatError(response.data.message || "Failed to get answer");
       }
     } catch (error) {
       console.error("Chat error:", error);
-      // Handle different error types
       if (error.code === "ERR_NETWORK" || error.message.includes("Network")) {
-        setChatError("Cannot connect to server. Please make sure the backend is running on port 3000.");
+        setChatError("Cannot connect to server. Please make sure the backend is running.");
       } else if (error.response?.data?.message) {
         setChatError(error.response.data.message);
       } else {
         setChatError("Failed to get answer. Please try again.");
+      }
+      
+      // Update activity to failed
+      const lastActivity = activities[0];
+      if (lastActivity) {
+        const index = activities.indexOf(lastActivity);
+        updateActivity(index, "failed");
       }
     } finally {
       setChatLoading(false);
     }
   };
 
-  return (
-    <div className="flex h-screen bg-[#f8fafc] text-gray-800">
+  // Handle studio mode change
+  const handleStudioModeChange = (mode) => {
+    setStudioMode(mode);
+    
+    // Add activity for certain modes
+    if (mode === "audio") {
+      addActivity("Generating audio", "Creating audio overview", "pending");
+    } else if (mode === "flashcards") {
+      addActivity("Loading flashcards", "Preparing flashcard deck", "pending");
+    } else if (mode === "quiz") {
+      addActivity("Loading quiz", "Preparing quiz questions", "pending");
+    }
+  };
 
-      {/* ================= LEFT: SOURCES ================= */}
-      <div className="w-[22%] min-w-[260px] border-r bg-white p-4">
-        {/* Back to Dashboard Button */}
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Dashboard
-        </button>
+  // Clear activity log
+  const handleClearActivity = () => {
+    setActivities([]);
+  };
 
-        <h2 className="text-sm font-semibold mb-4 text-gray-700">
-          Sources
-        </h2>
+  // Extract topics from summary (simple implementation)
+  const extractTopics = (summary) => {
+    if (!summary) return [];
+    // This is a placeholder - in real implementation, 
+    // the backend should provide topics
+    const commonTerms = [
+      "Binary Arithmetic",
+      "Logic Gates",
+      "Data Conversion",
+      "Digital Systems",
+      "Boolean Algebra",
+    ];
+    return commonTerms.slice(0, 3);
+  };
 
-        <FileUploader
-          multiple
-          onStart={() => setLoading(true)}
-          onSuccess={({ studyData, files, text }) => {
-            setStudyData(studyData);
-            setUploadedFiles(files);
-            setStudyText(text || ""); // Store the original text for QnA
-            setLoading(false);
-            setStudioMode("summary");
-          }}
-          onError={() => setLoading(false)}
-        />
+  // Render center panel content based on studio mode
+  const renderCenterContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <Loader label="Generating study companion..." />
+        </div>
+      );
+    }
 
-        {uploadedFiles.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs text-gray-500 mb-2">
-              Uploaded study material
-            </div>
-
-            <ul className="space-y-2">
-              {uploadedFiles.map((file, idx) => (
-                <li
-                  key={idx}
-                  className="px-3 py-2 rounded-lg border text-sm bg-gray-50 truncate"
-                  title={file}
-                >
-                  📄 {file}
-                </li>
-              ))}
-            </ul>
+    switch (studioMode) {
+      case "audio":
+        return studyData?.summary ? (
+          <div className="p-4">
+            <AudioPodcastPlayer summaryText={studyData.summary} />
           </div>
-        )}
-      </div>
-
-      {/* ================= CENTER ================= */}
-      <div className="flex-1 flex flex-col border-r bg-[#f8fafc]">
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {loading && <Loader label="Generating study companion..." />}
-
-          {!studyData && !loading && (
-            <div className="text-gray-400 text-center mt-24">
-              Upload documents to get started
-            </div>
-          )}
-
-          {studyData && studioMode === "summary" && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold mb-3 text-gray-800">
-                Summary
-              </h3>
-              <div className="prose max-w-none prose-slate prose-headings:font-semibold prose-h2:text-xl prose-h2:mb-2 prose-h2:mt-4 prose-p:my-2 prose-ul:list-disc prose-ul:ml-6 prose-ul:my-3 prose-li:my-1 prose-strong:font-semibold prose-strong:text-gray-900">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {studyData.summary}
-                </ReactMarkdown>
-              </div>
-            </div>
-          )}
-
-          {studyData && studioMode === "audio" && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold mb-4 text-gray-800">
-                Audio Summary
-              </h3>
-              <AudioPodcastPlayer summaryText={studyData.summary} />
-            </div>
-          )}
-
-          {studyData && studioMode === "flashcards" && (
+        ) : (
+          <div className="flex items-center justify-center h-full text-[#64748b]">
+            Upload files to generate audio
+          </div>
+        );
+      
+      case "flashcards":
+        return studyData?.flashcards ? (
+          <div className="p-4">
             <FlashcardDeck cards={studyData.flashcards} />
-          )}
-
-          {studyData && studioMode === "quiz" && (
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-[#64748b]">
+            No flashcards available
+          </div>
+        );
+      
+      case "quiz":
+        return studyData?.quiz ? (
+          <div className="p-4">
             <QuizMode questions={studyData.quiz} />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-[#64748b]">
+            No quiz available
+          </div>
+        );
+      
+      case "mindmap":
+      case "reports":
+      case "infographic":
+      case "slides":
+      case "datatable":
+        return (
+          <div className="flex items-center justify-center h-full text-[#64748b]">
+            {studioMode.charAt(0).toUpperCase() + studioMode.slice(1)} feature coming soon
+          </div>
+        );
+      
+      default:
+        // Summary/Chat mode - handled by ChatPanel
+        return null;
+    }
+  };
 
-        <div className="border-t bg-white p-4 space-y-3">
-          {/* Error Message */}
-          {chatError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {chatError}
-            </div>
-          )}
+  // For non-chat modes, we need to show a combined view
+  const isChatMode = studioMode === "summary" || studioMode === "chat";
 
-          {/* Chat Messages Display */}
-          {chatMessages.length > 0 && (
-            <div className="max-h-48 overflow-y-auto space-y-3 mb-2">
-              {chatMessages.map((msg, idx) => (
-                <div key={idx} className="text-sm">
-                  <div className="font-medium text-gray-700">Q: {msg.question}</div>
-                  <div className="text-gray-600 mt-1 prose prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.answer}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Chat Input */}
-          <form onSubmit={handleChatSubmit} className="flex gap-2">
-            <input
-              value={chatQuestion}
-              onChange={(e) => setChatQuestion(e.target.value)}
-              placeholder={studyData ? "Ask questions about your sources..." : "Upload files first to ask questions"}
-              disabled={!studyData || chatLoading}
-              className="flex-1 bg-gray-100 rounded-lg px-4 py-3 text-sm"
-            />
-            <button
-              type="submit"
-              disabled={!studyData || chatLoading || !chatQuestion.trim()}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition"
-            >
-              {chatLoading ? "..." : "Send"}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* ================= RIGHT ================= */}
-      <div className="w-[24%] min-w-[280px] bg-white p-4 border-l">
-        <h2 className="text-sm font-semibold mb-4 text-gray-700">
-          Studio
-        </h2>
-
-        <StudioButton
-          active={studioMode === "summary"}
-          onClick={() => setStudioMode("summary")}
-          title="Summary"
-          description="Read the generated overview"
-        />
-
-        <StudioButton
-          active={studioMode === "audio"}
-          onClick={() => setStudioMode("audio")}
-          title="Audio Overview"
-          description="Listen to a spoken summary"
-        />
-
-        <StudioButton
-          active={studioMode === "flashcards"}
-          onClick={() => setStudioMode("flashcards")}
-          title="Flashcards"
-          description="Key concepts for quick recall"
-        />
-
-        <StudioButton
-          active={studioMode === "quiz"}
-          onClick={() => setStudioMode("quiz")}
-          title="Quiz"
-          description="Test your understanding"
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ================= BUTTON ================= */
-
-function StudioButton({ title, description, onClick, active }) {
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left p-4 rounded-xl mb-3 border transition
-        ${active
-          ? "border-blue-500 bg-blue-50"
-          : "border-gray-200 hover:bg-gray-50"
-        }`}
-    >
-      <h3 className="font-medium text-gray-800">{title}</h3>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
-    </button>
+    <ThreePaneLayout
+      leftPanel={
+        <SourcesPanel
+          sources={sources}
+          onAddSource={handleAddSource}
+          onTopicClick={handleTopicClick}
+          onRemoveSource={(index) => {
+            setSources((prev) => prev.filter((_, i) => i !== index));
+          }}
+        />
+      }
+      centerPanel={
+        isChatMode ? (
+          <ChatPanel
+            projectName="Study Companion"
+            messages={chatMessages}
+            inputValue={chatQuestion}
+            onInputChange={setChatQuestion}
+            onSubmit={handleChatSubmit}
+            onSuggestionClick={handleSuggestionClick}
+            isLoading={chatLoading}
+            studyData={studyData}
+          />
+        ) : (
+          <div className="h-full flex flex-col bg-[#f8fafc]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-[#e2e8f0] bg-white">
+              <h2 className="text-sm font-semibold text-[#1e293b] capitalize">
+                {studioMode === "audio" ? "Audio Overview" : studioMode}
+              </h2>
+            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {renderCenterContent()}
+            </div>
+          </div>
+        )
+      }
+      rightPanel={
+        <StudioPanel
+          activeMode={isChatMode ? "summary" : studioMode}
+          onModeChange={handleStudioModeChange}
+          activities={activities}
+          onClearActivity={handleClearActivity}
+        />
+      }
+    />
   );
 }

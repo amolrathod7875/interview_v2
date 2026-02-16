@@ -1,7 +1,7 @@
 import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
-export default function FileUploader({ onStart, onSuccess }) {
+export default function FileUploader({ onStart, onSuccess, onError, multiple = true }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
@@ -58,6 +58,7 @@ export default function FileUploader({ onStart, onSuccess }) {
       });
     } catch (err) {
       console.error("Upload error:", err);
+      onError?.(err);
       alert(err.message || "Failed to process files");
     } finally {
       setUploading(false);
@@ -92,7 +93,7 @@ export default function FileUploader({ onStart, onSuccess }) {
       <input
         ref={fileInputRef}
         type="file"
-        multiple
+        multiple={multiple}
         accept=".pdf,.ppt,.pptx,.txt"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
