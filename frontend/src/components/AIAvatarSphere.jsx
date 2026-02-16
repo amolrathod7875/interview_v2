@@ -1,17 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Audio file URLs - Replace with your actual sound files
-const START_SOUND_URL = '/sounds/ai-start.mp3'
-const STOP_SOUND_URL = '/sounds/ai-stop.mp3'
-
 export default function AIAvatarSphere({ status = 'active', type = 'ai' }) {
     const canvasRef = useRef(null)
     const animationFrameRef = useRef(null)
     const particlesRef = useRef([])
     const rotationRef = useRef(0)
     const breathingRef = useRef(0)
-    const startAudioRef = useRef(null)
-    const stopAudioRef = useRef(null)
 
     // Color schemes based on type - Professional Corporate Blue Theme
     const colorSchemes = {
@@ -40,28 +34,6 @@ export default function AIAvatarSphere({ status = 'active', type = 'ai' }) {
     }
 
     const colors = colorSchemes[type] || colorSchemes.ai
-
-    useEffect(() => {
-        // Initialize audio
-        startAudioRef.current = new Audio(START_SOUND_URL)
-        stopAudioRef.current = new Audio(STOP_SOUND_URL)
-
-        // Play start sound when component mounts or status becomes active
-        if (status === 'active') {
-            startAudioRef.current.play().catch(err => console.log('Audio play failed:', err))
-        }
-
-        // Cleanup function
-        return () => {
-            // Play stop sound on unmount or when status ends
-            if (status === 'ended' || status === 'active') {
-                stopAudioRef.current.play().catch(err => console.log('Audio play failed:', err))
-            }
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current)
-            }
-        }
-    }, [status])
 
     useEffect(() => {
         const canvas = canvasRef.current

@@ -8,6 +8,7 @@ import { Spinner } from "./ui/spinner"
 import { motion } from "framer-motion"
 import LoadingWave from "./ui/LoadingWave"
 import AIAvatarSphere from "./AIAvatarSphere"
+import BodyLanguageMonitor from "./BodyLanguageMonitor"
 
 const messages = [
     "Generating Results...",
@@ -502,36 +503,15 @@ Key Guidelines:
                     
 
 
-                    {/* User Avatar Sphere */}
-                    <div className="relative z-10 h-[350px] w-[350px]">
-                        <AIAvatarSphere status={userSpeaking ? 'active' : 'idle'} type="user" />
+                    {/* Body Language Monitor */}
+                    <div className="relative z-10 w-full h-[350px] flex items-center justify-center">
+                        <BodyLanguageMonitor 
+                            isActive={isActive}
+                            showLandmarks={false}
+                        />
                     </div>
 
                     {/* Voice Waveform Visualizer - Professional Blue */}
-                    {userSpeaking && (
-                        <div className="flex gap-2 items-center h-16 relative z-10">
-                            {[...Array(9)].map((_, i) => (
-                                <motion.div
-                                    key={i}
-                                    className="w-2 rounded-full shadow-sm"
-                                    style={{
-                                        background: `linear-gradient(to top, #007BFF, #1A2B4B)`,
-                                    }}
-                                    animate={{
-                                        height: ["20px", "64px", "32px", "64px", "20px"],
-                                        opacity: [0.5, 1, 0.7, 1, 0.5],
-                                    }}
-                                    transition={{
-                                        duration: 1.5,
-                                        repeat: Infinity,
-                                        delay: i * 0.12,
-                                        ease: "easeInOut",
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    )}
-
                     {/* Status Text - Professional */}
                     <motion.div
                         className="relative z-10 text-center"
