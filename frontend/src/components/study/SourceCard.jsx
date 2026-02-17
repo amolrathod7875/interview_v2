@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { FileText, X, ChevronDown, ChevronUp, File, Image } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
 
 export default function SourceCard({
   fileName,
@@ -49,9 +52,49 @@ export default function SourceCard({
         
         {/* Summary with line-clamp */}
         <div className={`relative ${!isExpanded ? "line-clamp-3" : ""}`}>
-          <p className="text-sm text-[#334155] leading-relaxed">
-            {summary || "No summary available"}
-          </p>
+          {summary ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeSanitize]}
+              components={{
+                p: ({ node, ...props }) => (
+                  <p className="text-sm text-[#334155] leading-relaxed" {...props} />
+                ),
+                strong: ({ node, ...props }) => (
+                  <strong className="font-semibold" {...props} />
+                ),
+                h2: ({ node, ...props }) => (
+                  <h2 className="text-lg font-bold mt-2" {...props} />
+                ),
+                h3: ({ node, ...props }) => (
+                  <h3 className="text-md font-semibold mt-2" {...props} />
+                ),
+                ul: ({ node, ...props }) => (
+                  <ul className="list-disc ml-5 space-y-1" {...props} />
+                ),
+                ol: ({ node, ...props }) => (
+                  <ol className="list-decimal ml-5 space-y-1" {...props} />
+                ),
+                a: ({ node, ...props }) => (
+                  <a className="text-[#3b82f6] hover:underline" {...props} />
+                ),
+                code: ({ node, inline, className, children, ...props }) =>
+                  inline ? (
+                    <code className="bg-gray-100 px-1 rounded text-xs" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <pre className="bg-[#0f172a] text-white p-2 rounded overflow-auto" {...props}>
+                      <code>{children}</code>
+                    </pre>
+                  ),
+              }}
+            >
+              {summary}
+            </ReactMarkdown>
+          ) : (
+            <p className="text-sm text-[#334155] leading-relaxed">No summary available</p>
+          )}
           
           {/* Fade out effect when collapsed */}
           {!isExpanded && summary && summary.length > 150 && (

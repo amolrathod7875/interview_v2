@@ -1,7 +1,7 @@
 import express from "express";
 import { upload } from "../middlewares/upload.middleware.js";
 import { parseFileToText } from "../services/fileParser.service.js";
-import { generateStudyMaterial, generateQuiz, answerQuestion } from "../services/studyAI.service.js";
+import { generateStudyMaterial, generateQuiz, answerQuestion, generateMindMap, generateReport } from "../services/studyAI.service.js";
 import StudySession from "../models/StudySession.js";
 import audioService from "../services/audio.service.js";
 import crypto from "crypto";
@@ -71,10 +71,28 @@ router.post(
       // 2️⃣ Generate study material
       const studyData = await generateStudyMaterial(combinedText);
 
+      // 3️⃣ Generate mind map and report in parallel
+      console.log("[STUDY] Generating mind map and report...");
+      let mindmap = null;
+      let report = null;
+      
+      try {
+        const [mindmapResult, reportResult] = await Promise.all([
+          generateMindMap(combinedText),
+          generateReport(combinedText)
+        ]);
+        mindmap = mindmapResult;
+        report = reportResult;
+        console.log("[STUDY] Mind map and report generated successfully");
+      } catch (genError) {
+        console.error("[STUDY] Error generating mind map or report:", genError.message);
+        // Continue even if mind map/report generation fails
+      }
+
       // Generate a session ID for this study session
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // 3️⃣ Save to database for persistence
+      // 4️⃣ Save to database for persistence
       try {
         const studySession = new StudySession({
           sessionId,
@@ -83,6 +101,8 @@ router.post(
           summary: studyData.summary,
           flashcards: studyData.flashcards,
           quiz: studyData.quiz,
+          mindmap,
+          report,
           chatHistory: [],
         });
         await studySession.save();
@@ -105,6 +125,8 @@ router.post(
         summary: studyData.summary,
         flashcards: studyData.flashcards,
         quiz: studyData.quiz,
+        mindmap,
+        report,
         text: combinedText, // Return original text for QnA
       };
 
@@ -436,6 +458,194 @@ router.post("/chat", async (req, res) => {
       message: errorMessage,
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+});
+
+/**
+ * Task 4: Placeholder endpoints for broken features
+ * Mind Map, Report, Infographic, Slide Deck, Data Table
+ */
+
+// Mind Map endpoint
+router.post("/mindmap", async (req, res) => {
+  try {
+    const { text, sessionId } = req.body;
+    
+    // Get text from session or body
+    let studyText = text;
+    if (sessionId && !text) {
+      try {
+        const session = await StudySession.findOne({ sessionId });
+        studyText = session?.combinedText;
+      } catch (dbError) {
+        console.warn(`[MINDMAP] DB lookup failed:`, dbError.message);
+      }
+    }
+    
+    // Fallback to memory if not in DB
+    if (!studyText && sessionId) {
+      const memSession = studySessions.get(sessionId);
+      if (memSession) {
+        studyText = memSession.text;
+      }
+    }
+
+    if (!studyText) {
+      return res.status(400).json({ success: false, message: "Text or valid sessionId is required" });
+    }
+    
+    console.log("[STUDY] Generating mind map for session:", sessionId || "new");
+    
+    // Generate mind map using AI
+    const mindmap = await generateMindMap(studyText);
+    
+    // Update session in database if it exists
+    if (sessionId) {
+      try {
+        const session = await StudySession.findOne({ sessionId });
+        if (session) {
+          session.mindmap = mindmap;
+          await session.save();
+        }
+      } catch (dbError) {
+        console.warn(`[MINDMAP] Failed to update session:`, dbError.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: mindmap
+    });
+  } catch (error) {
+    console.error("[MINDMAP] Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate mind map" });
+  }
+});
+
+// Reports endpoint
+router.post("/reports", async (req, res) => {
+  try {
+    const { text, sessionId } = req.body;
+    
+    // Get text from session or body
+    let studyText = text;
+    if (sessionId && !text) {
+      try {
+        const session = await StudySession.findOne({ sessionId });
+        studyText = session?.combinedText;
+      } catch (dbError) {
+        console.warn(`[REPORTS] DB lookup failed:`, dbError.message);
+      }
+    }
+    
+    // Fallback to memory if not in DB
+    if (!studyText && sessionId) {
+      const memSession = studySessions.get(sessionId);
+      if (memSession) {
+        studyText = memSession.text;
+      }
+    }
+
+    if (!studyText) {
+      return res.status(400).json({ success: false, message: "Text or valid sessionId is required" });
+    }
+    
+    console.log("[STUDY] Generating report for session:", sessionId || "new");
+    
+    // Generate report using AI
+    const report = await generateReport(studyText);
+    
+    // Update session in database if it exists
+    if (sessionId) {
+      try {
+        const session = await StudySession.findOne({ sessionId });
+        if (session) {
+          session.report = report;
+          await session.save();
+        }
+      } catch (dbError) {
+        console.warn(`[REPORTS] Failed to update session:`, dbError.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    console.error("[REPORTS] Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate report" });
+  }
+});
+
+// Infographic endpoint
+router.post("/infographic", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Text is required" });
+    }
+    
+    // Return mock infographic data
+    res.json({
+      success: true,
+      data: {
+        elements: [
+          { type: "title", content: "Study Overview" },
+          { type: "stat", label: "Key Stat", value: "85%" },
+        ]
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to generate infographic" });
+  }
+});
+
+// Slides endpoint
+router.post("/slides", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Text is required" });
+    }
+    
+    // Return mock slides data
+    res.json({
+      success: true,
+      data: {
+        slides: [
+          { title: "Slide 1", content: "Introduction content" },
+          { title: "Slide 2", content: "Main points" },
+          { title: "Slide 3", content: "Conclusion" },
+        ]
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to generate slides" });
+  }
+});
+
+// Data Table endpoint
+router.post("/datatable", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Text is required" });
+    }
+    
+    // Return mock data table
+    res.json({
+      success: true,
+      data: {
+        columns: ["Topic", "Key Points", "Notes"],
+        rows: [
+          ["Topic 1", "Point A, Point B", "Important"],
+          ["Topic 2", "Point C, Point D", "Review later"],
+        ]
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to generate data table" });
   }
 });
 

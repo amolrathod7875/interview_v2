@@ -54,10 +54,20 @@ Frontend (Vercel) ←→ Backend (Render/Railway) ←→ MongoDB Atlas
    GEMINI_API_KEY=your_gemini_api_key
    MONGO_URI=your_mongodb_atlas_connection_string
    FIREBASE_API_KEY=your_firebase_api_key
-   AWS_ACCESS_KEY_ID=your_aws_access_key
-   AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-   AWS_REGION=your_aws_region
-   AWS_BUCKET=your_s3_bucket_name
+   
+   # Oracle Cloud Object Storage (recommended - replaces AWS S3)
+   ORACLE_ENDPOINT=https://your-namespace.compat.objectstorage.us-ashburn-1.oraclecloud.com
+   ORACLE_REGION=us-ashburn-1
+   ORACLE_ACCESS_KEY_ID=your_oracle_access_key_id
+   ORACLE_SECRET_ACCESS_KEY=your_oracle_secret_access_key
+   ORACLE_BUCKET=resumes-ai-interview
+   
+   # OR - AWS S3 (deprecated - use Oracle Cloud instead)
+   # AWS_ACCESS_KEY_ID=your_aws_access_key
+   # AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+   # AWS_REGION=your_aws_region
+   # AWS_BUCKET=your_s3_bucket_name
+   
    OCR_API_KEY=your_ocr_api_key
    OPEN_ROUTER_API_KEY=your_openrouter_api_key
    FRONTEND_URL=https://your-frontend-app.vercel.app

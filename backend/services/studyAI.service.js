@@ -8,6 +8,9 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY_amol;
 const MODEL =
   process.env.OPENROUTER_MODEL_amol ||
   "nvidia/nemotron-3-nano-30b-a3b:free";
+// Prefer explicit OpenAI key for mindmap generation to avoid overloading OpenRouter
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 // Constants for content chunking
 const MAX_CHUNK_SIZE = 12000; // Leave room for prompt overhead
@@ -99,6 +102,41 @@ const callOpenRouter = async (prompt, systemMessage = "You generate detailed, st
     throw new Error("Empty response from OpenRouter. Check API key and model availability.");
   }
 
+  return content;
+};
+
+// Simple OpenAI chat caller used for mindmap generation (smaller, cost-conscious model)
+const callOpenAI = async (prompt, systemMessage = "You generate valid JSON only.") => {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OpenAI API key missing (OPENAI_API_KEY)");
+  }
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.2,
+      max_tokens: 2500,
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    console.error("OpenAI error:", res.status, txt);
+    throw new Error(`OpenAI error (${res.status})`);
+  }
+
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error("Empty response from OpenAI");
   return content;
 };
 
@@ -380,4 +418,213 @@ Your Answer:
   return answer;
 };
 
+/**
+ * Generate a mind map from study material
+ * @param {string} rawText - The original study text
+ * @returns {Promise<Object>} Mind map with nodes and edges
+ */
+export const generateMindMap = async (rawText) => {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+  }
+
+  console.log("[AI MindMap] Generating mind map...");
+  console.log("[AI MindMap] Text length:", rawText.length);
+
+  if (rawText.length < 50) {
+    throw new Error("Text too short to generate mind map");
+  }
+  // First try OpenAI (cheaper for short structured outputs) if available
+  try {
+    if (OPENAI_API_KEY) {
+      const prompt = `You are an assistant that returns ONLY valid JSON describing a hierarchical mind map (nodes and edges).\n
+Input:\n"""\n${rawText.slice(0, 14000)}\n"""\n\nReturn an object {"nodes": [...], "edges": [...]} where nodes have id,label,level,parentId(optional),x,y. Keep labels short.`;
+
+      const aiContent = await callOpenAI(prompt, "Generate mindmap JSON only");
+      const parsed = parseAIResponse(aiContent);
+      console.log("[AI MindMap - OpenAI] Generated", parsed.nodes?.length || 0, "nodes and", parsed.edges?.length || 0, "edges");
+      if (parsed && Array.isArray(parsed.nodes)) return parsed;
+    }
+
+    // Fallback to OpenRouter (existing) if OpenAI not available or fails
+    const promptOR = `You are an expert AI that creates mind maps from study material. Return ONLY valid JSON with nodes and edges.\n"""\n${rawText.slice(0,14000)}\n"""`;
+    const contentOR = await callOpenRouter(promptOR, "You generate mind maps in valid JSON only.");
+    const parsedOR = parseAIResponse(contentOR);
+    if (parsedOR && Array.isArray(parsedOR.nodes)) {
+      console.log("[AI MindMap - OpenRouter] Generated", parsedOR.nodes.length, "nodes");
+      return parsedOR;
+    }
+  } catch (err) {
+    console.warn("[AI MindMap] AI generation failed, falling back to heuristic:", err.message);
+  }
+
+  // Final fallback: simple heuristic generator (keywords/headings)
+  const fallback = generateFallbackMindMap(rawText);
+  console.log("[AI MindMap] Fallback generated", fallback.nodes.length, "nodes");
+  return fallback;
+};
+
+// Heuristic fallback mind map generator: extracts frequent terms and headings
+const generateFallbackMindMap = (text) => {
+  const stopwords = new Set([
+    'the','and','is','in','to','of','a','for','on','with','that','by','this','as','are','from','or','an','be','it','will','which','at',
+  ]);
+
+  const clean = text.replace(/[^a-zA-Z0-9\s\n\.]/g, ' ');
+  const words = clean.toLowerCase().split(/\s+/).filter(w => w.length>2 && !stopwords.has(w));
+
+  const freq = {};
+  for (const w of words) freq[w] = (freq[w]||0)+1;
+  const sorted = Object.keys(freq).sort((a,b)=>freq[b]-freq[a]);
+
+  // Choose top 5 terms as subtopics
+  const top = sorted.slice(0,5);
+
+  const nodes = [];
+  const edges = [];
+
+  // Root node: use first non-empty line as title or fallback
+  const firstLine = (text.split('\n').find(l=>l.trim().length>10) || '').trim();
+  const rootLabel = firstLine ? firstLine.slice(0,60) : 'Main Topic';
+  nodes.push({ id: 'n0', label: rootLabel, level: 0, x: 400, y: 60 });
+
+  // Level 1 nodes
+  top.forEach((term, i) => {
+    const id = `n${i+1}`;
+    const x = 150 + i * 110;
+    const y = 170;
+    nodes.push({ id, label: term.slice(0,30), level: 1, x, y, parentId: 'n0' });
+    edges.push({ from: 'n0', to: id });
+
+    // add 2 detail nodes for each term (extract nearby sentences)
+    const re = new RegExp(`([^.!?]{20,120}${term}[^.!?]{0,120}[.!?])`, 'ig');
+    const matches = [];
+    let m;
+    while ((m = re.exec(text)) && matches.length < 2) matches.push(m[1].trim());
+
+    if (matches.length === 0) {
+      // pick some nearby words as detail
+      nodes.push({ id: `${id}d1`, label: `detail about ${term}`.slice(0,30), level:2, x: x-40, y: 270, parentId: id });
+      nodes.push({ id: `${id}d2`, label: `example ${term}`.slice(0,30), level:2, x: x+40, y: 270, parentId: id });
+      edges.push({ from: id, to: `${id}d1` });
+      edges.push({ from: id, to: `${id}d2` });
+    } else {
+      matches.forEach((s, j) => {
+        const did = `${id}d${j+1}`;
+        nodes.push({ id: did, label: s.slice(0,30), level:2, x: x + (j===0 ? -30 : 30), y: 270 + j*20, parentId: id });
+        edges.push({ from: id, to: did });
+      });
+    }
+  });
+
+  return { nodes, edges };
+};
+
+/**
+ * Generate a study report from study material
+ * @param {string} rawText - The original study text
+ * @returns {Promise<Object>} Report with title, summary, sections, and key points
+ */
+export const generateReport = async (rawText) => {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+  }
+
+  console.log("[AI Report] Generating report...");
+  console.log("[AI Report] Text length:", rawText.length);
+
+  if (rawText.length < 50) {
+    throw new Error("Text too short to generate report");
+  }
+
+  const prompt = `
+You are an expert AI that creates comprehensive study reports.
+
+Your task is to analyze the provided content and generate a detailed structured report.
+
+=====================
+CONTENT TO ANALYZE
+=====================
+"""
+${rawText.slice(0, 14000)}
+"""
+
+=====================
+OUTPUT REQUIREMENTS
+=====================
+
+Return ONLY valid JSON (no markdown, no explanations).
+
+Generate a report with the following structure:
+
+{
+  "title": "Report Title",
+  "summary": "A brief 2-3 sentence overview of the content",
+  "sections": [
+    { "heading": "Section 1 Title", "content": "Detailed content for section 1..." },
+    { "heading": "Section 2 Title", "content": "Detailed content for section 2..." }
+  ],
+  "keyPoints": [
+    "Key point 1",
+    "Key point 2",
+    "Key point 3"
+  ],
+  "generatedAt": "2024-01-01T00:00:00.000Z"
+}
+
+=====================
+QUALITY RULES
+=====================
+
+TITLE:
+- Create a clear, descriptive title for the report
+
+SUMMARY:
+- Write 2-3 sentences summarizing the main topic and key takeaways
+
+SECTIONS:
+- Create 4-6 main sections covering different aspects of the content
+- Each section should have substantial content (2-4 paragraphs)
+- Use clear headings that describe the section topic
+- Cover: Introduction, Main Concepts, Key Details, Applications, Summary
+
+KEY POINTS:
+- Extract 5-8 most important points from the material
+- Each point should be a single, clear statement
+- Focus on actionable or exam-ready information
+
+GENERATED AT:
+- Use ISO 8601 format: new Date().toISOString()
+
+=====================
+STRICT RULES
+=====================
+- JSON ONLY (no backticks)
+- No extra text outside JSON
+- All fields must be present
+- Content should be in plain text, not markdown
+
+BEGIN.
+`;
+
+  const content = await callOpenRouter(
+    prompt,
+    "You generate study reports in valid JSON only with structured sections."
+  );
+  
+  const parsed = parseAIResponse(content);
+
+  console.log("[AI Report] Generated report with", parsed.sections?.length || 0, "sections");
+
+  if (!parsed.title || !parsed.sections || !Array.isArray(parsed.sections)) {
+    throw new Error("AI did not return valid report data");
+  }
+
+  // Add generatedAt timestamp if not present
+  if (!parsed.generatedAt) {
+    parsed.generatedAt = new Date().toISOString();
+  }
+
+  return parsed;
+};
 

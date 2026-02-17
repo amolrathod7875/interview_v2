@@ -42,15 +42,19 @@ export default function FileUploader({ onStart, onSuccess, onError, multiple = t
       console.log("Received study data:", {
         hasSummary: !!json.summary,
         hasFlashcards: !!json.flashcards,
-        hasQuiz: !!json.quiz
+        hasQuiz: !!json.quiz,
+        hasMindmap: !!json.mindmap,
+        hasReport: !!json.report,
       });
 
-      // ✅ Send clean data to StudyPage
+      // ✅ Send clean data to StudyPage. Include mindmap/report if backend provided them.
       onSuccess?.({
         studyData: {
           summary: json.summary,
           flashcards: json.flashcards,
           quiz: json.quiz,
+          mindmap: json.mindmap || null,
+          report: json.report || null,
         },
         files: Array.from(files).map((f) => f.name),
         sessionId: json.sessionId,

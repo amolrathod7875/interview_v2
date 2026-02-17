@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Send, Bot, User } from "lucide-react";
 import SuggestedQuestions from "./SuggestedQuestions";
+import LoadingWave from "../ui/LoadingWave.jsx";
 
 export default function ChatPanel({
   projectName = "Study Companion",
@@ -14,6 +15,7 @@ export default function ChatPanel({
   suggestions = [],
   isLoading = false,
   studyData,
+  isLoadingSummary = false,
 }) {
   const messagesEndRef = useRef(null);
 
@@ -57,11 +59,15 @@ export default function ChatPanel({
         {studyData && messages.length === 0 && (
           <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 shadow-sm">
             <h3 className="font-semibold mb-2 text-[#1e293b]">Summary</h3>
-            <div className="prose max-w-none prose-sm prose-slate">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {studyData.summary || "No summary available"}
-              </ReactMarkdown>
-            </div>
+            {isLoadingSummary ? (
+              <LoadingWave />
+            ) : (
+              <div className="prose max-w-none prose-sm prose-slate">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {studyData.summary || "No summary available"}
+                </ReactMarkdown>
+              </div>
+            )}
           </div>
         )}
 

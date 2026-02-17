@@ -42,6 +42,9 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 | **React Markdown 10.1.0** | Markdown rendering |
 | **@hello-pangea/dnd 18.0.1** | Drag and drop functionality |
 | **@monaco-editor/react 4.7.0** | Code editor for Codex |
+| **face-api.js 0.22.2** | Face detection and expression analysis |
+| **react-webcam 7.2.0** | Webcam capture for body language analysis |
+| **lucide-react 0.562.0** | Modern icon library |
 
 ### Backend Technologies
 
@@ -52,6 +55,7 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 | **MongoDB + Mongoose 9.1.1** | Database and ODM |
 | **Firebase Admin 13.6.0** | Server-side auth |
 | **Axios** | HTTP client |
+| **@openrouter/sdk 0.3.14** | OpenRouter AI API wrapper |
 
 ### AI/ML and External APIs
 
@@ -60,6 +64,7 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 | **Google Gemini API** | Quiz generation, content generation |
 | **OpenRouter SDK** | AI code generation and analysis |
 | **Deepgram SDK 4.11.3** | Text-to-speech audio generation |
+| **Kokoro TTS (HuggingFace)** | Free neural TTS alternative |
 | **OCR Space API** | Resume text extraction |
 | **AWS S3 SDK** | File storage |
 | **GitHub API (Octokit)** | Repository analysis |
@@ -91,6 +96,13 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 - Configurable interview duration (default: 15 minutes)
 - Real-time timer with auto-end functionality
 - AI avatar visualization during interviews
+- **Body Language Monitor**: Real-time webcam analysis during interviews
+  - Face detection using face-api.js
+  - Eye contact tracking and scoring
+  - Emotion detection (happy, neutral, sad, fearful, angry)
+  - Confidence score calculation
+  - Visual feedback with color-coded indicators
+  - Toast notifications for real-time coaching
 - Voice activity detection (user speaking indicator)
 - AI evaluation and scoring after completion
 
@@ -145,7 +157,10 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 - Flashcard generation
 - Quiz generation from study materials
 - Chat interface for Q&A
-- Audio podcast generation (text-to-speech)
+- **Audio podcast generation**
+  - Deepgram TTS (primary)
+  - Kokoro TTS (fallback/free alternative)
+  - Chunk-based processing for long content
 - Activity logging
 - Multi-file study sessions
 
@@ -161,6 +176,10 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 - Monaco code editor integration
 - Code execution engine
 - AI code analysis and feedback
+- **Time & Space Complexity Analysis**
+  - Visual complexity chart comparing user's solution vs optimal
+  - Support for O(1), O(log n), O(n), O(n log n), O(n²) curves
+  - Real-time complexity evaluation
 - Topic tracking (DSA topics)
 - User progress tracking
 
@@ -217,6 +236,17 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 - Featured companies
 - Footer with links
 
+### 13. AI Avatar Visualization
+- 3D particle-based sphere animation
+- Professional corporate blue theme
+- Real-time status indicators:
+  - Active state (when AI/user is speaking)
+  - Idle state (when waiting)
+- Fibonacci sphere distribution for even particle placement
+- Breathing animation effect
+- Depth-based opacity and size scaling
+- Glow effects for front-facing particles
+
 ---
 
 ## Module Descriptions
@@ -233,8 +263,14 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 | Component | File Path | Description |
 |-----------|-----------|-------------|
 | AI Interview | `aiInterview.jsx` | Voice/text mock interview interface |
+| Body Language Monitor | `BodyLanguageMonitor.jsx` | Real-time face analysis during interviews |
+| AI Avatar Sphere | `AIAvatarSphere.jsx` | 3D animated avatar visualization |
 | Quiz | `quiz.jsx` | Interactive quiz interface |
 | Codex | `Codex.jsx` | DSA practice environment |
+| Complexity Chart | `ComplexityChart.jsx` | Time/space complexity visualization |
+| Problem Panel | `ProblemPanel.jsx` | Problem description and controls |
+| Editor Panel | `EditorPanel.jsx` | Monaco editor wrapper |
+| Output Panel | `OutputPanel.jsx` | Code execution output |
 | Build Resume | `BuildResume.jsx` | Resume builder with templates |
 | Analyse Resume | `analyseResume.jsx` | Resume analyzer |
 | Job Tracker Board | `jobTracker/Board.jsx` | Kanban job tracker |
@@ -306,6 +342,7 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 |---------|-------------|
 | `studyAI.service.js` | AI-powered study features |
 | `audio.service.js` | Text-to-speech generation |
+| `kokoro.service.js` | Kokoro TTS (HuggingFace) fallback |
 | `fileParser.service.js` | File parsing (PDF, DOCX, PPT) |
 | `githubAi.service.js` | GitHub analysis |
 
@@ -418,7 +455,17 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 
 ### HuggingFace Inference
 - **Use Cases:**
-  - Additional ML model inference (reserved for future use)
+  - Kokoro TTS (neural text-to-speech)
+  - Additional ML model inference
+
+### Kokoro TTS (HuggingFace)
+- **Model:** `hexgrad/Kokoro-82M`
+- **Features:**
+  - Free neural TTS voices
+  - No character limit (unlike DeepGram)
+  - Multiple voice options (e.g., "amy" British female)
+  - Used as fallback when DeepGram fails
+  - Can process unlimited text length
 
 ---
 
@@ -458,6 +505,18 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
 - **Use Cases:**
   - Resume text extraction
   - PDF parsing
+
+### Face-API.js Models (Local)
+- **Location:** `frontend/public/models/`
+- **Models:**
+  - `tiny_face_detector_model` - Lightweight face detection
+  - `face_landmark_68_model` - 68 facial landmarks
+  - `face_expression_model` - Expression classification
+- **Use Cases:**
+  - Real-time face detection during interviews
+  - Eye contact tracking
+  - Emotion detection
+  - Facial landmark visualization
 
 ---
 
@@ -567,6 +626,17 @@ This is a comprehensive **AI-Powered Interview Preparation Platform** - a full-s
   topic: ObjectId,
   difficulty: String (enum: easy, medium, hard),
   generatedBy: String (enum: ai, admin)
+}
+```
+
+### UserProgress Model
+```javascript
+{
+  userId: ObjectId,
+  topic: ObjectId,
+  solvedProblems: [ObjectId],
+  completion: Number (0-1),
+  timestamps
 }
 ```
 

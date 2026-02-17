@@ -41,6 +41,14 @@ const studySessionSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+    mindmap: {
+      type: Object,
+      default: null,
+    },
+    report: {
+      type: Object,
+      default: null,
+    },
     chatHistory: [chatMessageSchema],
   },
   {

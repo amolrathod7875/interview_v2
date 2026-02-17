@@ -4,9 +4,6 @@ import {
   FileText,
   CreditCard,
   ClipboardList,
-  Image,
-  Presentation,
-  Table,
 } from "lucide-react";
 import StudioWidget from "./StudioWidget";
 import ActivityLog from "./ActivityLog";
@@ -42,24 +39,6 @@ const STUDIO_WIDGETS = [
     icon: ClipboardList,
     label: "Quiz",
     description: "Test your understanding",
-  },
-  {
-    id: "infographic",
-    icon: Image,
-    label: "Infographic",
-    description: "Visual summaries",
-  },
-  {
-    id: "slides",
-    icon: Presentation,
-    label: "Slide Deck",
-    description: "Create presentations",
-  },
-  {
-    id: "datatable",
-    icon: Table,
-    label: "Data Table",
-    description: "Tabular data view",
   },
 ];
 

@@ -1,53 +1,28 @@
 const LoadingWave = () => {
-    return (
-        <>
-            <div className="loading-wave">
-                <div className="loading-bar" />
-                <div className="loading-bar" />
-                <div className="loading-bar" />
-                <div className="loading-bar" />
-            </div>
+  return (
+    <div className="w-full flex items-center justify-center py-6">
+      <div className="flex items-end gap-2 h-16">
+        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-0" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-100" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-200" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-300" style={{ height: '8px' }} />
+      </div>
 
-            <style>{`
-        .loading-wave {
-          width: 200px;
-          height: 100px;
-          display: flex;
-          justify-content: center;
-          align-items: flex-end;
+      <style>{`
+        .animate-wave { animation: wave 900ms ease-in-out infinite; display: inline-block; }
+        .delay-0 { animation-delay: 0ms; }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+
+        @keyframes wave {
+          0% { transform: scaleY(0.45); }
+          50% { transform: scaleY(1.6); }
+          100% { transform: scaleY(0.45); }
         }
-
-        .loading-bar {
-          width: 10px;
-          height: 10px;
-          margin: 0 5px;
-          background-color: #3b82f6;
-;
-          border-radius: 5px;
-          animation: loading-wave-animation 1s ease-in-out infinite;
-        }
-
-        .loading-bar:nth-child(2) {
-          animation-delay: 0.1s;
-        }
-
-        .loading-bar:nth-child(3) {
-          animation-delay: 0.2s;
-        }
-
-        .loading-bar:nth-child(4) {
-          animation-delay: 0.3s;
-        }
-
-     @keyframes loading-wave-animation {
-        0% { height: 10px; }
-        50% { height: 20px; } /* was 50px */
-        100% { height: 10px; }
-    }
-
       `}</style>
-        </>
-    )
-}
+    </div>
+  );
+};
 
-export default LoadingWave
+export default LoadingWave;
