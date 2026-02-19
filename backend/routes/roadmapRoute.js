@@ -1,7 +1,9 @@
 import e from "express";
 const router = e.Router()
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import roadmapModel from '../models/roadmapModel.js'
+import { getRoadmap, saveRoadmap } from '../config/oracleStorage.js'
+import { generateTopicKey } from '../utils/roadmapUtils.js'
 
 const getPrompt = (topic) => {
         return `Generate a learning roadmap for the topic: "${topic}".
@@ -33,31 +35,86 @@ Output format strict JSON as asked in prompt:
 }
 const generateRoadmap = async (topic) => {
     const prompt = getPrompt(topic);
-    const ai = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
     })
 
-    const geminiResponse = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
-        contents: prompt,
-    });
-    console.log(geminiResponse);
-    return geminiResponse
+    try {
+        const openaiResponse = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
+        });
+        console.log("OpenAI Response:", JSON.stringify(openaiResponse, null, 2));
+        return openaiResponse
+    } catch (error) {
+        console.error("OpenAI API Error:", error);
+        throw error;
+    }
 }
 
 router.post('/add', async (req, resp) => {
     try {
         const topic = req.body.topic;
-        const roadmap = await generateRoadmap(topic);
-        if (!roadmap.candidates) {
-            resp.status(500).json({ success: false, message: "something went wrong from external api" });
+        const topicKey = generateTopicKey(topic);
+        const userId = req.body.userId;
+        
+        // Step 1: Check Oracle bucket for global cached roadmap
+        let cachedRoadmap = null;
+        try {
+            cachedRoadmap = await getRoadmap(topicKey);
+            console.log(`[Roadmap] Cache check for '${topicKey}': ${cachedRoadmap ? 'HIT' : 'MISS'}`);
+        } catch (error) {
+            console.warn('[Roadmap] Oracle bucket check failed, falling back to LLM:', error.message);
         }
-        console.log(roadmap.candidates[0].content.parts[0].text)
-        const parsed = roadmap.candidates[0].content.parts[0].text.replace("```json", "").replace("```", "")
-        console.log(parsed)
-        const modifiedResponse = JSON.parse(parsed);
-        const dbResp = await roadmapModel.create({userId: req.body.userId, topic: req.body.topic, roadmap: modifiedResponse});
-        resp.json({ success: true, data: dbResp })
+        
+        let modifiedResponse;
+        
+        if (cachedRoadmap) {
+            // Cache hit - use cached roadmap
+            modifiedResponse = cachedRoadmap;
+            console.log(`[Roadmap] Using cached roadmap for topic: ${topic}`);
+        } else {
+            // Cache miss - generate via LLM
+            console.log(`[Roadmap] Generating new roadmap for topic: ${topic}`);
+            const roadmap = await generateRoadmap(topic);
+            
+            console.log("Roadmap response structure:", JSON.stringify(roadmap, null, 2));
+            
+            if (!roadmap || !roadmap.choices || !roadmap.choices[0]) {
+                console.error("Invalid roadmap response:", roadmap);
+                return resp.status(500).json({ success: false, message: "something went wrong from external api" });
+            }
+            
+            const rawText = roadmap.choices[0].message.content;
+            console.log("Raw text from OpenAI:", rawText);
+            
+            const parsed = rawText.replace("```json", "").replace("```", "");
+            console.log(parsed);
+            modifiedResponse = JSON.parse(parsed);
+            
+            // Save to Oracle bucket for future requests
+            try {
+                await saveRoadmap(topicKey, modifiedResponse);
+                console.log(`[Roadmap] Saved roadmap to Oracle bucket: ${topicKey}`);
+            } catch (error) {
+                console.warn('[Roadmap] Failed to save to Oracle bucket:', error.message);
+                // Continue - don't block user response
+            }
+        }
+        
+        // Always save to MongoDB for user progress tracking
+        const dbResp = await roadmapModel.create({
+            userId: userId,
+            topic: topic,
+            roadmap: modifiedResponse
+        });
+        
+        resp.json({ 
+            success: true, 
+            data: dbResp,
+            cached: !!cachedRoadmap
+        });
+        
     } catch (e) {
         resp.status(500).json({ success: false, message: e.message });
     }
