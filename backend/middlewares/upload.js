@@ -61,6 +61,3 @@ else {
 }
 
 export const upload = multer({ storage });
-
-// Memory-based upload – gives req.file.buffer for in-process parsing
-export const memoryUpload = multer({ storage: multer.memoryStorage() });
