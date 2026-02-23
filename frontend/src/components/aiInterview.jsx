@@ -7,8 +7,11 @@ import { PhoneOff, Mic, ArrowLeft, Zap } from "lucide-react"
 import { Spinner } from "./ui/spinner"
 import { motion } from "framer-motion"
 import LoadingWave from "./ui/LoadingWave"
-import AIAvatarSphere from "./AIAvatarSphere"
+import AIAvatar3D from "./AIAvatar3D"
+import BeyondPresenceAvatar from "./BeyondPresenceAvatar"
 import BodyLanguageMonitor from "./BodyLanguageMonitor"
+import InterviewAvatarControls from "./InterviewAvatarControls"
+import { useAudioAnalyzer } from "../hooks/useAudioAnalyzer"
 
 const messages = [
     "Generating Results...",
@@ -34,6 +37,17 @@ export default function AiInterview() {
     const [timeLeft, setTimeLeft] = useState(0)
     const [noOfQuestions, setNoOfQuestions] = useState(5)
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+
+    // Avatar state
+    const [avatarEnabled, setAvatarEnabled] = useState(true)
+    const [expression, setExpression] = useState('neutral')
+    const [showCaptions, setShowCaptions] = useState(false)
+    const [amplitude, setAmplitude] = useState(0)
+    const bpSessionRef = useRef(null)  // pre-warmed BP session (ref = no re-render)
+
+    // Audio analyzer
+    const { getSimulatedAmplitude } = useAudioAnalyzer()
+    const animationFrameRef = useRef(null)
 
 
     const navigate = useNavigate()
@@ -103,6 +117,30 @@ export default function AiInterview() {
     useEffect(() => {
         console.log("AI speaking:", aiSpeaking, "User speaking:", userSpeaking)
     }, [aiSpeaking, userSpeaking])
+
+    // Update amplitude for lip-sync (simulated since Vapi doesn't expose audio stream)
+    useEffect(() => {
+        if (!isActive) {
+            setAmplitude(0)
+            return
+        }
+
+        let animationId
+        const updateAmplitude = () => {
+            // Use simulated amplitude based on speaking state
+            const newAmplitude = getSimulatedAmplitude(aiSpeaking)
+            setAmplitude(newAmplitude)
+            animationId = requestAnimationFrame(updateAmplitude)
+        }
+
+        updateAmplitude()
+
+        return () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId)
+            }
+        }
+    }, [isActive, aiSpeaking, getSimulatedAmplitude])
 
     const hangUpInterview = async () => {
         try {
@@ -221,6 +259,23 @@ export default function AiInterview() {
 
     const startInterview = async () => {
         setLoading(true)
+
+        // Pre-warm LiveKit room credentials (but NOT BP session — that must happen
+        // after the client connects to the room, so BP joins an occupied room)
+        try {
+            const res = await fetch(`${API}/api/beyondpresence/create-session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+            if (res.ok) {
+                const data = await res.json()
+                bpSessionRef.current = data
+                console.log('[BP] Call pre-created ✅ callId:', data.callId, '| url:', data.livekitUrl ? 'present' : 'MISSING')
+            }
+        } catch (e) {
+            console.warn('[BP] Pre-warm failed, avatar will fetch its own credentials:', e.message)
+        }
+
         const assistantOptions = {
             name: "AI Recruiter",
             firstMessage: `Hi ${user?.name || user?.firstName || 'there'}, how are you? Ready for your interview on ${interview.topic || 'for your selected topic'}?`,
@@ -349,221 +404,68 @@ Key Guidelines:
     return (
         <div className="fixed inset-0 h-screen w-screen bg-white flex flex-col font-['Inter',sans-serif] overflow-hidden">
 
-            {/* Header - Professional Clean Design */}
-            <div className="flex justify-between items-center px-6 py-3 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+            {/* Header - Modern Clean Design */}
+            <div className="flex justify-between items-center px-6 py-4 bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#1A2B4B] to-[#007BFF] flex items-center justify-center shadow-md">
-                        <Zap className="h-5 w-5 text-white" />
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#1A2B4B] to-[#007BFF] flex items-center justify-center shadow-lg">
+                        <Zap className="h-6 w-6 text-white" />
                     </div>
-                    <h1 className="text-xl font-semibold text-[#1A2B4B] tracking-tight">
-                        AI Interview Session
-                    </h1>
+                    <div>
+                        <h1 className="text-xl font-bold text-[#1A2B4B] tracking-tight">
+                            AI Interview Session
+                        </h1>
+                        <p className="text-xs text-gray-500">
+                            {interview.topic}
+                        </p>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                     {/* Question Progress */}
-                    <div className="px-4 py-2 bg-[#007BFF]/10 text-[#1A2B4B] text-sm font-medium rounded-lg">
+                    <div className="px-4 py-2 bg-[#007BFF]/10 text-[#1A2B4B] text-sm font-semibold rounded-xl">
                         Question: {currentQuestionIndex}/{noOfQuestions}
                     </div>
 
                     {/* Timer */}
-                    <div className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                    <div className={`px-4 py-2 text-sm font-semibold rounded-xl ${
                         timeLeft < 60 ? 'bg-red-100 text-red-700' : 
                         timeLeft < 180 ? 'bg-orange-100 text-orange-700' : 
                         'bg-gray-100 text-gray-700'
                     }`}>
-                        Time: {formatTime(timeLeft)}
+                        {formatTime(timeLeft)}
                     </div>
 
-                    {/* Topic Badge */}
-                    <div className="px-4 py-2 bg-[#007BFF] text-white text-sm font-medium rounded-full shadow-sm">
-                        Topic: {interview.topic}
-                    </div>
+                    {/* Avatar Controls */}
+                    <InterviewAvatarControls
+                        avatarEnabled={avatarEnabled}
+                        onToggleAvatar={() => setAvatarEnabled(!avatarEnabled)}
+                        expression={expression}
+                        onExpressionChange={setExpression}
+                        showCaptions={showCaptions}
+                        onToggleCaptions={() => setShowCaptions(!showCaptions)}
+                    />
                 </div>
             </div>
 
-            {/* Main Content - Clean Professional Layout */}
-            <div className="flex-1 grid grid-cols-2 gap-4 p-4 bg-[#F8F9FA] overflow-hidden">
+            {/* Main Content - Avatar at Bottom Center */}
+            <div className="flex-1 flex items-end justify-center pb-4 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden">
 
-                {/* AI Agent Card - Professional White Design */}
-                <div className="bg-white rounded-2xl flex flex-col items-center justify-center gap-6 relative overflow-hidden shadow-lg border border-gray-100">
-                    
-                    {/* Subtle Blue Accent Background */}
-                    <div className="absolute inset-0">
-                        {aiSpeaking && (
-                            <motion.div
-                                className="absolute inset-0 bg-gradient-to-br from-[#007BFF]/5 to-transparent"
-                                animate={{
-                                    opacity: [0.3, 0.5, 0.3],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                            />
-                        )}
-                    </div>
-
-
-                    
-
-
-                    {/* AI Avatar Sphere */}
-                    <div className="relative z-10 h-[350px] w-[350px]">
-                        <AIAvatarSphere status={aiSpeaking ? 'active' : 'idle'} type="ai" />
-                    </div>
-
-                    {/* Voice Waveform Visualizer - Professional Blue */}
-                    {aiSpeaking && (
-                        <div className="flex gap-2 items-center h-16 relative z-10">
-                            {[...Array(9)].map((_, i) => (
-                                <motion.div
-                                    key={i}
-                                    className="w-2 rounded-full shadow-sm"
-                                    style={{
-                                        background: `linear-gradient(to top, #007BFF, #1A2B4B)`,
-                                    }}
-                                    animate={{
-                                        height: ["20px", "64px", "32px", "64px", "20px"],
-                                        opacity: [0.5, 1, 0.7, 1, 0.5],
-                                    }}
-                                    transition={{
-                                        duration: 1.5,
-                                        repeat: Infinity,
-                                        delay: i * 0.12,
-                                        ease: "easeInOut",
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Status Text - Professional */}
-                    <motion.div
-                        className="relative z-10 text-center"
-                        animate={{
-                            opacity: [1, 0.8, 1],
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: aiSpeaking ? Infinity : 0,
-                        }}
-                    >
-                        <p className="text-lg font-semibold text-[#1A2B4B] mb-2">
-                            {aiSpeaking ? "AI is Speaking" : "AI is Listening"}
-                        </p>
-                        {aiSpeaking && (
-                            <motion.div
-                                className="flex gap-1.5 justify-center"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                            >
-                                {[...Array(3)].map((_, i) => (
-                                    <motion.div
-                                        key={i}
-                                        className="w-2.5 h-2.5 rounded-full bg-[#007BFF]"
-                                        animate={{
-                                            scale: [1, 1.8, 1],
-                                            opacity: [0.4, 1, 0.4],
-                                        }}
-                                        transition={{
-                                            duration: 1.2,
-                                            repeat: Infinity,
-                                            delay: i * 0.2,
-                                        }}
-                                    />
-                                ))}
-                            </motion.div>
-                        )}
-                    </motion.div>
-                </div>
-
-                {/* User Card - Professional White Design */}
-                <div className="bg-white rounded-2xl flex flex-col items-center justify-center gap-6 relative overflow-hidden shadow-lg border border-gray-100">
-                    
-                    {/* Subtle Blue Accent Background */}
-                    <div className="absolute inset-0">
-                        {userSpeaking && (
-                            <motion.div
-                                className="absolute inset-0 bg-gradient-to-br from-[#007BFF]/5 to-transparent"
-                                animate={{
-                                    opacity: [0.3, 0.5, 0.3],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                            />
-                        )}
-                    </div>
-
-
-                    
-
-
-                    {/* Body Language Monitor */}
-                    <div className="relative z-10 w-full h-[350px] flex items-center justify-center">
-                        <BodyLanguageMonitor 
-                            isActive={isActive}
-                            showLandmarks={false}
-                        />
-                    </div>
-
-                    {/* Voice Waveform Visualizer - Professional Blue */}
-                    {/* Status Text - Professional */}
-                    <motion.div
-                        className="relative z-10 text-center"
-                        animate={{
-                            opacity: [1, 0.8, 1],
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: userSpeaking ? Infinity : 0,
-                        }}
-                    >
-                        <p className="text-lg font-semibold text-[#1A2B4B] mb-2">
-                            {userSpeaking ? "You are Speaking" : "You are Listening"}
-                        </p>
-                        {userSpeaking && (
-                            <motion.div
-                                className="flex gap-1.5 justify-center"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                            >
-                                {[...Array(3)].map((_, i) => (
-                                    <motion.div
-                                        key={i}
-                                        className="w-2.5 h-2.5 rounded-full bg-[#007BFF]"
-                                        animate={{
-                                            scale: [1, 1.8, 1],
-                                            opacity: [0.4, 1, 0.4],
-                                        }}
-                                        transition={{
-                                            duration: 1.2,
-                                            repeat: Infinity,
-                                            delay: i * 0.2,
-                                        }}
-                                    />
-                                ))}
-                            </motion.div>
-                        )}
-                    </motion.div>
+                {/* Avatar - Positioned at bottom center */}
+                <div className="h-[60vh] w-full flex items-end justify-center">
+                    <BeyondPresenceAvatar 
+                        isSpeaking={aiSpeaking}
+                        showAvatar={avatarEnabled}
+                        sessionData={bpSessionRef.current}
+                    />
                 </div>
             </div>
 
-            {/* Live Transcript Section */}
-            <div className="px-4 pb-2 flex-shrink-0">
-                <div className="bg-gradient-to-r from-[#007BFF]/5 to-[#1A2B4B]/5 rounded-xl p-4 max-h-32 overflow-y-auto border border-[#007BFF]/10">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-[#007BFF] animate-pulse" />
-                        <p className="text-xs font-semibold text-[#1A2B4B] uppercase tracking-wide">Live Transcript</p>
-                    </div>
-                    <div className="text-sm text-gray-600 leading-relaxed">
-                        {currentAnswer || "Waiting for conversation..."}
-                    </div>
-                </div>
+            {/* Candidate Video - Extra Large for full face visibility */}
+            <div className="absolute top-20 right-6 w-96 h-80 rounded-xl overflow-hidden shadow-2xl border-2 border-white/50 z-50 bg-black">
+                <BodyLanguageMonitor 
+                    isActive={isActive}
+                    showLandmarks={false}
+                />
             </div>
 
             {/* Professional Footer Controls */}

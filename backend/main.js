@@ -18,6 +18,7 @@ import buildRoutes from "./routes/buildRoutes.js";
 import codexCodeRoutes from "./routes/codexCodeRoutes.js";
 import codexAiRoutes from "./routes/codexAiRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
+import beyondPresenceRoute from "./routes/beyondPresenceRoute.js";
 
 // 🔥 GitHub
 import githubAuthRoutes from "./routes/githubAuth.routes.js";
@@ -72,6 +73,7 @@ app.use("/buildResume", buildRoutes);
 app.use("/codex/code", codexCodeRoutes);
 app.use("/codex/ai", codexAiRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/beyondpresence", beyondPresenceRoute);
 
 // GitHub
 app.use("/auth", githubAuthRoutes);
