@@ -1,7 +1,9 @@
 import e from "express";
 const router = e.Router()
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import roadmapModel from '../models/roadmapModel.js'
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const getPrompt = (topic) => {
         return `Generate a learning roadmap for the topic: "${topic}".
@@ -31,34 +33,43 @@ Output format strict JSON as asked in prompt:
 }
 `
 }
+
 const generateRoadmap = async (topic) => {
     const prompt = getPrompt(topic);
-    const ai = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY
-    })
 
-    const geminiResponse = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
-        contents: prompt,
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            {
+                role: "system",
+                content: "You are an expert learning roadmap generator. Always respond with valid JSON only — no markdown, no extra text."
+            },
+            {
+                role: "user",
+                content: prompt
+            }
+        ],
+        temperature: 0.7,
     });
-    console.log(geminiResponse);
-    return geminiResponse
+
+    console.log("✅ OpenAI roadmap response received");
+    return response.choices[0].message.content;
 }
 
 router.post('/add', async (req, resp) => {
     try {
         const topic = req.body.topic;
-        const roadmap = await generateRoadmap(topic);
-        if (!roadmap.candidates) {
-            resp.status(500).json({ success: false, message: "something went wrong from external api" });
-        }
-        console.log(roadmap.candidates[0].content.parts[0].text)
-        const parsed = roadmap.candidates[0].content.parts[0].text.replace("```json", "").replace("```", "")
-        console.log(parsed)
-        const modifiedResponse = JSON.parse(parsed);
-        const dbResp = await roadmapModel.create({userId: req.body.userId, topic: req.body.topic, roadmap: modifiedResponse});
-        resp.json({ success: true, data: dbResp })
+        const rawText = await generateRoadmap(topic);
+
+        // Strip any accidental markdown fences
+        const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+        console.log("Parsed roadmap text:", cleaned);
+
+        const modifiedResponse = JSON.parse(cleaned);
+        const dbResp = await roadmapModel.create({ userId: req.body.userId, topic: req.body.topic, roadmap: modifiedResponse });
+        resp.json({ success: true, data: dbResp });
     } catch (e) {
+        console.error("❌ Roadmap generation error:", e.message);
         resp.status(500).json({ success: false, message: e.message });
     }
 })

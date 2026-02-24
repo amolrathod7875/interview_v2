@@ -202,14 +202,15 @@ export default function StudyPage() {
     if (!studyData?.summary) return;
     setIsGeneratingAudio(true);
     try {
-      const response = await axios.post(`${API_BASE}/api/study/audio`, {
-        text: studyData.summary
-      });
+      const response = await axios.post(
+        `${API_BASE}/api/study/audio`,
+        { text: studyData.summary },
+        { responseType: "blob" }
+      );
       if (response.status === 200) {
         setHasAudio(true);
-        // Create blob URL from response
-        const audioBlob = await response.blob();
-        const url = URL.createObjectURL(audioBlob);
+        // response.data is already a Blob when responseType is 'blob'
+        const url = URL.createObjectURL(response.data);
         setAudioUrl(url);
       }
     } catch (error) {
