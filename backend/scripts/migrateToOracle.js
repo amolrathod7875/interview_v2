@@ -132,11 +132,11 @@ async function migrateFiles() {
         // Upload to Oracle
         const oracleUrl = await uploadToOracle(key, body, contentType)
         
-        console.log(`  ✓ Uploaded to: ${oracleUrl}`)
+        console.log(`   Uploaded to: ${oracleUrl}`)
         successCount++
         
       } catch (error) {
-        console.error(`  ✗ Error: ${error.message}`)
+        console.error(`   Error: ${error.message}`)
         errorCount++
       }
     }
@@ -155,7 +155,7 @@ async function migrateFiles() {
       process.exit(1)
     }
 
-    console.log('\n✓ Migration completed successfully!')
+    console.log('\n Migration completed successfully!')
     console.log('You can now switch to Oracle Cloud by:')
     console.log('1. Updating your production environment variables')
     console.log('2. Removing AWS credentials from deployment')

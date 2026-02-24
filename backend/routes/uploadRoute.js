@@ -2,21 +2,14 @@ import express from 'express'
 import multer from 'multer'
 import ResumeModel from '../models/resumeModel.js'
 import ocrSpacePkg from 'ocr-space-api-wrapper';
-import OpenAI from 'openai';
+import { callCohere } from '../services/cohere.service.js'
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { oracleStorage } from '../config/oracleStorage.js';
 import pdfParse from 'pdf-parse';
 
 const { ocrSpace } = ocrSpacePkg;
 const router = express.Router()
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_ROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-  defaultHeaders: {
-    'HTTP-Referer': 'https://ai-interview.app',
-    'X-Title': 'AI Interview Platform',
-  },
-});
+// Using Cohere for resume analysis instead of OpenAI/OpenRouter SDK
 
 // ── Memory storage: file stays in RAM as req.file.buffer ─────────────────────
 // No disk I/O, no Oracle download-to-process roundtrip.
@@ -144,21 +137,9 @@ ${text}
 
 export const analyseResume = async (text) => {
   try {
-    const response = await openai.chat.completions.create({
-      model: 'openai/gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a professional resume evaluator. Always respond with valid JSON only — no markdown, no extra text.'
-        },
-        {
-          role: 'user',
-          content: getPrompt(text)
-        }
-      ],
-      temperature: 0.3,
-    });
-    return response.choices[0].message.content;
+    const system = 'You are a professional resume evaluator. Always respond with valid JSON only — no markdown, no extra text.';
+    const cohereText = await callCohere(getPrompt(text), system, 1500, process.env.COHERE_API_KEY);
+    return cohereText;
   } catch (e) {
     console.error('[RESUME ANALYSE]', e.message);
     throw e;

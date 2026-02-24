@@ -12,7 +12,7 @@ export default function FileUploader({ onStart, onSuccess, onError, multiple = t
 
     const formData = new FormData();
     Array.from(files).forEach((file) => {
-      formData.append("files", file); // ✅ MUST match backend
+      formData.append("files", file); // MUST match backend
     });
 
     setUploading(true);
@@ -24,7 +24,7 @@ export default function FileUploader({ onStart, onSuccess, onError, multiple = t
         body: formData,
       });
 
-      // 🔥 Safely read response
+      // Safely read response
       const text = await res.text();
       let json;
 
@@ -38,7 +38,7 @@ export default function FileUploader({ onStart, onSuccess, onError, multiple = t
         throw new Error(json.message || "Processing failed");
       }
 
-      // ✅ Debug log to check what we received
+      // Debug log to check what we received
       console.log("Received study data:", {
         hasSummary: !!json.summary,
         hasFlashcards: !!json.flashcards,
@@ -47,7 +47,7 @@ export default function FileUploader({ onStart, onSuccess, onError, multiple = t
         hasReport: !!json.report,
       });
 
-      // ✅ Send clean data to StudyPage. Include mindmap/report if backend provided them.
+      // Send clean data to StudyPage. Include mindmap/report if backend provided them.
       onSuccess?.({
         studyData: {
           summary: json.summary,

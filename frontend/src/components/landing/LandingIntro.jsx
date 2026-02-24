@@ -8,7 +8,7 @@ export default function LandingPage() {
   return (
     <>
       <Hero />
-      <LandingIntro />   {/* 👈 directly below Hero */}
+      <LandingIntro />   {/* directly below Hero */}
       <Features />
       <CTA />
       <Footer />

@@ -4,7 +4,7 @@ const router = e.Router()
 
 import dotenv from 'dotenv'
 import { quizQuestionModel } from '../models/quizQuestionModel.js';
-import { GoogleGenAI } from '@google/genai';
+import { callCohere, parseCohereJSON } from '../services/cohere.service.js';
 import { quizAnswerModel } from '../models/quizAnswerModel.js';
 import resultModel from '../models/resultModel.js';
 import { quizResultModel } from '../models/quizResultModel.js';
@@ -28,22 +28,19 @@ const getPrompt = (topic, noOfQuestions) => {
 
 export const generateQuestions = async (topic, noOfQuestions) => {
     try {
-        const ai = new GoogleGenAI({
-            apiKey: process.env.GEMINI_API_KEY
-        })
-        // console.log(process.env.GEMINI_API_KEY)
         const prompt = getPrompt(topic, noOfQuestions);
-        const geminiResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash-lite",
-            contents: prompt,
-        });
-
-        const modifiedResp = geminiResponse.candidates[0].content.parts[0].text;
-        const parsedResponse = JSON.parse(modifiedResp);
+        // Use specific Cohere key for quiz feature
+        const raw = await callCohere(
+            prompt,
+            "You are a quiz generator. Respond with valid JSON only — no markdown, no extra text.",
+            1500,
+            process.env.COHERE_API_KEY_QUZ
+        );
+        const parsedResponse = parseCohereJSON(raw);
         return parsedResponse;
-    }
-    catch (e) {
-        console.log(e.message)
+    } catch (e) {
+        console.log('[QUIZ] Cohere error:', e.message);
+        throw e;
     }
 
 }

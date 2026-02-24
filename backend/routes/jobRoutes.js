@@ -94,7 +94,7 @@ router.put("/:id/notes", async (req, res) => {
 });
 
 /**
- * DELETE JOB 🗑
+ * DELETE JOB 
  */
 router.delete("/:id", async (req, res) => {
   try {

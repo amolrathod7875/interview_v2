@@ -315,9 +315,9 @@ export default function BodyLanguageMonitor({
         setEyeContactStatus((prev) => {
           if (prev !== newEyeStatus) {
             if (newEyeStatus === 'good') {
-              showNotification('✅ Great Eye Contact!', 'success', 'eyeContact', 2000);
+              showNotification('Great Eye Contact!', 'success', 'eyeContact', 2000);
             } else if (newEyeStatus === 'bad') {
-              showNotification('⚠️ Maintain Eye Contact', 'warning', 'eyeContact', 3000);
+              showNotification('Maintain Eye Contact', 'warning', 'eyeContact', 3000);
             }
           }
           return newEyeStatus;
@@ -325,9 +325,9 @@ export default function BodyLanguageMonitor({
         
         setCurrentEmotion((prev) => {
           if (prev !== emotion && emotion === 'happy') {
-            showNotification('😊 Great Expression!', 'success', 'emotion', 2000);
+            showNotification('Great Expression!', 'success', 'emotion', 2000);
           } else if (prev !== emotion && (emotion === 'fearful' || emotion === 'angry')) {
-            showNotification('😌 Stay Calm', 'info', 'emotion', 3000);
+            showNotification('Stay Calm', 'info', 'emotion', 3000);
           }
           return emotion;
         });
@@ -375,7 +375,7 @@ export default function BodyLanguageMonitor({
         if (mounted) {
           setIsInitialized(true);
           setIsLoading(false);
-          setToastMessage('🧠 Analysis Ready');
+          setToastMessage('Analysis Ready');
           setToastType('success');
           setShowToast(true);
           setTimeout(() => setShowToast(false), 2500);
@@ -385,7 +385,7 @@ export default function BodyLanguageMonitor({
           console.error('Failed to load face-api models:', err);
           setError('Failed to load AI models. Body language analysis unavailable.');
           setIsLoading(false);
-          setToastMessage('⚠️ Analysis Unavailable');
+          setToastMessage('Analysis Unavailable');
           setToastType('warning');
           setShowToast(true);
           setTimeout(() => setShowToast(false), 2500);

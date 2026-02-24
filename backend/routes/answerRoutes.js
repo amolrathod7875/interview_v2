@@ -1,7 +1,7 @@
 import e from "express";
 import { answerModel } from "../models/answerModel.js";
 import { questionModel } from "../models/questionModel.js";
-import { GoogleGenAI } from "@google/genai";
+import { callCohere } from '../services/cohere.service.js'
 import resultModel from "../models/resultModel.js";
 
 const router = e.Router()
@@ -36,18 +36,11 @@ const getEvaluation = async (interviewId) => {
         const questionResp = await questionModel.find({ interviewId: interviewId });
         const answerResp = await answerModel.find({ interviewId: interviewId });
         const prompt = getPrompt(questionResp, answerResp);
-        const ai = new GoogleGenAI({
-            apiKey: process.env.GEMINI_API_KEY
-        })
-
-        const geminiResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-        });
-        console.log(geminiResponse);
-        return geminiResponse
-    }
-    catch (e) {
+        const system = 'You are an expert evaluator. Return JSON only in the specified schema.';
+        const key = process.env.COHERE_API_KEY_GITHUB_ANALYSIS || process.env.COHERE_API_KEY;
+        const cohereResp = await callCohere(prompt, system, 2500, key);
+        return { candidates: [{ content: { parts: [{ text: cohereResp }] } }] };
+    } catch (e) {
         console.error(e);
     }
 }

@@ -74,7 +74,7 @@ const ComplexityChart = ({
       borderWidth: 1.2,
       pointRadius: 0,
       tension: 0.35,
-      animations: false // ❌ no animation
+      animations: false // no animation
     });
   });
 
@@ -131,7 +131,7 @@ const ComplexityChart = ({
         data={{ labels, datasets }}
         options={{
           responsive: true,
-          animation: false, // ❌ global animation OFF
+          animation: false, // global animation OFF
           plugins: {
             legend: {
               labels: {

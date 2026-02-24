@@ -270,7 +270,7 @@ export default function AiInterview() {
             if (res.ok) {
                 const data = await res.json()
                 bpSessionRef.current = data
-                console.log('[BP] Call pre-created ✅ callId:', data.callId, '| url:', data.livekitUrl ? 'present' : 'MISSING')
+                console.log('[BP] Call pre-created callId:', data.callId, '| url:', data.livekitUrl ? 'present' : 'MISSING')
             }
         } catch (e) {
             console.warn('[BP] Pre-warm failed, avatar will fetch its own credentials:', e.message)
@@ -301,7 +301,7 @@ export default function AiInterview() {
 You are an AI voice assistant conducting interviews.
 Your job is to ask candidates provided interview questions, assess their responses.
 
-🚨 CRITICAL RULE: Ask EXACTLY ${noOfQuestions} questions. NOT ${noOfQuestions + 1}, NOT ${noOfQuestions - 1}. EXACTLY ${noOfQuestions}. Count each question you ask and STOP at ${noOfQuestions}.
+CRITICAL RULE: Ask EXACTLY ${noOfQuestions} questions. NOT ${noOfQuestions + 1}, NOT ${noOfQuestions - 1}. EXACTLY ${noOfQuestions}. Count each question you ask and STOP at ${noOfQuestions}.
 
 You have EXACTLY ${noOfQuestions} questions available. DO NOT create new questions. ONLY use the provided questions below.
 

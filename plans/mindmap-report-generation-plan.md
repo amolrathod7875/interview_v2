@@ -265,11 +265,11 @@ Update to handle report from initial upload:
 
 ## Acceptance Criteria
 
-1. ✅ After file upload, mind map is auto-generated and saved
-2. ✅ After file upload, report is auto-generated and saved
-3. ✅ Clicking "Mind Map" shows interactive node-based visualization
-4. ✅ Clicking "Reports" shows formatted report with sections
-5. ✅ Data persists in database for session
-6. ✅ On-demand generation still works if not auto-generated
-7. ✅ Loading states shown during generation
-8. ✅ Error handling for failed generations
+1.  After file upload, mind map is auto-generated and saved
+2.  After file upload, report is auto-generated and saved
+3.  Clicking "Mind Map" shows interactive node-based visualization
+4.  Clicking "Reports" shows formatted report with sections
+5.  Data persists in database for session
+6.  On-demand generation still works if not auto-generated
+7.  Loading states shown during generation
+8.  Error handling for failed generations

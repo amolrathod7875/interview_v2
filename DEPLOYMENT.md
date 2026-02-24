@@ -1,10 +1,10 @@
-# 🚀 Deployment Guide - AI Interview Platform
+#  Deployment Guide - AI Interview Platform
 
 This guide walks you through deploying the AI Interview Platform to production.
 
 ---
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - [Vercel Account](https://vercel.com/) (for frontend)
 - [Render](https://render.com/) / [Railway](https://railway.app/) / [Heroku](https://heroku.com/) (for backend)
@@ -15,7 +15,7 @@ This guide walks you through deploying the AI Interview Platform to production.
 
 ---
 
-## 🎯 Deployment Architecture
+##  Deployment Architecture
 
 ```
 Frontend (Vercel) ←→ Backend (Render/Railway) ←→ MongoDB Atlas
@@ -299,7 +299,7 @@ Both Vercel and Render/Railway support automatic deployments:
 
 ---
 
-## 🔐 Security Checklist
+##  Security Checklist
 
 - [ ] All environment variables are set
 - [ ] MongoDB Atlas IP whitelist is configured
@@ -311,7 +311,7 @@ Both Vercel and Render/Railway support automatic deployments:
 
 ---
 
-## 📊 Monitoring
+##  Monitoring
 
 ### Backend Logs
 - **Render**: Dashboard → Logs tab
@@ -324,7 +324,7 @@ Both Vercel and Render/Railway support automatic deployments:
 
 ---
 
-## 💰 Cost Estimates
+##  Cost Estimates
 
 ### Free Tier Options
 - **Vercel**: Free for personal projects
@@ -359,7 +359,7 @@ Both Vercel and Render/Railway support automatic deployments:
 
 ---
 
-## 📞 Support
+##  Support
 
 If you encounter issues:
 1. Check service status pages
@@ -369,7 +369,7 @@ If you encounter issues:
 
 ---
 
-## 🎉 Success!
+##  Success!
 
 Your AI Interview Platform should now be live! 
 

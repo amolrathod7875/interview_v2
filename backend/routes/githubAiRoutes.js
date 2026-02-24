@@ -13,7 +13,7 @@ const router = express.Router();
   POST /api/ai/github/analyze
 */
 
-// 🔥 IMPORTANT: prevent cookie leakage to OpenRouter
+//  IMPORTANT: prevent cookie leakage to OpenRouter
 axios.defaults.withCredentials = false;
 
 router.post("/analyze", githubAuth, async (req, res) => {
@@ -114,7 +114,7 @@ Return JSON with exactly these fields:
           "HTTP-Referer": "http://localhost:5173",
           "X-Title": "Interview.io",
         },
-        withCredentials: false, // 🔥 ABSOLUTELY REQUIRED
+        withCredentials: false, //  ABSOLUTELY REQUIRED
       }
     );
 
@@ -144,7 +144,7 @@ Return JSON with exactly these fields:
     });
   } catch (err) {
     console.error(
-      "❌ GitHub AI Analyze Error:",
+      " GitHub AI Analyze Error:",
       err.response?.data || err.message
     );
     res.status(500).json({

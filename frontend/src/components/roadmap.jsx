@@ -5,7 +5,7 @@ import RoadmapTimeline from "./ui/RoadmapTimeline"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
-// ✅ Clean formatter for hover content
+// Clean formatter for hover content
 const formatHoverContent = (text) => {
   if (!text) return null
 
@@ -66,36 +66,59 @@ const Roadmap = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [roadmap, setRoadmap] = useState(null)
+  const [fromCache, setFromCache] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError("")
     setRoadmap(null)
+    setFromCache(false)
 
     try {
-      const res = await axios.post(`${API}/roadmap/add`, {
-        topic,
-        userId: localStorage.getItem("userUid"),
+      // Try using GET endpoint first (supports caching)
+      const res = await axios.get(`${API}/roadmap/${encodeURIComponent(topic)}`, {
+        params: { userId: localStorage.getItem("userUid") }
       })
 
       if (!res.data.success) {
-        throw new Error("Failed to generate roadmap")
+        throw new Error("Failed to fetch roadmap")
       }
 
-      setRoadmap(res.data.data.roadmap)
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Something went wrong"
-      )
+      setRoadmap(res.data.data.roadmap || res.data.data)
+      setFromCache(res.data.cached || false)
+      
+      // Show cache status in console
+      if (res.data.cached) {
+        console.log("[ROADMAP] Roadmap loaded from Oracle cache!")
+      }
+    } catch {
+      // Fallback to POST if GET fails
+      try {
+        const postRes = await axios.post(`${API}/roadmap/add`, {
+          topic,
+          userId: localStorage.getItem("userUid"),
+        })
+
+        if (!postRes.data.success) {
+          throw new Error("Failed to generate roadmap")
+        }
+
+        setRoadmap(postRes.data.data.roadmap)
+        setFromCache(postRes.data.cached || false)
+      } catch (postErr) {
+        setError(
+          postErr.response?.data?.message ||
+          postErr.message ||
+          "Something went wrong"
+        )
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // ✅ TIMELINE STRUCTURE
+  // TIMELINE STRUCTURE
   const roadmapLevels = roadmap
     ? [
         { title: "Beginner", items: roadmap.beginner || [] },
@@ -104,7 +127,7 @@ const Roadmap = () => {
       ]
     : []
 
-  // ✅ Loading state
+  // Loading state
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#f8fafc] gap-4">
@@ -162,7 +185,14 @@ const Roadmap = () => {
           </div>
         )}
 
-        {/* ✅ TIMELINE ROADMAP */}
+        {/* Cache Indicator */}
+        {fromCache && roadmap && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm flex items-center gap-2">
+            <span>Loaded from cache (Oracle Cloud) - No API cost!</span>
+          </div>
+        )}
+
+        {/* TIMELINE ROADMAP */}
         {roadmap && (
           <RoadmapTimeline
             levels={roadmapLevels}

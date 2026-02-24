@@ -1,16 +1,15 @@
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import { callCohere } from "./cohere.service.js";
 
-// 🔥 LOAD ENV
+// LOAD ENV
 dotenv.config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY_amol;
 const MODEL =
   process.env.OPENROUTER_MODEL_amol ||
   "nvidia/nemotron-3-nano-30b-a3b:free";
-// Prefer explicit OpenAI key for mindmap generation to avoid overloading OpenRouter
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+// (OpenAI/Gemini removed) Use Cohere / OpenRouter for LLM calls
 
 // Constants for content chunking
 const MAX_CHUNK_SIZE = 12000; // Leave room for prompt overhead
@@ -57,87 +56,79 @@ const chunkContent = (text, maxSize = MAX_CHUNK_SIZE) => {
   return chunks;
 };
 
-// Shared helper for calling OpenRouter API
-const callOpenRouter = async (prompt, systemMessage = "You generate detailed, structured study material in valid JSON only.") => {
+// Shared helper for calling OpenRouter API with Cohere fallback for study companion
+const callOpenRouter = async (
+  prompt,
+  systemMessage = "You generate detailed, structured study material in valid JSON only."
+) => {
+  // First, try OpenRouter as before
   if (!OPENROUTER_API_KEY) {
-    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
-  }
+    console.warn("[AI] OPENROUTER_API_KEY_amol missing — will attempt Cohere fallback if available");
+  } else {
+    try {
+      console.log("[AI] Using OpenRouter model:", MODEL);
+      console.log("[AI] Prompt length:", prompt.length);
 
-  console.log("[AI] Using model:", MODEL);
-  console.log("[AI] API Key present:", OPENROUTER_API_KEY ? 'Yes' : 'No');
-  console.log("[AI] Prompt length:", prompt.length);
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "Interview.io Study Companion",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            { role: "system", content: systemMessage },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.35,
+        }),
+      });
 
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "Interview.io Study Companion",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: systemMessage },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.35,
-      }),
+      if (response.ok) {
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content;
+        if (content) return content;
+        console.warn("[AI] OpenRouter returned empty content — falling back to Cohere");
+      } else {
+        const err = await response.text();
+        console.warn("[AI] OpenRouter API error:", response.status, err);
+      }
+    } catch (orErr) {
+      console.warn("[AI] OpenRouter request failed:", orErr.message);
     }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    console.error("❌ OpenRouter API error:", response.status, err);
-    throw new Error(`OpenRouter error (${response.status}): ${err}`);
   }
 
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-
-  if (!content) {
-    console.error("❌ Empty response. Full data:", JSON.stringify(data, null, 2));
-    throw new Error("Empty response from OpenRouter. Check API key and model availability.");
+  // If we reach here, OpenRouter failed — try Cohere as Plan B using COHERE_API_KEY_STUDY_COM
+  const cohereKey = process.env.COHERE_API_KEY_STUDY_COM;
+  if (!cohereKey) {
+    throw new Error("Both OpenRouter and COHERE_API_KEY_STUDY_COM are unavailable — cannot process request");
   }
 
-  return content;
+  console.log("[AI] Falling back to Cohere for study companion using COHERE_API_KEY_STUDY_COM");
+  try {
+    const text = await callCohere(prompt, systemMessage, 2048, cohereKey);
+    return text;
+  } catch (coErr) {
+    console.error("[AI] Cohere fallback failed:", coErr.message);
+    throw new Error("Both OpenRouter and Cohere failed: " + coErr.message);
+  }
 };
 
-// Simple OpenAI chat caller used for mindmap generation (smaller, cost-conscious model)
-const callOpenAI = async (prompt, systemMessage = "You generate valid JSON only.") => {
-  if (!OPENAI_API_KEY) {
-    throw new Error("OpenAI API key missing (OPENAI_API_KEY)");
+// Lightweight LLM caller for smaller tasks — use Cohere (replaces OpenAI/Gemini)
+const callSmallLLM = async (prompt, systemMessage = "You generate valid JSON only.") => {
+  const cohereKey = process.env.COHERE_API_KEY_STUDY_COM || process.env.COHERE_API_KEY;
+  if (!cohereKey) throw new Error("No Cohere API key available for small LLM calls");
+
+  try {
+    const text = await callCohere(prompt, systemMessage, 2500, cohereKey);
+    return text;
+  } catch (err) {
+    console.error("Small LLM (Cohere) error:", err.message);
+    throw err;
   }
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 2500,
-    }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    console.error("OpenAI error:", res.status, txt);
-    throw new Error(`OpenAI error (${res.status})`);
-  }
-
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Empty response from OpenAI");
-  return content;
 };
 
 // Clean and parse JSON from AI response
@@ -150,14 +141,14 @@ const parseAIResponse = (content) => {
 
     return JSON.parse(cleaned);
   } catch (err) {
-    console.error("❌ Invalid JSON from AI:\n", content);
+    console.error("Invalid JSON from AI:\n", content);
     throw new Error("AI returned invalid JSON");
   }
 };
 
 export const generateStudyMaterial = async (rawText) => {
   if (!OPENROUTER_API_KEY) {
-    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+    throw new Error(" OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
   console.log("[AI] Using model:", MODEL);
@@ -265,7 +256,7 @@ BEGIN.
   const content = await callOpenRouter(prompt);
   const parsed = parseAIResponse(content);
   
-  // 🔥 Debug: Log what we got
+  // Debug: Log what we got
   console.log("[AI] Generated content structure:", {
     hasSummary: !!parsed.summary,
     summaryLength: parsed.summary?.length,
@@ -281,7 +272,7 @@ BEGIN.
 // Generate quiz with custom question count
 export const generateQuiz = async (rawText, count = 5) => {
   if (!OPENROUTER_API_KEY) {
-    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+    throw new Error("OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
   console.log("[AI Quiz] Generating quiz with", count, "questions");
@@ -368,7 +359,7 @@ BEGIN.
  */
 export const answerQuestion = async (rawText, question) => {
   if (!OPENROUTER_API_KEY) {
-    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+    throw new Error("OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
   const prompt = `
@@ -425,7 +416,7 @@ Your Answer:
  */
 export const generateMindMap = async (rawText) => {
   if (!OPENROUTER_API_KEY) {
-    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+    throw new Error("OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
   console.log("[AI MindMap] Generating mind map...");
@@ -434,19 +425,22 @@ export const generateMindMap = async (rawText) => {
   if (rawText.length < 50) {
     throw new Error("Text too short to generate mind map");
   }
-  // First try OpenAI (cheaper for short structured outputs) if available
+  // First try Cohere (small structured output) then OpenRouter as fallback
   try {
-    if (OPENAI_API_KEY) {
-      const prompt = `You are an assistant that returns ONLY valid JSON describing a hierarchical mind map (nodes and edges).\n
+    const prompt = `You are an assistant that returns ONLY valid JSON describing a hierarchical mind map (nodes and edges).\n
 Input:\n"""\n${rawText.slice(0, 14000)}\n"""\n\nReturn an object {"nodes": [...], "edges": [...]} where nodes have id,label,level,parentId(optional),x,y. Keep labels short.`;
 
-      const aiContent = await callOpenAI(prompt, "Generate mindmap JSON only");
+    // Cohere small LLM call
+    try {
+      const aiContent = await callSmallLLM(prompt, "Generate mindmap JSON only");
       const parsed = parseAIResponse(aiContent);
-      console.log("[AI MindMap - OpenAI] Generated", parsed.nodes?.length || 0, "nodes and", parsed.edges?.length || 0, "edges");
+      console.log("[AI MindMap - Cohere] Generated", parsed.nodes?.length || 0, "nodes and", parsed.edges?.length || 0, "edges");
       if (parsed && Array.isArray(parsed.nodes)) return parsed;
+    } catch (coErr) {
+      console.warn('[AI MindMap] Cohere small LLM failed:', coErr.message);
     }
 
-    // Fallback to OpenRouter (existing) if OpenAI not available or fails
+    // Fallback to OpenRouter
     const promptOR = `You are an expert AI that creates mind maps from study material. Return ONLY valid JSON with nodes and edges.\n"""\n${rawText.slice(0,14000)}\n"""`;
     const contentOR = await callOpenRouter(promptOR, "You generate mind maps in valid JSON only.");
     const parsedOR = parseAIResponse(contentOR);
@@ -527,7 +521,7 @@ const generateFallbackMindMap = (text) => {
  */
 export const generateReport = async (rawText) => {
   if (!OPENROUTER_API_KEY) {
-    throw new Error("❌ OPENROUTER_API_KEY_amol missing in environment variables");
+    throw new Error(" OPENROUTER_API_KEY_amol missing in environment variables");
   }
 
   console.log("[AI Report] Generating report...");

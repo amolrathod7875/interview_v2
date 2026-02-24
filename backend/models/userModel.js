@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-    // ✅ GitHub connection info
+    //  GitHub connection info
     github: {
       connected: {
         type: Boolean,

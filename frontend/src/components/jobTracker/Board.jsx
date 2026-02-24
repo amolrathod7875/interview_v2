@@ -150,7 +150,7 @@ const Board = () => {
               title={col}
               jobs={data[col]}
               onNotesSave={updateNotesLocally}
-              onDelete={deleteJobLocally} // 🗑 DELETE SUPPORT
+              onDelete={deleteJobLocally} // DELETE SUPPORT
             />
           ))}
         </div>

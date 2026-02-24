@@ -135,7 +135,7 @@ const GithubRepoSelector = () => {
             <option value="">Select Repository</option>
             {repos.map((repo) => (
               <option key={repo.id} value={`${repo.owner}/${repo.name}`}>
-                {repo.owner}/{repo.name} {repo.private ? "🔒" : ""}
+                {repo.owner}/{repo.name} {repo.private ? "(private)" : ""}
               </option>
             ))}
           </select>

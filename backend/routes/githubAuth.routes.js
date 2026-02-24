@@ -44,12 +44,12 @@ router.get("/github/callback", async (req, res) => {
 
     const isProduction = process.env.NODE_ENV === "production";
     
-    console.log("🔑 Session ID created:", sessionId);
+    console.log(" Session ID created:", sessionId);
     console.log("⏰ Session expires in 7 days");
     
     // Instead of cookie, pass session ID via URL
     const redirectUrl = `${process.env.FRONTEND_URL}/github-repos?session=${sessionId}`;
-    console.log("✅ Redirecting to:", redirectUrl);
+    console.log(" Redirecting to:", redirectUrl);
     
     res.redirect(redirectUrl)
   } catch (err) {
@@ -64,7 +64,7 @@ setInterval(() => {
   for (const [sessionId, data] of tokenStore.entries()) {
     if (data.expires < now) {
       tokenStore.delete(sessionId)
-      console.log("🗑️ Cleaned up expired session:", sessionId)
+      console.log("️ Cleaned up expired session:", sessionId)
     }
   }
 }, 60 * 60 * 1000) // Every 1 hour

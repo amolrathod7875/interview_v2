@@ -33,7 +33,7 @@ router.post("/sync", async (req, res) => {
       data: user,
     });
   } catch (err) {
-    console.error("❌ USER SYNC ERROR:", err);
+    console.error(" USER SYNC ERROR:", err);
     res.status(500).json({
       success: false,
       message: "User sync failed",
@@ -69,7 +69,7 @@ router.get("/me", async (req, res) => {
       data: user,
     });
   } catch (err) {
-    console.error("❌ GET USER ERROR:", err);
+    console.error(" GET USER ERROR:", err);
     res.status(500).json({
       success: false,
       message: "Failed to fetch user",
@@ -119,7 +119,7 @@ router.put("/update", async (req, res) => {
       data: updatedUser,
     });
   } catch (err) {
-    console.error("❌ UPDATE USER ERROR:", err);
+    console.error(" UPDATE USER ERROR:", err);
     res.status(500).json({
       success: false,
       message: "User update failed",
@@ -168,7 +168,7 @@ router.post("/github/repo", async (req, res) => {
       data: user.github,
     });
   } catch (err) {
-    console.error("❌ SAVE GITHUB REPO ERROR:", err);
+    console.error(" SAVE GITHUB REPO ERROR:", err);
     res.status(500).json({
       success: false,
       message: "Failed to save GitHub repository",

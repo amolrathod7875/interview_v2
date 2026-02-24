@@ -57,7 +57,7 @@ const StyledWrapper = styled.div`
     align-items: center;
     justify-content: center;
 
-    background: #696060ff;   /* ⬛ black like others */
+    background: #696060ff;   /* black like others */
     border-radius: 10px;
     border: none;
 
@@ -69,7 +69,7 @@ const StyledWrapper = styled.div`
     position: absolute;
     width: 100%;
     height: 100%;
-    background: #696060ff;   /* 🔵 mail blue accent */
+    background: #696060ff;   /* mail blue accent */
     z-index: 0;
     border-radius: 10px;
     transition: all 0.3s ease;
@@ -81,7 +81,7 @@ const StyledWrapper = styled.div`
   }
 
   .Btn:not(.disabled):hover .svgContainer {
-    background-color: rgba(59, 130, 246, 0.25); /* 🔵 light blue glow */
+    background-color: rgba(59, 130, 246, 0.25); /* light blue glow */
     backdrop-filter: blur(4px);
   }
 `

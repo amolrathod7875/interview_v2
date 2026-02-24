@@ -415,11 +415,11 @@ const detectPoorLighting = (video) => {
 
 | Event | Message | Type | Duration |
 |-------|---------|------|----------|
-| Eye contact lost > 3s | "⚠️ Maintain eye contact" | warning | 2s |
-| Good eye contact | "✅ Great confidence!" | success | 1.5s |
-| Negative emotion detected | "😊 Try to smile!" | info | 2s |
-| Face not centered | "📍 Center your face" | warning | 2s |
-| Models loaded | "🧠 Analysis ready" | success | 1s |
+| Eye contact lost > 3s | "️ Maintain eye contact" | warning | 2s |
+| Good eye contact | " Great confidence!" | success | 1.5s |
+| Negative emotion detected | " Try to smile!" | info | 2s |
+| Face not centered | " Center your face" | warning | 2s |
+| Models loaded | " Analysis ready" | success | 1s |
 
 ## 8. Implementation Checklist
 

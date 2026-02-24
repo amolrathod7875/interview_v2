@@ -52,7 +52,7 @@ const ComplexityTheory = ({ analysis }) => {
 
       {/* Interview Tip */}
       <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded text-gray-600">
-        💡 <b>Interview Tip:</b> Always explain <i>why</i> your solution is
+        <b>Interview Tip:</b> Always explain <i>why</i> your solution is
         optimal, not just the Big-O.
       </div>
     </div>

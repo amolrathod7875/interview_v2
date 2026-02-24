@@ -32,7 +32,7 @@ const ProblemSchema = new mongoose.Schema(
       default: ""
     },
 
-    // ✅ NEW: LeetCode-style starter code
+    //  NEW: LeetCode-style starter code
     starterCode: {
       python: {
         type: String,

@@ -26,7 +26,7 @@ import AcademicSingleColumnATS from "./components/ui/AcademicSingleColumnATS";
 
 // CodeX
 import Codex from "./components/Codex";
-import ComplexityPage from "./pages/ComplexityPage"; // ✅ NEW
+import ComplexityPage from "./pages/ComplexityPage"; // NEW
 
 // Job Tracker
 import JobBoard from "./components/jobTracker/Board";
@@ -96,7 +96,7 @@ function App() {
           }
         />
 
-        {/* ✅ NEW: CODEX COMPLEXITY PAGE */}
+        {/* NEW: CODEX COMPLEXITY PAGE */}
         <Route
           path="/codex/complexity"
           element={

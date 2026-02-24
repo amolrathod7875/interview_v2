@@ -1,11 +1,11 @@
-ï»¿import express from 'express';
+import express from 'express';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const router = express.Router();
 
-// Cached agent_id â€” set from env (BEYOND_PRESENCE_AGENT_ID) or auto-created on first call
+// Cached agent_id — set from env (BEYOND_PRESENCE_AGENT_ID) or auto-created on first call
 let _cachedAgentId = process.env.BEYOND_PRESENCE_AGENT_ID || null;
 
 /**
@@ -52,7 +52,7 @@ async function ensureAgent() {
  * 1. Ensures a managed agent exists (creates one if needed)
  * 2. Creates a call via POST /v1/calls
  * 3. Returns livekit_url + livekit_token for the frontend to connect with
- *    â€” BP's avatar agent is already waiting in the room.
+ *    — BP's avatar agent is already waiting in the room.
  */
 router.post('/create-session', async (req, res) => {
   try {

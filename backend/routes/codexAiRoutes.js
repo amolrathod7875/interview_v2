@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import { callCohere, parseCohereJSON } from "../services/cohere.service.js";
 import mongoose from "mongoose";
 import Topic from "../models/Topic.js";
 import Problem from "../models/Problem.js";
@@ -39,15 +40,9 @@ router.post("/generate", authMiddleware, async (req, res) => {
     const topic = await Topic.findById(topicId);
     if (!topic) return res.status(404).json({ error: "Topic not found" });
 
-    const response = await axios.post(
-      OPENROUTER_URL,
-      {
-        model: process.env.OPENROUTER_MODEL_amol,
-        temperature: 0.3,
-        messages: [
-          {
-            role: "system",
-            content: `
+    // Try OpenRouter first; if it fails, fallback to Cohere using COHERE_API_KEY_CODEX
+    let parsed;
+    const systemMsg = `
 You are a LeetCode-style problem generator.
 
 Return ONLY valid JSON.
@@ -72,19 +67,35 @@ starterCode rules:
 - Template only
 - NO main / input / print
 - NO implementation
-`
-          }
-        ]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+`;
+    const userMsg = `Generate a ${difficulty} problem for topic: ${topic.name}`;
 
-    const parsed = JSON.parse(response.data.choices[0].message.content);
+    try {
+      const response = await axios.post(
+        OPENROUTER_URL,
+        {
+          model: process.env.OPENROUTER_MODEL_amol,
+          temperature: 0.3,
+          messages: [
+            { role: "system", content: systemMsg },
+            { role: "user", content: userMsg }
+          ]
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      parsed = JSON.parse(response.data.choices[0].message.content);
+    } catch (orErr) {
+      console.warn("[CODEX] OpenRouter failed, falling back to Cohere (COHERE_API_KEY_CODEX):", orErr.message);
+      const cohereKey = process.env.COHERE_API_KEY_CODEX;
+      const text = await callCohere(userMsg, systemMsg, 2048, cohereKey);
+      parsed = parseCohereJSON(text);
+    }
 
     const problem = await Problem.create({
       title: parsed.title,
@@ -106,7 +117,7 @@ starterCode rules:
 
     res.json(problem);
   } catch (err) {
-    console.error("❌ Problem generation failed:", err.message);
+    console.error(" Problem generation failed:", err.message);
     res.status(500).json({ error: "Failed to generate problem" });
   }
 });
@@ -125,24 +136,14 @@ router.post("/analyze", authMiddleware, async (req, res) => {
     const problem = await Problem.findById(problemId).populate("topic");
     if (!problem) return res.status(404).json({ error: "Problem not found" });
 
-    const response = await axios.post(
-      OPENROUTER_URL,
-      {
-        model: process.env.OPENROUTER_MODEL_amol,
-        temperature: 0.2,
-        messages: [
-          {
-            role: "system",
-            content: `
+    // Try OpenRouter first; fallback to Cohere (COHERE_API_KEY_CODEX) if OpenRouter errors
+    const analyzeSystemMsg = `
 You are a LeetCode solution evaluator.
 
 Return ONLY valid JSON.
 Judge logic only, not execution.
-`
-          },
-          {
-            role: "user",
-            content: `
+`;
+    const analyzeUserMsg = `
 Problem:
 ${problem.description}
 
@@ -156,19 +157,34 @@ JSON:
   "spaceComplexity": "O(...)",
   "improvements": ["string"]
 }
-`
-          }
-        ]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+`;
 
-    const raw = response.data.choices[0].message.content;
+    let raw;
+    try {
+      const response = await axios.post(
+        OPENROUTER_URL,
+        {
+          model: process.env.OPENROUTER_MODEL_amol,
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: analyzeSystemMsg },
+            { role: "user", content: analyzeUserMsg }
+          ]
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      raw = response.data.choices[0].message.content;
+    } catch (orErr) {
+      console.warn("[CODEX] OpenRouter analyze failed, falling back to Cohere (COHERE_API_KEY_CODEX):", orErr.message);
+      const cohereKey = process.env.COHERE_API_KEY_CODEX;
+      raw = await callCohere(analyzeUserMsg, analyzeSystemMsg, 1024, cohereKey);
+    }
     const match = raw.match(/\{[\s\S]*\}/);
 
     if (!match) {
@@ -198,12 +214,12 @@ JSON:
         await progress.save();
       }
     } catch (progressErr) {
-      console.warn("⚠️ Progress update skipped:", progressErr.message);
+      console.warn("️ Progress update skipped:", progressErr.message);
     }
 
     res.json(analysis);
   } catch (err) {
-    console.error("❌ Code analysis failed:", err.message);
+    console.error(" Code analysis failed:", err.message);
     res.status(500).json({ error: "Failed to analyze code" });
   }
 });

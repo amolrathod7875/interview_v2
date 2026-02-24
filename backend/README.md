@@ -1,24 +1,24 @@
-# 🤖 AI Interview Platform
+#  AI Interview Platform
 
 An intelligent full-stack web application that helps users prepare for technical interviews through AI-powered mock interviews, quizzes, real-time evaluation, and detailed feedback.
 
 ---
 
-## 🚀 Features
+##  Features
 
-- 🎤 **AI Mock Interview** (voice & text based)
-- 🧠 **AI Evaluation & Scoring**
-- 📝 **Interview Quiz Module**
-- 📄 **Resume Upload & Analysis**
-- 📊 **Dashboard with Readiness Score**
-- 🗂 **Interview History Tracking**
-- 🔐 **Authentication (Firebase)**
-- ☁️ **File Storage with AWS S3**
-- ⚡ Real-time interaction & feedback
+-  **AI Mock Interview** (voice & text based)
+-  **AI Evaluation & Scoring**
+-  **Interview Quiz Module**
+-  **Resume Upload & Analysis**
+-  **Dashboard with Readiness Score**
+-  **Interview History Tracking**
+-  **Authentication (Firebase)**
+- ️ **File Storage with AWS S3**
+-  Real-time interaction & feedback
 
 ---
 
-## 🧩 Tech Stack
+##  Tech Stack
 
 ### Frontend
 - React
@@ -39,7 +39,7 @@ An intelligent full-stack web application that helps users prepare for technical
 
 ---
 
-## ⚙️ Environment Variables
+## ️ Environment Variables
 
 ### Backend `.env`
 ```
@@ -65,7 +65,7 @@ VITE_APP_ID=your_firebase_app_id
 VITE_MEASUREMENT_ID=your_firebase_measurment_id
 VITE_VAPI_PUBLIC_KEY=your_vapi_api_public_key
 ```
-## 🖥️ Setup Instructions
+## ️ Setup Instructions
 
 ### 1️⃣ Clone the Repository
 
@@ -112,7 +112,7 @@ http://localhost:5173
 
 ---
 
-## 🧪 Key Modules
+##  Key Modules
 
 AI Interview → Conducts real-time AI interviews  
 Quiz Engine → Skill-based quizzes  
@@ -122,7 +122,7 @@ Dashboard → User performance & history
 
 ---
 
-## 📈 Future Enhancements
+##  Future Enhancements
 
 Company-specific interview simulations  
 Coding challenge environment  
@@ -131,6 +131,6 @@ AI career roadmap generator
 
 ---
 
-## 🧑‍💻 Author
+## ‍ Author
 
 Developed by Nilesh Kashani and team

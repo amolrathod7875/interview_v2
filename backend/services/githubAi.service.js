@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY_amol;
+import { callCohere } from "./cohere.service.js";
 
 export async function analyzeWithAI({
   repo,
@@ -9,9 +7,7 @@ export async function analyzeWithAI({
   techStack,
   paths,
 }) {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY missing");
-  }
+  // Use Cohere for GitHub analysis. The API key to use is COHERE_API_KEY_GITHUB_ANALYSIS
 
   const prompt = `
 You are a senior software engineer and technical interviewer.
@@ -36,25 +32,10 @@ Project Structure:
 ${paths.slice(0, 200).join("\n")}
 `;
 
-  const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model: "nvidia/nemotron-3-nano-30b-a3b:free",
-      messages: [
-        { role: "system", content: "You are an expert interviewer." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.4,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  const content = response.data.choices[0].message.content;
+  // Keep the same system persona but call Cohere instead, using the dedicated key
+  const systemMsg = "You are an expert interviewer.";
+  const cohereKey = process.env.COHERE_API_KEY_GITHUB_ANALYSIS;
+  const content = await callCohere(prompt, systemMsg, 2048, cohereKey);
 
   return {
     projectSummary: extractSection(content, "Summary"),

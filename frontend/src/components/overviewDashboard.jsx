@@ -6,13 +6,13 @@ import ScoreCircle from './ui/scoreCircle'
 import { Button } from './ui/button'
 import LoadingWave from './ui/LoadingWave'
 
-// ✅ Job Analytics
+// Job Analytics
 import JobAnalytics from './jobTracker/JobAnalytics'
 
-// ✅ GitHub Analysis Card
+// GitHub Analysis Card
 import GithubAnalysisCard from './dashboard/GithubAnalysisCard'
 
-// ✅ GitHub Icon
+// GitHub Icon
 import { FaGithub } from 'react-icons/fa'
 
 const API = import.meta.env.VITE_API_BASE_URL
@@ -23,7 +23,7 @@ const OverviewDashboard = () => {
   const [score, setScore] = useState(0)
   const [loading, setIsLoading] = useState(true)
 
-  // ✅ NEW: user profile
+  // NEW: user profile
   const [user, setUser] = useState(null)
 
   const navigate = useNavigate()
@@ -101,7 +101,7 @@ const OverviewDashboard = () => {
           </p>
         </div>
 
-        {/* ✅ GITHUB ANALYSIS CARD */}
+        {/* GITHUB ANALYSIS CARD */}
         <GithubAnalysisCard />
 
         {/* JOB ANALYTICS */}

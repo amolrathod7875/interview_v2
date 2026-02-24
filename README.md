@@ -40,7 +40,7 @@ An intelligent full-stack web application that helps users prepare for technical
 
 ---
 
-## ⚙️ Environment Variables
+## ️ Environment Variables
 
 ### Backend `.env`
 ```
@@ -72,7 +72,7 @@ VITE_MEASUREMENT_ID=your_firebase_measurment_id
 VITE_VAPI_PUBLIC_KEY=your_vapi_api_public_key
 VITE_API_BASE_URL=http://localhost:3000
 ```
-## 🖥️ Setup Instructions
+## ️ Setup Instructions
 
 ### 1️⃣ Clone the Repository
 

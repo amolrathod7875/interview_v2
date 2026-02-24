@@ -6,7 +6,7 @@ const RoadmapTimeline = ({ levels, formatHoverContent }) => {
   return (
     <div className="relative flex gap-10">
 
-      {/* 🔵 Vertical timeline line */}
+      {/* Vertical timeline line */}
       <div className="absolute left-5 top-0 bottom-0 w-[8px] bg-blue-500 rounded-full" />
 
       {/* Content */}
@@ -14,7 +14,7 @@ const RoadmapTimeline = ({ levels, formatHoverContent }) => {
         {levels.map((level, idx) => (
           <div key={idx} className="relative">
 
-            {/* 🔵 Timeline node */}
+            {/* Timeline node */}
             <div
               className="
                 absolute -left-[55px] top-2

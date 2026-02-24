@@ -181,7 +181,7 @@ const GithubAnalysisCard = () => {
                   </div>
                   {repo.private && (
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      🔒 Private
+                      Private
                     </span>
                   )}
                 </div>
@@ -283,7 +283,7 @@ const GithubAnalysisCard = () => {
                 {analysis.repo}
               </h3>
               <p className="text-sm text-green-600 font-medium">
-                ✓ Analysis Complete
+                Analysis Complete
               </p>
             </div>
           </div>

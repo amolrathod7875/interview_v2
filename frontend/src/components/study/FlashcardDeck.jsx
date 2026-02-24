@@ -56,7 +56,7 @@ export default function FlashcardDeck({ cards = [] }) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
         <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center">
-          <span className="text-3xl">📚</span>
+          <span className="text-3xl"></span>
         </div>
         <h3 className="text-lg font-semibold text-yellow-400">No Flashcards Available</h3>
         <p className="text-gray-400 text-sm max-w-md">
@@ -74,7 +74,7 @@ export default function FlashcardDeck({ cards = [] }) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
         <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
-          <span className="text-3xl">⚠️</span>
+          <span className="text-3xl"></span>
         </div>
         <h3 className="text-lg font-semibold text-red-400">Invalid Flashcard Data</h3>
         <p className="text-gray-400 text-sm">Some flashcards have missing content. Please regenerate the study material.</p>

@@ -1,12 +1,12 @@
-# ⚙️ Vercel Environment Variables Setup
+# ️ Vercel Environment Variables Setup
 
-## 🚨 IMPORTANT: Set These in Vercel Dashboard
+##  IMPORTANT: Set These in Vercel Dashboard
 
 After deploying your frontend to Vercel, you **MUST** configure environment variables in the Vercel dashboard.
 
 ---
 
-## 📍 Where to Set Environment Variables
+##  Where to Set Environment Variables
 
 1. Go to your Vercel project dashboard
 2. Click on **Settings** tab
@@ -15,7 +15,7 @@ After deploying your frontend to Vercel, you **MUST** configure environment vari
 
 ---
 
-## 🔧 Required Environment Variables
+##  Required Environment Variables
 
 ### Backend API URL (CRITICAL!)
 
@@ -23,7 +23,7 @@ After deploying your frontend to Vercel, you **MUST** configure environment vari
 VITE_API_BASE_URL=https://your-backend-url.onrender.com
 ```
 
-**⚠️ Replace with your actual backend URL:**
+**️ Replace with your actual backend URL:**
 - If using Render: `https://your-app-name.onrender.com`
 - If using Railway: `https://your-app.up.railway.app`
 - If using Heroku: `https://your-app.herokuapp.com`
@@ -54,7 +54,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 ---
 
-## 🎯 Step-by-Step Guide
+##  Step-by-Step Guide
 
 ### 1. Get Your Backend URL
 
@@ -87,7 +87,7 @@ https://ai-interview-backend.up.railway.app
 
 ### 3. Redeploy After Adding Variables
 
-⚠️ **Environment variables only take effect after redeployment!**
+️ **Environment variables only take effect after redeployment!**
 
 Option A: Push a new commit
 ```bash
@@ -102,7 +102,7 @@ Option B: Manual redeploy in Vercel
 
 ---
 
-## ✅ Verify Setup
+##  Verify Setup
 
 After redeployment:
 
@@ -119,14 +119,14 @@ After redeployment:
 
 ---
 
-## 🐛 Common Issues
+##  Common Issues
 
 ### Issue: Still getting 404 errors
 
 **Solution:**
 1. Verify `VITE_API_BASE_URL` has no trailing slash
 2. Check backend is running: Visit `https://your-backend-url.onrender.com/` in browser
-3. Should see: `{"status":"Active","message":"Backend is running successfully 🚀"}`
+3. Should see: `{"status":"Active","message":"Backend is running successfully "}`
 
 ### Issue: CORS errors persist
 
@@ -144,7 +144,7 @@ After redeployment:
 
 ---
 
-## 📝 Quick Checklist
+##  Quick Checklist
 
 - [ ] Backend is deployed and running
 - [ ] Backend URL is noted (e.g., `https://ai-interview-backend.onrender.com`)
@@ -156,7 +156,7 @@ After redeployment:
 
 ---
 
-## 💡 Pro Tips
+##  Pro Tips
 
 1. **Use different Firebase projects** for dev and production
 2. **Set up preview environments** in Vercel with staging backend
@@ -166,7 +166,7 @@ After redeployment:
 
 ---
 
-## 🔗 Useful Links
+##  Useful Links
 
 - [Vercel Environment Variables Docs](https://vercel.com/docs/concepts/projects/environment-variables)
 - [Vite Environment Variables](https://vitejs.dev/guide/env-and-mode.html)
@@ -174,7 +174,7 @@ After redeployment:
 
 ---
 
-## 📞 Need Help?
+##  Need Help?
 
 If you're still having issues:
 1. Check Vercel deployment logs

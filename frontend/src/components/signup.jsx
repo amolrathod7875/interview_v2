@@ -30,7 +30,7 @@ export default function Signup() {
       localStorage.setItem("userUid", resp.uid)
       localStorage.setItem("name", resp.displayName || name)
 
-      // ✅ SYNC USER WITH MONGODB
+      // SYNC USER WITH MONGODB
       await axios.post(`${API}/user/sync`, {
         name: resp.displayName || name,
         email: resp.email,
@@ -56,7 +56,7 @@ export default function Signup() {
       localStorage.setItem("userUid", resp.uid)
       localStorage.setItem("name", resp.displayName || "")
 
-      // ✅ SYNC USER WITH MONGODB
+      // SYNC USER WITH MONGODB
       await axios.post(`${API}/user/sync`, {
         name: resp.displayName || "",
         email: resp.email,

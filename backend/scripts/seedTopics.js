@@ -14,7 +14,7 @@ dotenv.config({
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error("❌ MONGO_URI not found in .env");
+  console.error(" MONGO_URI not found in .env");
   process.exit(1);
 }
 
@@ -35,15 +35,15 @@ const topics = [
 const seed = async () => {
   try {
     await mongoose.connect(MONGO_URI);
-    console.log("✅ MongoDB connected");
+    console.log(" MongoDB connected");
 
     await Topic.deleteMany();
     await Topic.insertMany(topics);
 
-    console.log("🔥 Topics seeded successfully");
+    console.log(" Topics seeded successfully");
     process.exit();
   } catch (err) {
-    console.error("❌ Seeding failed:", err.message);
+    console.error(" Seeding failed:", err.message);
     process.exit(1);
   }
 };

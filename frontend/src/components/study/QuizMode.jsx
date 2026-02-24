@@ -94,7 +94,7 @@ export default function QuizMode({ questions: initialQuestions, sessionId, study
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
         <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center">
-          <span className="text-3xl">📝</span>
+          <span className="text-3xl"></span>
         </div>
         <h3 className="text-lg font-semibold text-yellow-400">No Quiz Available</h3>
         <p className="text-gray-400 text-sm max-w-md">
@@ -166,7 +166,7 @@ export default function QuizMode({ questions: initialQuestions, sessionId, study
             isPassing ? "bg-green-500/20" : "bg-yellow-500/20"
           }`}>
             <span className={`text-4xl ${isPassing ? "text-green-400" : "text-yellow-400"}`}>
-              {isPassing ? "🎉" : "📚"}
+              {isPassing ? "Great job!" : "Study more!"}
             </span>
           </div>
           

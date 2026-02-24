@@ -1,6 +1,6 @@
 # Environment Variables Configuration
 
-## 🔧 Backend Environment Variables (.env)
+##  Backend Environment Variables (.env)
 
 Create a `.env` file in the `backend/` directory:
 
@@ -32,7 +32,7 @@ NODE_ENV=production
 
 ---
 
-## 🎨 Frontend Environment Variables (.env)
+##  Frontend Environment Variables (.env)
 
 Create a `.env` file in the `frontend/` directory:
 
@@ -55,7 +55,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 ---
 
-## 📝 How to Obtain API Keys
+##  How to Obtain API Keys
 
 ### MongoDB Atlas
 1. Go to https://www.mongodb.com/cloud/atlas
@@ -94,7 +94,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 ---
 
-## 🚀 For Production Deployment
+##  For Production Deployment
 
 ### Vercel (Frontend)
 Set environment variables in: **Project Settings → Environment Variables**
@@ -103,15 +103,15 @@ Set environment variables in: **Project Settings → Environment Variables**
 Set environment variables in: **Environment tab** or **Variables section**
 
 ### Important Notes:
-- ✅ Never commit `.env` files to Git
-- ✅ Use different keys for development and production
-- ✅ Keep your API keys secure
-- ✅ Rotate keys regularly
-- ✅ Use environment-specific values (dev, staging, prod)
+-  Never commit `.env` files to Git
+-  Use different keys for development and production
+-  Keep your API keys secure
+-  Rotate keys regularly
+-  Use environment-specific values (dev, staging, prod)
 
 ---
 
-## ✅ Verification Checklist
+##  Verification Checklist
 
 Before deploying, ensure:
 - [ ] All required environment variables are set
@@ -125,7 +125,7 @@ Before deploying, ensure:
 
 ---
 
-## 🔒 Security Best Practices
+##  Security Best Practices
 
 1. **Never expose** API keys in client-side code
 2. Use **VITE_** prefix for Vite environment variables

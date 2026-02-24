@@ -44,7 +44,7 @@ export const updateJobNotes = async (id, notes) => {
 };
 
 /**
- * DELETE JOB 🗑
+ * DELETE JOB 
  */
 export const deleteJob = async (id) => {
   await fetch(`${BASE_URL}/api/jobs/${id}`, {

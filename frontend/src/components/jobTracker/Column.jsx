@@ -24,7 +24,7 @@ const Column = ({ title, jobs, onNotesSave, onDelete }) => {
                 job={job}
                 index={index}
                 onNotesSave={onNotesSave}
-                onDelete={onDelete}   // 🗑 PASS DELETE CALLBACK
+                onDelete={onDelete}   // PASS DELETE CALLBACK
               />
             ))}
             {provided.placeholder}

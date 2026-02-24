@@ -28,7 +28,7 @@ const LANGUAGE_MAP = {
  * body: { language, code, stdin? }
  */
 router.post("/execute", async (req, res) => {
-  console.log("🔥 /codex/code/execute HIT");
+  console.log(" /codex/code/execute HIT");
 
   const { language, code, stdin = "" } = req.body;
 
@@ -59,7 +59,7 @@ router.post("/execute", async (req, res) => {
     );
 
     const result = judge0Res.data;
-    console.log("✅ Judge0 status:", result.status?.description);
+    console.log(" Judge0 status:", result.status?.description);
 
     // status id 3 = Accepted (success), others are errors/TLE/etc.
     const success = result.status?.id === 3;
@@ -69,7 +69,7 @@ router.post("/execute", async (req, res) => {
     return res.json({ success, output, error: errOut });
 
   } catch (error) {
-    console.error("❌ JUDGE0 ERROR:", error.message);
+    console.error(" JUDGE0 ERROR:", error.message);
     if (error.response) {
       console.error("   Status:", error.response.status);
       console.error("   Data:",   JSON.stringify(error.response.data));

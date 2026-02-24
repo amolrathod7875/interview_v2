@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai'
+import { callCohere } from '../services/cohere.service.js'
 import e from 'express'
 import { questionModel } from '../models/questionModel.js'
 import dotenv from 'dotenv'
@@ -40,32 +40,26 @@ ${questionsList}
 
 export const generateQuestions = async (topic, experience, skills, interviewId, numQuestions = 9) => {
     try {
-        const ai = new GoogleGenAI({
-            apiKey: process.env.GEMINI_API_KEY
-        })
         const prompt = getPrompt(topic, experience, skills, numQuestions);
-        const geminiResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash-lite",
-            contents: prompt,
-        });
-        const modifiedResp = geminiResponse.candidates[0].content.parts[0].text;
-        const parsedResponse = JSON.parse(modifiedResp);
+        const system = `You generate exactly ${numQuestions} interview questions as a JSON array. Return JSON only.`;
+        const key = process.env.COHERE_API_KEY_QUZ || process.env.COHERE_API_KEY;
+        const cohereResp = await callCohere(prompt, system, 1500, key);
+        const parsedResponse = JSON.parse(cohereResp);
 
         for (const r of parsedResponse) {
-            questionModel.create({
+            await questionModel.create({
                 interviewId: interviewId,
                 text: r.text,
                 qNo: r.qNo,
                 postOfInterview: topic
             })
         }
-        
+
         return { 
             success: "true",
             message: "added to database successfully"
         }
-    }
-    catch (e) {
+    } catch (e) {
         console.log(e);
         return { message: e }
     }

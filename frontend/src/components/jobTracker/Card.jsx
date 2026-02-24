@@ -109,7 +109,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
                     job.company
                   )}`}
                 >
-                  {job.company?.charAt(0).toUpperCase() || "🏢"}
+                  {job.company?.charAt(0).toUpperCase() || "B"}
                 </div>
               )}
 
@@ -145,7 +145,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
           {/* Notes Preview */}
           {job.notes && !showNotes && (
             <p className="mt-3 text-sm text-gray-600 line-clamp-2">
-              📝 {job.notes}
+              {job.notes}
             </p>
           )}
 

@@ -20,7 +20,7 @@ import codexAiRoutes from "./routes/codexAiRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import beyondPresenceRoute from "./routes/beyondPresenceRoute.js";
 
-// 🔥 GitHub
+//  GitHub
 import githubAuthRoutes from "./routes/githubAuth.routes.js";
 import githubApiRoutes from "./routes/githubApi.routes.js";
 import githubAiRoutes from "./routes/githubAiRoutes.js";
@@ -31,9 +31,9 @@ const app = express();
 
 /* ================= MIDDLEWARE ================= */
 
-// ⚠️ IMPORTANT
-// ❌ DO NOT parse multipart here
-// ✅ JSON only for non-file routes
+// ️ IMPORTANT
+//  DO NOT parse multipart here
+//  JSON only for non-file routes
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
@@ -55,15 +55,15 @@ app.use(
   })
 );
 
-// 🔍 DEBUG incoming requests (keep for now)
+//  DEBUG incoming requests (keep for now)
 app.use((req, _res, next) => {
-  console.log(`➡️ ${req.method} ${req.originalUrl}`);
+  console.log(`️ ${req.method} ${req.originalUrl}`);
   next();
 });
 
 /* ================= ROUTES ================= */
 
-// ✅ FILE UPLOAD ROUTE — MUST COME FIRST
+//  FILE UPLOAD ROUTE — MUST COME FIRST
 app.use("/api/study", studyRoutes);
 
 // Core routes
@@ -92,17 +92,17 @@ app.use("/api/ai/github", githubAiRoutes);
 app.get("/", (_req, res) => {
   res.json({
     status: "Active",
-    message: "Backend is running successfully 🚀",
+    message: "Backend is running successfully ",
   });
 });
 
 /* ================= GLOBAL ERROR HANDLER ================= */
 /**
- * 🔥 THIS IS THE KEY FIX
+ *  THIS IS THE KEY FIX
  * Multer + Express errors will ALWAYS return JSON now
  */
 app.use((err, _req, res, _next) => {
-  console.error("❌ GLOBAL ERROR:", err);
+  console.error(" GLOBAL ERROR:", err);
 
   // Multer file errors
   if (err.name === "MulterError") {
@@ -122,15 +122,15 @@ app.use((err, _req, res, _next) => {
 /* ================= DATABASE ================= */
 
 if (!process.env.MONGO_URI) {
-  console.error("❌ MONGO_URI missing in .env");
+  console.error(" MONGO_URI missing in .env");
   process.exit(1);
 }
 
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Atlas connected"))
+  .then(() => console.log(" MongoDB Atlas connected"))
   .catch((err) => {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error(" MongoDB connection failed:", err.message);
     process.exit(1);
   });
 
@@ -138,5 +138,5 @@ mongoose
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🔥 Server running on port ${PORT}`);
+  console.log(` Server running on port ${PORT}`);
 });

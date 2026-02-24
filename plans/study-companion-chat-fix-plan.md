@@ -170,11 +170,11 @@ If OpenRouter fails:
 ## Expected Outcome
 
 After implementing this plan:
-1. ✅ Candidates can ask unlimited questions about their study materials
-2. ✅ Sessions persist across server restarts
-3. ✅ Better error messages guide users
-4. ✅ Faster response times with optimized text handling
-5. ✅ Full chat history available for review
+1.  Candidates can ask unlimited questions about their study materials
+2.  Sessions persist across server restarts
+3.  Better error messages guide users
+4.  Faster response times with optimized text handling
+5.  Full chat history available for review
 
 ---
 

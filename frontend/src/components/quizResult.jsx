@@ -59,9 +59,9 @@ const QuizResult = () => {
 
         {/* Feedback */}
         <div className="text-sm text-gray-600">
-          {percentage >= 80 && "Excellent work! You really know your stuff 👏"}
-          {percentage >= 50 && percentage < 80 && "Good job! A little more practice will make it perfect 💪"}
-          {percentage < 50 && "Keep practicing — you'll improve fast 🚀"}
+          {percentage >= 80 && "Excellent work! You really know your stuff"}
+          {percentage >= 50 && percentage < 80 && "Good job! A little more practice will make it perfect"}
+          {percentage < 50 && "Keep practicing — you'll improve fast"}
         </div>
 
         {/* Actions */}

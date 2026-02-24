@@ -5,7 +5,7 @@
 
 ---
 
-## 🚨 CRITICAL: Backend Server Not Running
+##  CRITICAL: Backend Server Not Running
 
 The error shows `net::ERR_CONNECTION_REFUSED` which means **your backend server is not running**.
 

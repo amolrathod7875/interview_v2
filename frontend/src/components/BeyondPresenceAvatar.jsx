@@ -31,7 +31,7 @@ export default function BeyondPresenceAvatar({
     const doIt = () => {
       track.attach(videoRef.current)
       setVideoAttached(true)
-      console.log('[BP] ✅ Avatar video attached')
+      console.log('[BP] Avatar video attached')
     }
     if (videoRef.current) {
       doIt()
@@ -94,7 +94,7 @@ export default function BeyondPresenceAvatar({
 
       // ── TrackSubscribed: attach video ─────────────────────────────────────
       room.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
-        console.log(`[BP] ✅ Track subscribed: ${track.kind} from "${participant.identity}"`)
+        console.log(`[BP] Track subscribed: ${track.kind} from "${participant.identity}"`)
         if (track.kind === 'video') {
           // Stop the poll — we found the video
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
@@ -109,7 +109,7 @@ export default function BeyondPresenceAvatar({
 
       // ── Connected: BP managed agent is already in the room — just scan + poll ──
       room.on(RoomEvent.Connected, async () => {
-        console.log('[BP] ✅ Connected to LiveKit room (BP managed agent)')
+        console.log('[BP] Connected to LiveKit room (BP managed agent)')
         setIsConnected(true)
         setIsLoading(false)
 
