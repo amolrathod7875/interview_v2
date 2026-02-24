@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.966.0",
+    "@aws-sdk/s3-request-presigner": "^3.996.0",
     "@bey-dev/sdk": "^0.0.1",
     "@deepgram/sdk": "^4.11.3",
     "@google/genai": "^1.34.0",

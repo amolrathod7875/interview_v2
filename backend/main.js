@@ -37,6 +37,13 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
+// Fix: Allow Firebase signInWithPopup to work by removing COOP restrictions
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "unsafe-none");
+  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
+  next();
+});
+
 app.use(
   cors({
     origin: [

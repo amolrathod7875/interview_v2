@@ -3,7 +3,14 @@ const router = e.Router()
 import OpenAI from "openai";
 import roadmapModel from '../models/roadmapModel.js'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPEN_ROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': 'https://ai-interview.app',
+    'X-Title': 'AI Interview Platform',
+  },
+});
 
 const getPrompt = (topic) => {
         return `Generate a learning roadmap for the topic: "${topic}".
@@ -38,7 +45,7 @@ const generateRoadmap = async (topic) => {
     const prompt = getPrompt(topic);
 
     const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         messages: [
             {
                 role: "system",
