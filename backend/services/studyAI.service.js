@@ -1,15 +1,11 @@
-import fetch from "node-fetch";
 import dotenv from "dotenv";
 import { callCohere } from "./cohere.service.js";
 
 // LOAD ENV
 dotenv.config();
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY_amol;
-const MODEL =
-  process.env.OPENROUTER_MODEL_amol ||
-  "nvidia/nemotron-3-nano-30b-a3b:free";
-// (OpenAI/Gemini removed) Use Cohere / OpenRouter for LLM calls
+// Study Companion uses COHERE_API_KEY_STUDY_COM directly (no OpenRouter)
+const STUDY_COHERE_KEY = () => process.env.COHERE_API_KEY_STUDY_COM;
 
 // Constants for content chunking
 const MAX_CHUNK_SIZE = 12000; // Leave room for prompt overhead
@@ -56,70 +52,30 @@ const chunkContent = (text, maxSize = MAX_CHUNK_SIZE) => {
   return chunks;
 };
 
-// Shared helper for calling OpenRouter API with Cohere fallback for study companion
+// Primary caller for Study Companion — uses COHERE_API_KEY_STUDY_COM directly
 const callOpenRouter = async (
   prompt,
-  systemMessage = "You generate detailed, structured study material in valid JSON only."
+  systemMessage = "You generate detailed, structured study material in valid JSON only.",
+  maxTokens = 4096
 ) => {
-  // First, try OpenRouter as before
-  if (!OPENROUTER_API_KEY) {
-    console.warn("[AI] OPENROUTER_API_KEY_amol missing — will attempt Cohere fallback if available");
-  } else {
-    try {
-      console.log("[AI] Using OpenRouter model:", MODEL);
-      console.log("[AI] Prompt length:", prompt.length);
-
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:3000",
-          "X-Title": "Interview.io Study Companion",
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            { role: "system", content: systemMessage },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.35,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data?.choices?.[0]?.message?.content;
-        if (content) return content;
-        console.warn("[AI] OpenRouter returned empty content — falling back to Cohere");
-      } else {
-        const err = await response.text();
-        console.warn("[AI] OpenRouter API error:", response.status, err);
-      }
-    } catch (orErr) {
-      console.warn("[AI] OpenRouter request failed:", orErr.message);
-    }
-  }
-
-  // If we reach here, OpenRouter failed — try Cohere as Plan B using COHERE_API_KEY_STUDY_COM
-  const cohereKey = process.env.COHERE_API_KEY_STUDY_COM;
+  const cohereKey = STUDY_COHERE_KEY();
   if (!cohereKey) {
-    throw new Error("Both OpenRouter and COHERE_API_KEY_STUDY_COM are unavailable — cannot process request");
+    throw new Error("COHERE_API_KEY_STUDY_COM is missing — cannot process request");
   }
 
-  console.log("[AI] Falling back to Cohere for study companion using COHERE_API_KEY_STUDY_COM");
+  console.log("[AI] Using Cohere (COHERE_API_KEY_STUDY_COM) | prompt length:", prompt.length);
   try {
-    const text = await callCohere(prompt, systemMessage, 2048, cohereKey);
+    const text = await callCohere(prompt, systemMessage, maxTokens, cohereKey);
     return text;
   } catch (coErr) {
-    console.error("[AI] Cohere fallback failed:", coErr.message);
-    throw new Error("Both OpenRouter and Cohere failed: " + coErr.message);
+    console.error("[AI] Cohere request failed:", coErr.message);
+    throw new Error("Cohere study companion call failed: " + coErr.message);
   }
 };
 
-// Lightweight LLM caller for smaller tasks — use Cohere (replaces OpenAI/Gemini)
+// Lightweight LLM caller for smaller tasks — use Cohere
 const callSmallLLM = async (prompt, systemMessage = "You generate valid JSON only.") => {
-  const cohereKey = process.env.COHERE_API_KEY_STUDY_COM || process.env.COHERE_API_KEY;
+  const cohereKey = STUDY_COHERE_KEY() || process.env.COHERE_API_KEY;
   if (!cohereKey) throw new Error("No Cohere API key available for small LLM calls");
 
   try {
@@ -146,14 +102,44 @@ const parseAIResponse = (content) => {
   }
 };
 
-export const generateStudyMaterial = async (rawText) => {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error(" OPENROUTER_API_KEY_amol missing in environment variables");
+/**
+ * Strip flashcard and quiz sections that Cohere sometimes leaks into
+ * the summary text field. Removes everything from any heading that
+ * matches "Flashcards", "Quiz", "Key Concepts" (standalone section) etc.
+ * Also removes raw "front / back" Q&A lines and MCQ-style lines.
+ */
+const cleanSummary = (summary) => {
+  if (!summary || typeof summary !== "string") return summary;
+
+  // Split on lines that begin a Flashcards or Quiz section (with or without ## / #)
+  // e.g. "## Flashcards", "Flashcards", "# Quiz", "Quiz"
+  const sectionBreakRe = /^#{0,3}\s*(flashcards?|quiz(?:zes)?)\s*$/im;
+  const breakMatch = sectionBreakRe.exec(summary);
+  if (breakMatch) {
+    summary = summary.slice(0, breakMatch.index).trimEnd();
   }
 
-  console.log("[AI] Using model:", MODEL);
-  console.log("[AI] API Key present:", OPENROUTER_API_KEY ? 'Yes' : 'No');
-  console.log("[AI] API Key length:", OPENROUTER_API_KEY?.length);
+  // Also strip individual Q&A lines that still sneak in:
+  // Lines like "What is ...? **Answer**" or "A) ..." or "front: / back:"
+  const lines = summary.split("\n");
+  const cleanLines = [];
+  for (const line of lines) {
+    // Skip lines that look like flashcard Q/A pairs
+    if (/^(front|back)\s*:/i.test(line.trim())) continue;
+    // Skip lines that look like MCQ options: "A) ...", "B) ..."
+    if (/^[A-D]\)\s+/.test(line.trim())) continue;
+    cleanLines.push(line);
+  }
+
+  return cleanLines.join("\n").trimEnd();
+};
+
+export const generateStudyMaterial = async (rawText) => {
+  if (!STUDY_COHERE_KEY()) {
+    throw new Error("COHERE_API_KEY_STUDY_COM missing in environment variables");
+  }
+
+  console.log("[AI] Using Cohere for study material generation");
   console.log("[AI] Received text length:", rawText.length);
   console.log("[AI] First 100 chars:", rawText.slice(0, 100));
 
@@ -246,16 +232,17 @@ STRICT RULES
 BEGIN.
 `;
 
-  console.log("[AI] Sending request to OpenRouter...");
-  console.log("[AI] Request details:", {
-    model: MODEL,
-    promptLength: prompt.length,
-    temperature: 0.35
-  });
+  console.log("[AI] Sending request to Cohere...");
+  console.log("[AI] Prompt length:", prompt.length);
 
-  const content = await callOpenRouter(prompt);
+  const content = await callOpenRouter(prompt, "You generate detailed, structured study material in valid JSON only.", 4096);
   const parsed = parseAIResponse(content);
-  
+
+  // Sanitize: remove any flashcard/quiz content that leaked into summary
+  if (parsed.summary) {
+    parsed.summary = cleanSummary(parsed.summary);
+  }
+
   // Debug: Log what we got
   console.log("[AI] Generated content structure:", {
     hasSummary: !!parsed.summary,
@@ -271,8 +258,8 @@ BEGIN.
 
 // Generate quiz with custom question count
 export const generateQuiz = async (rawText, count = 5) => {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY_amol missing in environment variables");
+  if (!STUDY_COHERE_KEY()) {
+    throw new Error("COHERE_API_KEY_STUDY_COM missing in environment variables");
   }
 
   console.log("[AI Quiz] Generating quiz with", count, "questions");
@@ -358,8 +345,8 @@ BEGIN.
  * @returns {Promise<string>} The answer
  */
 export const answerQuestion = async (rawText, question) => {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY_amol missing in environment variables");
+  if (!STUDY_COHERE_KEY()) {
+    throw new Error("COHERE_API_KEY_STUDY_COM missing in environment variables");
   }
 
   const prompt = `
@@ -415,8 +402,8 @@ Your Answer:
  * @returns {Promise<Object>} Mind map with nodes and edges
  */
 export const generateMindMap = async (rawText) => {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY_amol missing in environment variables");
+  if (!STUDY_COHERE_KEY()) {
+    throw new Error("COHERE_API_KEY_STUDY_COM missing in environment variables");
   }
 
   console.log("[AI MindMap] Generating mind map...");
@@ -440,13 +427,13 @@ Input:\n"""\n${rawText.slice(0, 14000)}\n"""\n\nReturn an object {"nodes": [...]
       console.warn('[AI MindMap] Cohere small LLM failed:', coErr.message);
     }
 
-    // Fallback to OpenRouter
-    const promptOR = `You are an expert AI that creates mind maps from study material. Return ONLY valid JSON with nodes and edges.\n"""\n${rawText.slice(0,14000)}\n"""`;
-    const contentOR = await callOpenRouter(promptOR, "You generate mind maps in valid JSON only.");
-    const parsedOR = parseAIResponse(contentOR);
-    if (parsedOR && Array.isArray(parsedOR.nodes)) {
-      console.log("[AI MindMap - OpenRouter] Generated", parsedOR.nodes.length, "nodes");
-      return parsedOR;
+    // Second attempt with slightly different prompt
+    const promptRetry = `You are an expert AI that creates mind maps from study material. Return ONLY valid JSON with nodes and edges.\n"""\n${rawText.slice(0,14000)}\n"""`;
+    const contentRetry = await callOpenRouter(promptRetry, "You generate mind maps in valid JSON only.");
+    const parsedRetry = parseAIResponse(contentRetry);
+    if (parsedRetry && Array.isArray(parsedRetry.nodes)) {
+      console.log("[AI MindMap - Cohere retry] Generated", parsedRetry.nodes.length, "nodes");
+      return parsedRetry;
     }
   } catch (err) {
     console.warn("[AI MindMap] AI generation failed, falling back to heuristic:", err.message);
@@ -520,8 +507,8 @@ const generateFallbackMindMap = (text) => {
  * @returns {Promise<Object>} Report with title, summary, sections, and key points
  */
 export const generateReport = async (rawText) => {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error(" OPENROUTER_API_KEY_amol missing in environment variables");
+  if (!STUDY_COHERE_KEY()) {
+    throw new Error("COHERE_API_KEY_STUDY_COM missing in environment variables");
   }
 
   console.log("[AI Report] Generating report...");

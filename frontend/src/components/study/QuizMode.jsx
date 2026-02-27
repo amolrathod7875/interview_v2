@@ -161,7 +161,7 @@ export default function QuizMode({ questions: initialQuestions, sessionId, study
 
     return (
       <div className="flex flex-col items-center gap-6 p-6">
-        <div className="text-center">
+        <div className="bg-white rounded-2xl p-8 shadow-md w-full max-w-md text-center">
           <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 ${
             isPassing ? "bg-green-500/20" : "bg-yellow-500/20"
           }`}>
@@ -170,17 +170,17 @@ export default function QuizMode({ questions: initialQuestions, sessionId, study
             </span>
           </div>
           
-          <h2 className="text-2xl font-bold text-white mb-2">Quiz Complete!</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Quiz Complete!</h2>
           
           <div className="text-6xl font-bold mb-2" style={{ color: isPassing ? "#4ade80" : "#facc15" }}>
             {percentage}%
           </div>
           
-          <p className="text-gray-400">
+          <p className="text-gray-700">
             You scored {score} out of {questions.length}
           </p>
-          
-          <p className={`mt-2 text-sm ${isPassing ? "text-green-400" : "text-yellow-400"}`}>
+
+          <p className={`mt-2 text-sm ${isPassing ? "text-green-600" : "text-yellow-600"}`}>
             {isPassing ? "Great job! You passed!" : "Keep studying and try again!"}
           </p>
         </div>

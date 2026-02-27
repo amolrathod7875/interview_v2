@@ -5,6 +5,13 @@ import LoadingWave from "../ui/LoadingWave"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
+// Convert escaped newline sequences like "\\n" into real newlines
+const sanitize = (text) => {
+  if (typeof text !== 'string') return text
+  // replace escaped CRLF or LF with actual newline, and escaped tabs
+  return text.replace(/\\r?\\n/g, '\n').replace(/\\t/g, '\t')
+}
+
 const GithubAnalysisCard = () => {
   const [step, setStep] = useState("initial") // initial, repos, analyzing, results
   const [repos, setRepos] = useState([])
@@ -298,8 +305,8 @@ const GithubAnalysisCard = () => {
         <div className="space-y-6">
           {/* 1. Project Summary */}
           <Section title="Project Summary">
-            <p className="text-gray-700 leading-relaxed">
-              {analysis.projectSummary || "No summary available"}
+            <p className="text-gray-700 leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>
+              {analysis.projectSummary ? sanitize(analysis.projectSummary) : "No summary available"}
             </p>
           </Section>
 
@@ -363,7 +370,7 @@ const GithubAnalysisCard = () => {
                 {analysis.resumeBulletPoints.map((bullet, i) => (
                   <li key={i} className="flex gap-2">
                     <span className="text-blue-600 font-bold">•</span>
-                    <span className="text-gray-700">{bullet}</span>
+                    <span className="text-gray-700" style={{ whiteSpace: 'pre-wrap' }}>{sanitize(bullet)}</span>
                   </li>
                 ))}
               </ul>
@@ -381,7 +388,7 @@ const GithubAnalysisCard = () => {
                     <span className="font-bold text-blue-600 min-w-[24px]">
                       {i + 1}.
                     </span>
-                    <span className="text-gray-700">{question}</span>
+                    <span className="text-gray-700" style={{ whiteSpace: 'pre-wrap' }}>{sanitize(question)}</span>
                   </li>
                 ))}
               </ol>
@@ -393,8 +400,8 @@ const GithubAnalysisCard = () => {
           {/* 5. Key Improvements */}
           {analysis.keyImprovements && (
             <Section title="Key Improvements">
-              <p className="text-gray-700 leading-relaxed">
-                {analysis.keyImprovements}
+              <p className="text-gray-700 leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>
+                {sanitize(analysis.keyImprovements)}
               </p>
             </Section>
           )}

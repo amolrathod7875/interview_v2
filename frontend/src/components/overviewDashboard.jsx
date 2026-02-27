@@ -26,6 +26,10 @@ const OverviewDashboard = () => {
   // NEW: user profile
   const [user, setUser] = useState(null)
 
+  // State for Show More/Less functionality
+  const [showAllInterviews, setShowAllInterviews] = useState(false)
+  const [showAllQuizzes, setShowAllQuizzes] = useState(false)
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -155,27 +159,45 @@ const OverviewDashboard = () => {
 
             <div className="space-y-3 overflow-y-auto">
               {data.filter(d => d.isCompleted).length > 0 ? (
-                data.filter(d => d.isCompleted).map(item => (
-                  <div
-                    key={item._id}
-                    onClick={() =>
-                      navigate('/postInterview', {
-                        state: { interviewId: item._id },
-                      })
-                    }
-                    className="flex gap-4 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer"
-                  >
-                    <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold">
-                      {item.topic?.[0]?.toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">{item.topic}</p>
-                      <p className="text-xs text-gray-500">
-                        Skills: {item.skills.join(', ')}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                (() => {
+                  const completedInterviews = data.filter(d => d.isCompleted)
+                  const displayedInterviews = showAllInterviews 
+                    ? completedInterviews 
+                    : completedInterviews.slice(0, 5)
+                  return (
+                    <>
+                      {displayedInterviews.map(item => (
+                        <div
+                          key={item._id}
+                          onClick={() =>
+                            navigate('/postInterview', {
+                              state: { interviewId: item._id },
+                            })
+                          }
+                          className="flex gap-4 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer"
+                        >
+                          <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold">
+                            {item.topic?.[0]?.toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{item.topic}</p>
+                            <p className="text-xs text-gray-500">
+                              Skills: {item.skills.join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {completedInterviews.length > 5 && (
+                        <button
+                          onClick={() => setShowAllInterviews(!showAllInterviews)}
+                          className="w-full mt-2 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {showAllInterviews ? 'Show Less' : `Show More (${completedInterviews.length - 5} more)`}
+                        </button>
+                      )}
+                    </>
+                  )
+                })()
               ) : (
                 <p className="text-gray-400 text-center mt-8">
                   No completed interviews yet
@@ -192,23 +214,41 @@ const OverviewDashboard = () => {
 
             <div className="space-y-3 overflow-y-auto">
               {quiz.filter(q => q.isCompleted).length > 0 ? (
-                quiz.filter(q => q.isCompleted).map(item => (
-                  <div
-                    key={item._id}
-                    onClick={() => getQuizResult(item._id, item.noOfQuestions)}
-                    className="flex gap-4 p-4 border rounded-xl hover:bg-indigo-50 cursor-pointer"
-                  >
-                    <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
-                      {item.topic?.[0]?.toUpperCase() || 'Q'}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{item.topic}</p>
-                      <p className="text-xs text-gray-500">
-                        Questions: {item.noOfQuestions}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                (() => {
+                  const completedQuizzes = quiz.filter(q => q.isCompleted)
+                  const displayedQuizzes = showAllQuizzes 
+                    ? completedQuizzes 
+                    : completedQuizzes.slice(0, 5)
+                  return (
+                    <>
+                      {displayedQuizzes.map(item => (
+                        <div
+                          key={item._id}
+                          onClick={() => getQuizResult(item._id, item.noOfQuestions)}
+                          className="flex gap-4 p-4 border rounded-xl hover:bg-indigo-50 cursor-pointer"
+                        >
+                          <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
+                            {item.topic?.[0]?.toUpperCase() || 'Q'}
+                          </div>
+                          <div>
+                            <p className="font-semibold">{item.topic}</p>
+                            <p className="text-xs text-gray-500">
+                              Questions: {item.noOfQuestions}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {completedQuizzes.length > 5 && (
+                        <button
+                          onClick={() => setShowAllQuizzes(!showAllQuizzes)}
+                          className="w-full mt-2 py-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                          {showAllQuizzes ? 'Show Less' : `Show More (${completedQuizzes.length - 5} more)`}
+                        </button>
+                      )}
+                    </>
+                  )
+                })()
               ) : (
                 <p className="text-gray-400 text-center mt-8">
                   No completed quizzes yet
