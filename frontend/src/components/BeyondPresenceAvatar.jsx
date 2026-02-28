@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState, useCallback } from 'react'
-import { Room, RoomEvent, DataPacket_Kind } from 'livekit-client'
+import { Room, RoomEvent, DataPacket_Kind, createLocalAudioTrack } from 'livekit-client'
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -136,6 +136,8 @@ export default function BeyondPresenceAvatar({
     if (!showAvatar) return
     if (roomRef.current) { roomRef.current.disconnect(); roomRef.current = null }
 
+    let localMicTrack = null; // Create a variable to hold the mic
+
     try {
       setIsLoading(true)
       setError(null)
@@ -143,6 +145,20 @@ export default function BeyondPresenceAvatar({
       setVideoAttached(false)
       setAudioAttached(false)
 
+      // 🔥 FIX 1: PRE-WARM THE MICROPHONE 🔥
+      // Ask for microphone immediately before doing ANY async fetch
+      // This guarantees the browser grants permission because it's tied to the user's click
+      try {
+        localMicTrack = await createLocalAudioTrack({
+          echoCancellation: true,
+          noiseSuppression: true,
+        });
+        console.log('[BP] Microphone pre-warmed successfully!');
+      } catch (micErr) {
+        console.error('[BP] Failed to pre-warm microphone:', micErr);
+      }
+
+      // Now we safely do the async fetch
       let creds = sessionRef.current
       if (!creds) {
         const r = await fetch(`${API}/api/beyondpresence/create-session`, {
@@ -248,12 +264,18 @@ export default function BeyondPresenceAvatar({
       await room.connect(livekitUrl, clientToken)
       try { await room.startAudio() } catch (e) { void e }
 
-      // Explicitly enable the user's microphone so the AI can hear them
+      // 🔥 FIX 2: PUBLISH THE PRE-WARMED MIC TO THE AI 🔥
       try {
-        await room.localParticipant.setMicrophoneEnabled(true)
-        console.log('[BP] Microphone enabled and streaming to AI!')
+        if (localMicTrack) {
+          await room.localParticipant.publishTrack(localMicTrack);
+          console.log('[BP] Published pre-warmed microphone to AI!');
+        } else {
+          // Fallback just in case
+          await room.localParticipant.setMicrophoneEnabled(true)
+          console.log('[BP] Microphone enabled via fallback!');
+        }
       } catch (micError) {
-        console.error('[BP] Microphone permission denied or failed:', micError)
+        console.error('[BP] Microphone publish failed:', micError)
       }
 
     } catch (err) {
