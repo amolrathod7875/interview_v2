@@ -248,6 +248,14 @@ export default function BeyondPresenceAvatar({
       await room.connect(livekitUrl, clientToken)
       try { await room.startAudio() } catch (e) { void e }
 
+      // Explicitly enable the user's microphone so the AI can hear them
+      try {
+        await room.localParticipant.setMicrophoneEnabled(true)
+        console.log('[BP] Microphone enabled and streaming to AI!')
+      } catch (micError) {
+        console.error('[BP] Microphone permission denied or failed:', micError)
+      }
+
     } catch (err) {
       console.error('[BP] connect error:', err)
       setError(err.message || 'Failed to connect')
