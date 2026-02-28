@@ -1,23 +1,23 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { Room, RoomEvent } from 'livekit-client'
+﻿import { useEffect, useRef, useState, useCallback } from 'react'
+import { Room, RoomEvent, DataPacket_Kind } from 'livekit-client'
 
 const API = import.meta.env.VITE_API_BASE_URL
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BeyondPresenceAvatar — connects to a BP managed-agent LiveKit room.
-// BP creates and owns the room; we receive livekit_url + livekit_token from
-// the backend /api/beyondpresence/create-session  →  POST /v1/calls
-// ─────────────────────────────────────────────────────────────────────────────
+// BeyondPresenceAvatar
+// Connects to a BP managed-agent LiveKit room.
+// Handles: video track, audio track, and Data Channel transcripts.
 
 export default function BeyondPresenceAvatar({
-  isSpeaking  = false,
-  showAvatar  = true,
-  sessionData = null,   // pre-warmed { roomName, clientToken, livekitUrl }
+  isSpeaking         = false,
+  showAvatar         = true,
+  sessionData        = null,
+  onTranscriptUpdate = () => {},
+  onAiSpeakingChange = () => {},
 }) {
   const videoRef   = useRef(null)
+  const audioRef   = useRef(null)   // <audio> element for BP voice
   const roomRef    = useRef(null)
-  const pollRef    = useRef(null)   // interval handle for BP track polling
-  // Keep sessionData in a ref so changing it doesn't trigger reconnects
+  const pollRef    = useRef(null)
   const sessionRef = useRef(sessionData)
   useEffect(() => { sessionRef.current = sessionData }, [sessionData])
 
@@ -25,8 +25,9 @@ export default function BeyondPresenceAvatar({
   const [error,         setError]         = useState(null)
   const [isConnected,   setIsConnected]   = useState(false)
   const [videoAttached, setVideoAttached] = useState(false)
+  const [, setAudioAttached] = useState(false)
 
-  // ── Attach BP video track to the <video> element ─────────────────────────
+  // -- Attach BP video track --------------------------------------------------
   const attachVideo = useCallback((track) => {
     const doIt = () => {
       track.attach(videoRef.current)
@@ -40,7 +41,65 @@ export default function BeyondPresenceAvatar({
     }
   }, [])
 
-  // ── Scan all current remote participants for a video track ────────────────
+  // -- Attach BP audio track --------------------------------------------------
+  const attachAudio = useCallback((track) => {
+    const doIt = () => {
+      // Reuse existing <audio> element or create one
+      let audioEl = audioRef.current
+      if (!audioEl) {
+        audioEl = document.createElement('audio')
+        audioEl.autoplay = true
+        audioEl.playsInline = true
+        audioEl.volume = 1.0
+        document.body.appendChild(audioEl)
+        audioRef.current = audioEl
+      }
+      track.attach(audioEl)
+      setAudioAttached(true)
+      console.log('[BP] Avatar audio attached')
+    }
+
+    if (document.readyState === 'complete') {
+      doIt()
+    } else {
+      window.addEventListener('load', doIt, { once: true })
+    }
+  }, [])
+
+  // -- Decode Data Channel messages (STT transcripts) ------------------------
+  const handleDataMessage = useCallback((payload, _participant, kind) => {
+    // LiveKit v2 uses DataPacket_Kind enum
+    const isBinary = kind === DataPacket_Kind.RELIABLE || kind === DataPacket_Kind.LOSSY || kind === 0 || kind === 1
+    if (!isBinary) return
+
+    try {
+      const text = new TextDecoder().decode(payload)
+      const data = JSON.parse(text)
+
+      if (data.type === 'transcript') {
+        const transcriptType = data.transcriptType || (data.is_final ? 'final' : 'partial')
+        onTranscriptUpdate({
+          type:      transcriptType,
+          text:      data.transcript || data.text || '',
+          role:      data.role || 'user',
+          timestamp: Date.now(),
+        })
+      }
+
+      if (data.type === 'speech_start') {
+        onAiSpeakingChange(data.role === 'assistant')
+      }
+
+      if (data.type === 'speech_end') {
+        onAiSpeakingChange(false)
+        onTranscriptUpdate({ type: 'speech_end', role: data.role || 'assistant', text: '' })
+      }
+    } catch (e) {
+      void e // Non-JSON control messages — safe to ignore
+    }
+  }, [onTranscriptUpdate, onAiSpeakingChange])
+
+  // -- Scan all remote participants for video tracks -------------------------
   const scanForBpTracks = useCallback((room) => {
     let found = false
     room.remoteParticipants.forEach(p => {
@@ -56,10 +115,25 @@ export default function BeyondPresenceAvatar({
     return found
   }, [attachVideo])
 
-  // ── Connect to LiveKit + Beyond Presence ─────────────────────────────────
+  // -- Scan all remote participants for audio tracks -------------------------
+  const scanForAudioTracks = useCallback((room) => {
+    let found = false
+    room.remoteParticipants.forEach(p => {
+      p.trackPublications.forEach(pub => {
+        if (pub.track?.kind === 'audio') {
+          found = true
+          attachAudio(pub.track)
+        } else if (pub.kind === 'audio' && !pub.isSubscribed) {
+          pub.setSubscribed(true)
+        }
+      })
+    })
+    return found
+  }, [attachAudio])
+
+  // -- Connect to LiveKit + Beyond Presence ----------------------------------
   const connect = useCallback(async () => {
     if (!showAvatar) return
-    // Tear down any previous room cleanly
     if (roomRef.current) { roomRef.current.disconnect(); roomRef.current = null }
 
     try {
@@ -67,120 +141,133 @@ export default function BeyondPresenceAvatar({
       setError(null)
       setIsConnected(false)
       setVideoAttached(false)
+      setAudioAttached(false)
 
-      // Use pre-warmed session if available, otherwise create one
       let creds = sessionRef.current
       if (!creds) {
         const r = await fetch(`${API}/api/beyondpresence/create-session`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
         })
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || `HTTP ${r.status}`)
         creds = await r.json()
       }
-      const { roomName, clientToken, livekitUrl } = creds
-      console.log('[BP] Connecting to room →', roomName)
+
+      const { clientToken, livekitUrl } = creds
+      console.log('[BP] Connecting to LiveKit room...')
 
       const room = new Room({ adaptiveStream: true, dynacast: true })
       roomRef.current = room
 
-      // ── TrackPublished: force-subscribe (in case autoSubscribe is off) ────
+      // Force-subscribe to any published track
       room.on(RoomEvent.TrackPublished, (pub, participant) => {
         console.log(`[BP] Track published by "${participant.identity}": ${pub.kind}`)
-        if (!pub.isSubscribed) {
-          pub.setSubscribed(true)
-          console.log(`[BP] Force-subscribed to ${pub.kind}`)
-        }
+        if (!pub.isSubscribed) pub.setSubscribed(true)
       })
 
-      // ── TrackSubscribed: attach video ─────────────────────────────────────
+      // Attach subscribed tracks
       room.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
         console.log(`[BP] Track subscribed: ${track.kind} from "${participant.identity}"`)
         if (track.kind === 'video') {
-          // Stop the poll — we found the video
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
           attachVideo(track)
         }
-        // BP's own audio is intentionally ignored — VAPI handles voice
+        if (track.kind === 'audio') {
+          attachAudio(track)
+        }
       })
 
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
         if (track.kind === 'video') { track.detach(); setVideoAttached(false) }
+        if (track.kind === 'audio') { track.detach(); setAudioAttached(false) }
       })
 
-      // ── Connected: BP managed agent is already in the room — just scan + poll ──
+      // Data Channel: STT transcripts from BP
+      room.on(RoomEvent.DataReceived, (payload, participant, kind) => {
+        handleDataMessage(payload, participant, kind)
+      })
+
       room.on(RoomEvent.Connected, async () => {
-        console.log('[BP] Connected to LiveKit room (BP managed agent)')
+        console.log('[BP] Connected to LiveKit room')
         setIsConnected(true)
         setIsLoading(false)
 
-        // Unblock autoplay — required by Chrome/Safari
-        try { await room.startAudio() } catch (_) {}
+        try { await room.startAudio() } catch (e) { void e }
 
-        // Scan immediately — BP agent may already be publishing
-        const found = scanForBpTracks(room)
-        console.log('[BP] Initial scan found BP video:', found)
+        const foundVideo = scanForBpTracks(room)
+        const foundAudio = scanForAudioTracks(room)
+        console.log('[BP] Initial scan — video:', foundVideo, '| audio:', foundAudio)
 
-        // Poll every 3s up to 60s for BP agent to start publishing video
-        if (!found) {
+        if (!foundVideo || !foundAudio) {
           if (pollRef.current) clearInterval(pollRef.current)
           let elapsed = 0
           pollRef.current = setInterval(() => {
             elapsed += 3
-            console.log(`[BP] Polling for avatar... (${elapsed}s elapsed)`)
-            const gotIt = scanForBpTracks(room)
-            if (gotIt || elapsed >= 60) {
+            const gotVideo = scanForBpTracks(room)
+            const gotAudio = scanForAudioTracks(room)
+            console.log(`[BP] Polling... (${elapsed}s) video=${gotVideo} audio=${gotAudio}`)
+            if ((gotVideo && gotAudio) || elapsed >= 60) {
               clearInterval(pollRef.current)
               pollRef.current = null
-              if (!gotIt) console.warn('[BP] Avatar not found after 60s')
+              if (!gotVideo) console.warn('[BP] Video not found after 60s')
+              if (!gotAudio) console.warn('[BP] Audio not found after 60s')
             }
           }, 3000)
         }
       })
 
-      // ── BP participant joins after us ──────────────────────────────────────
       room.on(RoomEvent.ParticipantConnected, participant => {
         console.log('[BP] Participant connected:', participant.identity)
-        // Give BP a moment to publish tracks, then scan (retry up to 5 times)
         let attempts = 0
         const tryAttach = () => {
           attempts++
-          let found = false
+          let foundV = false
           participant.trackPublications.forEach(pub => {
-            console.log(`[BP] ${participant.identity} track: ${pub.kind} subscribed=${pub.isSubscribed} hasTrack=${!!pub.track}`)
-            if (pub.track?.kind === 'video') { found = true; attachVideo(pub.track) }
+            if (pub.track?.kind === 'video') { foundV = true; attachVideo(pub.track) }
             else if (pub.kind === 'video' && !pub.isSubscribed) pub.setSubscribed(true)
+            if (pub.track?.kind === 'audio') attachAudio(pub.track)
+            else if (pub.kind === 'audio' && !pub.isSubscribed) pub.setSubscribed(true)
           })
-          if (!found && attempts < 10) setTimeout(tryAttach, 2000)
+          if (!foundV && attempts < 10) setTimeout(tryAttach, 2000)
         }
         setTimeout(tryAttach, 1000)
       })
 
-      room.on(RoomEvent.Disconnected,    () => {
-        setIsConnected(false); setVideoAttached(false)
+      room.on(RoomEvent.Disconnected, () => {
+        setIsConnected(false)
+        setVideoAttached(false)
+        setAudioAttached(false)
         if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       })
-      room.on(RoomEvent.ConnectionError, err => { setError(err.message || 'Connection failed'); setIsLoading(false) })
+
+      room.on(RoomEvent.ConnectionError, err => {
+        setError(err.message || 'Connection failed')
+        setIsLoading(false)
+      })
 
       await room.connect(livekitUrl, clientToken)
-
-      // Unblock media autoplay (required by Chrome/Safari after connect)
-      try { await room.startAudio() } catch (_) {}
+      try { await room.startAudio() } catch (e) { void e }
 
     } catch (err) {
       console.error('[BP] connect error:', err)
       setError(err.message || 'Failed to connect')
       setIsLoading(false)
     }
-  }, [showAvatar, attachVideo, scanForBpTracks])  // sessionData intentionally NOT a dep — use sessionRef
+  }, [showAvatar, attachVideo, attachAudio, handleDataMessage, scanForBpTracks, scanForAudioTracks])
 
-  // Connect once on mount, not on every prop change
+  // Connect on mount
   useEffect(() => {
     if (showAvatar) connect()
     return () => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       if (roomRef.current) { roomRef.current.disconnect(); roomRef.current = null }
+      // Remove the injected <audio> element
+      if (audioRef.current && audioRef.current.parentNode) {
+        audioRef.current.parentNode.removeChild(audioRef.current)
+        audioRef.current = null
+      }
     }
-  }, [showAvatar])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showAvatar]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!showAvatar) return null
 
@@ -213,7 +300,7 @@ export default function BeyondPresenceAvatar({
         </div>
       )}
 
-      {/* Avatar video stream from Beyond Presence */}
+      {/* Avatar video stream */}
       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
 
       {/* Placeholder while waiting for first video frame */}

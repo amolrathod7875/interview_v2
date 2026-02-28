@@ -1,17 +1,13 @@
-import { useEffect, useRef, useState } from "react"
-import Vapi from "@vapi-ai/web"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { Button } from "./ui/button"
 import axios from "axios"
 import { useLocation, useNavigate } from 'react-router-dom'
 import { PhoneOff, Mic, ArrowLeft, Zap } from "lucide-react"
 import { Spinner } from "./ui/spinner"
-import { motion } from "framer-motion"
 import LoadingWave from "./ui/LoadingWave"
-import AIAvatar3D from "./AIAvatar3D"
 import BeyondPresenceAvatar from "./BeyondPresenceAvatar"
 import BodyLanguageMonitor from "./BodyLanguageMonitor"
 import InterviewAvatarControls from "./InterviewAvatarControls"
-import { useAudioAnalyzer } from "../hooks/useAudioAnalyzer"
 
 const messages = [
     "Generating Results...",
@@ -19,49 +15,39 @@ const messages = [
     "Almost done..."
 ]
 const API = import.meta.env.VITE_API_BASE_URL
-const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY)
 
 export default function AiInterview() {
     const [isCompleted, setIsCompleted] = useState(false)
     const [questions, setQuestions] = useState([])
-    const [answers, setAnswers] = useState([])
     const [isActive, setIsActive] = useState(false)
     const { state } = useLocation()
-    const [currentAnswer, setCurrentAnswer] = useState("")
     const [interview, setInterview] = useState({})
     const [aiSpeaking, setAiSpeaking] = useState(false)
     const [userSpeaking, setUserSpeaking] = useState(false)
     const [msgIndex, setMsgIndex] = useState(0)
     const [loading, setLoading] = useState(false)
     const [user, setUser] = useState(null)
-    const [timeLeft, setTimeLeft] = useState(0)
-    const [noOfQuestions, setNoOfQuestions] = useState(5)
+    const [timeLeft, setTimeLeft] = useState(() => (state?.timeInMinutes ?? 0) * 60)
+    const [noOfQuestions] = useState(() => state?.noOfQuestions ?? 5)
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
     // Avatar state
     const [avatarEnabled, setAvatarEnabled] = useState(true)
     const [expression, setExpression] = useState('neutral')
     const [showCaptions, setShowCaptions] = useState(false)
-    const [amplitude, setAmplitude] = useState(0)
-    const bpSessionRef = useRef(null)  // pre-warmed BP session (ref = no re-render)
+    const [bpSession, setBpSession] = useState(null)  // pre-warmed BP session
+    const bpSessionRef = useRef(null)
 
-    // Audio analyzer
-    const { getSimulatedAmplitude } = useAudioAnalyzer()
-    const animationFrameRef = useRef(null)
+    // Transcript state — collected from LiveKit Data Channel via BeyondPresenceAvatar callbacks
+    const [transcriptHistory, setTranscriptHistory] = useState([])
+    const [currentTranscript, setCurrentTranscript] = useState('')
 
 
     const navigate = useNavigate()
     const interviewId = state?.interviewId
 
-    // Initialize timer and question config
-    useEffect(() => {
-        if (state?.timeInMinutes) {
-            setTimeLeft(state.timeInMinutes * 60) // Convert to seconds
-        }
-        if (state?.noOfQuestions) {
-            setNoOfQuestions(state.noOfQuestions)
-        }
-    }, [state])
+    // Stable ref to hangUpInterview so the timer effect never goes stale
+    const hangUpRef = useRef(null)
 
     // Timer countdown
     useEffect(() => {
@@ -70,7 +56,7 @@ export default function AiInterview() {
         const timer = setInterval(() => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
-                    hangUpInterview() // Auto end when time is up
+                    hangUpRef.current?.() // Auto end when time is up
                     return 0
                 }
                 return prev - 1
@@ -118,115 +104,51 @@ export default function AiInterview() {
         console.log("AI speaking:", aiSpeaking, "User speaking:", userSpeaking)
     }, [aiSpeaking, userSpeaking])
 
-    // Update amplitude for lip-sync (simulated since Vapi doesn't expose audio stream)
-    useEffect(() => {
-        if (!isActive) {
-            setAmplitude(0)
-            return
-        }
-
-        let animationId
-        const updateAmplitude = () => {
-            // Use simulated amplitude based on speaking state
-            const newAmplitude = getSimulatedAmplitude(aiSpeaking)
-            setAmplitude(newAmplitude)
-            animationId = requestAnimationFrame(updateAmplitude)
-        }
-
-        updateAmplitude()
-
-        return () => {
-            if (animationId) {
-                cancelAnimationFrame(animationId)
-            }
-        }
-    }, [isActive, aiSpeaking, getSimulatedAmplitude])
-
     const hangUpInterview = async () => {
         try {
             setIsCompleted(true)
             setIsActive(false)
-            if (currentAnswer.trim()) {
-                setAnswers(prev => [...prev, currentAnswer.trim()])
-                setCurrentAnswer("")
-            }
-            const finalAnswers = currentAnswer.trim()
-                ? [...answers, currentAnswer.trim()]
-                : answers
 
-            await vapi.stop()
+            // Merge any in-progress transcript into history
+            const finalAnswers = currentTranscript.trim()
+                ? [...transcriptHistory, currentTranscript.trim()]
+                : transcriptHistory
+
             const updateResp = await axios.put(`${API}/interview/update/${interviewId}`)
             console.log("update: ", updateResp)
-            const answerResp = await axios.post(`${API}/answers/add`, { interviewId: interviewId, answers: finalAnswers })
-                .then(res => navigate('/postinterview', { state: { interviewId: interviewId } }))
-                .catch(r => navigate('/dashboard'))
-        }
-        catch (e) {
+
+            await axios.post(`${API}/answers/add`, { interviewId: interviewId, answers: finalAnswers })
+                .then(() => navigate('/postinterview', { state: { interviewId: interviewId } }))
+                .catch(() => navigate('/dashboard'))
+        } catch (e) {
             console.log(e)
+            navigate('/dashboard')
         }
     }
+    // Keep ref in sync so the timer effect always calls the latest version
+    useEffect(() => { hangUpRef.current = hangUpInterview })
 
-    useEffect(() => {
-        const handler = (msg) => {
-            if (
-                msg.type === "transcript" &&
-                msg.transcriptType === "final" &&
-                msg.role === "user"
-            ) {
-                console.log(msg.transcript)
-                setCurrentAnswer(prev => prev + " " + msg.transcript)
-            }
+    // Callback passed to BeyondPresenceAvatar to receive LiveKit Data Channel transcripts
+    const handleTranscriptUpdate = useCallback((transcriptData) => {
+        if (transcriptData.role === 'user') {
+            if (transcriptData.type === 'final') {
+                // User finished a sentence — save to history
+                setTranscriptHistory(prev => [...prev, transcriptData.text])
+                setCurrentTranscript('')
+                setUserSpeaking(false)
 
-            if (msg.type === "transcript" && msg.role === "user") {
+                // Each user answer corresponds to a question, bump the counter
+                setCurrentQuestionIndex(prev => prev + 1)
+            } else {
+                // Partial — user is still speaking
+                setCurrentTranscript(transcriptData.text)
                 setUserSpeaking(true)
                 setTimeout(() => setUserSpeaking(false), 500)
             }
-
-            if (
-                msg.type === "transcript" &&
-                msg.transcriptType === "final" &&
-                msg.role === "assistant"
-            ) {
-                const text = msg.transcript?.trim() || ""
-
-                const looksLikeQuestion =
-                    text.endsWith("?") ||
-                    text.toLowerCase().startsWith("describe") ||
-                    text.toLowerCase().startsWith("explain") ||
-                    text.toLowerCase().startsWith("how") ||
-                    text.toLowerCase().startsWith("what") ||
-                    text.toLowerCase().startsWith("when") ||
-                    text.toLowerCase().startsWith("why")
-
-                if (looksLikeQuestion) {
-                    // Save previous answer if exists
-                    if (currentAnswer.trim()) {
-                        setAnswers(prev => [...prev, currentAnswer.trim()])
-                        setCurrentAnswer("")
-                    }
-                    // Increment question counter immediately when new question is asked
-                    setCurrentQuestionIndex(prev => prev + 1)
-                }
-            }
-        }
-
-        const onSpeechStart = () => {
-            setAiSpeaking(true)
-            setLoading(false) 
-        }
-
-        const onSpeechEnd = () => {
-            setAiSpeaking(false)
-        }
-
-        vapi.on("message", handler)
-        vapi.on("speech-start", onSpeechStart)
-        vapi.on("speech-end", onSpeechEnd)
-
-        return () => {
-            vapi.off("message", handler)
-            vapi.off("speech-start", onSpeechStart)
-            vapi.off("speech-end", onSpeechEnd)
+        } else if (transcriptData.role === 'assistant') {
+            // Track AI speaking state for lip-sync amplitude
+            setAiSpeaking(transcriptData.type !== 'speech_end')
+            setLoading(false)
         }
     }, [])
 
@@ -247,7 +169,7 @@ export default function AiInterview() {
             }).catch(e => console.error(e))
         }
         func()
-    }, [])
+    }, [interviewId])
 
     useEffect(() => {
         async function func() {
@@ -255,96 +177,48 @@ export default function AiInterview() {
             setInterview(resp.data.data)
         }
         func()
-    }, [])
+    }, [interviewId])
 
     const startInterview = async () => {
         setLoading(true)
 
-        // Pre-warm LiveKit room credentials (but NOT BP session — that must happen
-        // after the client connects to the room, so BP joins an occupied room)
         try {
             const res = await fetch(`${API}/api/beyondpresence/create-session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    llm: {
+                        provider: 'openai',
+                        model: 'gpt-4',
+                    },
+                    tts: {
+                        provider: 'elevenlabs',
+                        voiceId: 'burt',
+                    },
+                    questions: parsedQuestionsRef.current,
+                    interviewConfig: {
+                        topic: interview.topic,
+                        noOfQuestions: noOfQuestions,
+                        experience: state?.experience || 'mid',
+                    },
+                    greeting: `Hi ${user?.name || user?.firstName || 'there'}, how are you? Ready for your interview on ${interview.topic || 'your selected topic'}?`,
+                }),
             })
+
             if (res.ok) {
                 const data = await res.json()
                 bpSessionRef.current = data
-                console.log('[BP] Call pre-created callId:', data.callId, '| url:', data.livekitUrl ? 'present' : 'MISSING')
+                setBpSession(data)
+                console.log('[BP] Call pre-created with full config:', data.callId)
+            } else {
+                console.warn('[BP] create-session returned', res.status)
             }
         } catch (e) {
-            console.warn('[BP] Pre-warm failed, avatar will fetch its own credentials:', e.message)
+            console.warn('[BP] Pre-warm failed:', e.message)
         }
 
-        const assistantOptions = {
-            name: "AI Recruiter",
-            firstMessage: `Hi ${user?.name || user?.firstName || 'there'}, how are you? Ready for your interview on ${interview.topic || 'for your selected topic'}?`,
-
-            transcriber: {
-                provider: "deepgram",
-                model: "nova-2",
-                language: "en-US",
-            },
-
-            voice: {
-                provider: "11labs",
-                voiceId: "burt",
-            },
-
-            model: {
-                provider: "openai",
-                model: "gpt-4",
-                messages: [
-                    {
-                        role: "system",
-                        content: `
-You are an AI voice assistant conducting interviews.
-Your job is to ask candidates provided interview questions, assess their responses.
-
-CRITICAL RULE: Ask EXACTLY ${noOfQuestions} questions. NOT ${noOfQuestions + 1}, NOT ${noOfQuestions - 1}. EXACTLY ${noOfQuestions}. Count each question you ask and STOP at ${noOfQuestions}.
-
-You have EXACTLY ${noOfQuestions} questions available. DO NOT create new questions. ONLY use the provided questions below.
-
-Ask one question at a time and wait for the candidate's response before proceeding. Keep the questions clear and concise. Below are the ONLY questions you must ask:
-Questions: ${parsedQuestionsRef.current}  
-
-If the candidate struggles, offer hints or rephrase the question without giving away the direct answer. Example:
-"Need a hint? Think about how React tracks component updates!"
-
-Provide brief 1-2 lined (30-40 worded), encouraging feedback after each answer. Example:
-"Nice! That's a solid answer."
-"Hmm, not quite! Want to try again?"
-
-Keep the conversation natural and engaging — use casual phrases like "Alright, next up..." or "Let's tackle a tricky one!"
-
-After EXACTLY ${noOfQuestions} questions (count them: 1, 2, 3... up to ${noOfQuestions}), IMMEDIATELY wrap up the interview. Do NOT ask any more questions after reaching ${noOfQuestions}. Example:
-"That was great! You handled some tough questions well. Keep sharpening your skills!"
-
-After ending with questions, provide feedback based upon user's answers, communication skills, and completeness of answers also, rate user's overall performance out of 100 and let user know that.
-
-End on a positive note:
-"Thankyou so much for appearing for this mock interview, hope you loved this.
-
-Key Guidelines:
-• Be friendly, engaging, and witty
-• Keep responses short and natural, like a real conversation
-• Adapt based on the candidate's confidence level
-• Take questions from interview from provided questions only
-• Dont invent your own questions (most imp guideline) again, never ever invent your own questions just choose random question from list of questions provided. location for questions is "Questions: ${parsedQuestionsRef.current}" this.
-
-`,
-                    },
-                ],
-            },
-        }
-        try {
-            await vapi.start(assistantOptions)
-            setIsActive(true)
-        } catch (e) {
-            console.error("Failed to start VAPI:", e)
-            setLoading(false)
-            alert("Failed to start voice interview. Please check your VAPI configuration or try again.")
-        }
+        setIsActive(true)
+        setLoading(false)
     }
 
     if (isCompleted) {
@@ -455,7 +329,9 @@ Key Guidelines:
                     <BeyondPresenceAvatar 
                         isSpeaking={aiSpeaking}
                         showAvatar={avatarEnabled}
-                        sessionData={bpSessionRef.current}
+                        sessionData={bpSession}
+                        onTranscriptUpdate={handleTranscriptUpdate}
+                        onAiSpeakingChange={setAiSpeaking}
                     />
                 </div>
             </div>

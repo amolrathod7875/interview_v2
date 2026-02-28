@@ -69,8 +69,9 @@ VITE_STORAGE_BUCKET=your_firebase_Storage_bucket
 VITE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_APP_ID=your_firebase_app_id
 VITE_MEASUREMENT_ID=your_firebase_measurment_id
-VITE_VAPI_PUBLIC_KEY=your_vapi_api_public_key
 VITE_API_BASE_URL=http://localhost:3000
+VITE_BEY_API_KEY=your_beyond_presence_api_key
+VITE_BEY_AVATAR_ID=your_beyond_presence_avatar_id
 ```
 ## ️ Setup Instructions
 
@@ -100,7 +101,6 @@ http://localhost:3000
 cd frontend  
 npm install
 npm install firebase/auth
-npm install @vapi-ai/web
 npm install react-icons
 npx shadcn@latest init
 npx shadcn@latest add button
