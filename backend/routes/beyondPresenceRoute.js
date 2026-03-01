@@ -5,9 +5,17 @@ dotenv.config();
 
 const router = express.Router();
 
-// Per-key agent cache. Each BP API key belongs to a separate account, so each
-// key needs its own agent_id for correct failover behaviour.
+// ─── Per-key+prompt agent cache ───────────────────────────────────────────────
+// Key format: `${apiKey}::${promptHash}`
+// Each unique apiKey+systemPrompt combination gets its own cached agent_id.
 const _agentCache = {};
+
+/** Simple djb2 hash for cache keys — no crypto dependency needed */
+function hashString(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = (h * 33) ^ str.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
 
 /**
  * Collect all Beyond Presence API keys from the environment (deduplicated).
@@ -81,19 +89,20 @@ async function bpRequestWithKeyRotation(endpoint, method = 'POST', body = null, 
       console.warn(`[BP] Key ${attempt + 1}/${keys.length} (${apiKey.substring(0, 8)}...) failed with HTTP ${status}`);
 
       if (status === 402 || status === 429) {
-        delete _agentCache[apiKey];
+        // Evict all entries for this key
+        Object.keys(_agentCache).filter(k => k.startsWith(apiKey)).forEach(k => delete _agentCache[k]);
         lastError = new Error(`BP API ${status}: ${errorText}`);
         continue;
       }
 
       if (status === 401 || status === 403) {
-        delete _agentCache[apiKey];
+        Object.keys(_agentCache).filter(k => k.startsWith(apiKey)).forEach(k => delete _agentCache[k]);
         lastError = new Error(`BP API ${status}: Unauthorized`);
         continue;
       }
 
       if (status === 404) {
-        delete _agentCache[apiKey];
+        Object.keys(_agentCache).filter(k => k.startsWith(apiKey)).forEach(k => delete _agentCache[k]);
         lastError = new Error(`BP API 404: Agent not found`);
         continue;
       }
@@ -110,18 +119,26 @@ async function bpRequestWithKeyRotation(endpoint, method = 'POST', body = null, 
 }
 
 /**
- * Return (or create) the managed agent for a specific API key.
- * Cached per-key in _agentCache.
+ * Return (or create) the managed agent for a specific API key + system prompt.
+ * Cached per (apiKey, promptHash) in _agentCache so that:
+ *  - The same question set reuses the existing agent (fast, no extra API call)
+ *  - A different question set creates a new agent (correct system prompt)
  */
 async function ensureAgentForKey(apiKey, config = {}) {
-  if (_agentCache[apiKey]) {
-    console.log(`[BP] Using cached agent ${_agentCache[apiKey]} for key ${apiKey.substring(0, 8)}...`);
-    return _agentCache[apiKey];
+  const promptHash = hashString(config.systemPrompt || '__default__');
+  const cacheKey   = `${apiKey}::${promptHash}`;
+
+  if (_agentCache[cacheKey]) {
+    console.log(`[BP] Using cached agent ${_agentCache[cacheKey]} for key ${apiKey.substring(0, 8)}... (prompt hash: ${promptHash})`);
+    return _agentCache[cacheKey];
   }
 
   const avatarId = process.env.BEYOND_PRESENCE_AVATAR_ID;
   if (!avatarId) throw new Error('Missing BEYOND_PRESENCE_AVATAR_ID');
 
+  // llm: { type: 'openai' } is required — without it BP's agent is completely
+  // silent (no greeting, no responses). This field is not in the TypeScript SDK
+  // types but the API accepts it and needs it to activate the LLM pipeline.
   const agentBody = {
     name: 'AI Interviewer',
     avatar_id: avatarId,
@@ -129,10 +146,8 @@ async function ensureAgentForKey(apiKey, config = {}) {
       "You are a professional AI technical interviewer. Conduct a structured interview by asking one question at a time about the candidate's skills, experience, and problem-solving ability. Be encouraging, concise, and professional.",
     language: 'en',
     greeting: config.greeting || 'Hello! I am your AI interviewer today. Are you ready to begin?',
-    llm: config.llm || { type: 'openai' },
+    llm: { type: 'openai' },
   };
-
-  if (config.tts) agentBody.tts = config.tts;
 
   console.log(`[BP] Creating agent for key ${apiKey.substring(0, 8)}... with avatar ${avatarId}`);
 
@@ -148,8 +163,8 @@ async function ensureAgentForKey(apiKey, config = {}) {
   }
 
   const agent = await res.json();
-  _agentCache[apiKey] = agent.id;
-  console.log(`[BP] Agent ${agent.id} cached for key ${apiKey.substring(0, 8)}...`);
+  _agentCache[cacheKey] = agent.id;
+  console.log(`[BP] Agent ${agent.id} cached for key ${apiKey.substring(0, 8)}... (prompt hash: ${promptHash})`);
   return agent.id;
 }
 
@@ -168,6 +183,14 @@ async function ensureAgentForKey(apiKey, config = {}) {
  */
 router.post('/create-session', async (req, res) => {
   try {
+    // Always clear the agent cache on each new interview session.
+    // Previously cached agents may have been created with the wrong `llm` field
+    // (type:'openai' = text-only ChatGPT, no STT). Clearing forces new agents
+    // to be created without that field, restoring BP's default Realtime STT.
+    const cleared = Object.keys(_agentCache).length;
+    Object.keys(_agentCache).forEach(k => delete _agentCache[k]);
+    if (cleared) console.log(`[BP] Cleared ${cleared} cached agent(s) — fresh agents will be created`);
+
     const { llm, tts, greeting, questions, interviewConfig } = req.body || {};
 
     let systemPrompt = llm?.systemPrompt;
@@ -181,8 +204,8 @@ CRITICAL RULE: Ask EXACTLY ${n} questions. NOT ${n + 1}, NOT ${n - 1}. EXACTLY $
 
 You have EXACTLY ${n} questions available. DO NOT create new questions. ONLY use the provided questions below.
 
-Ask one question at a time and wait for the candidate response before proceeding. Keep the questions clear and concise. Below are the ONLY questions you must ask:
-Questions: ${questions.join(' ')}
+Ask one question at a time and wait for the candidate response before proceeding. Keep the questions clear and concise. Below are the ONLY questions you must ask (in this exact order):
+${questions.map((q, i) => `Question ${i + 1}: ${q}`).join('\n')}
 
 If the candidate struggles, offer hints or rephrase the question without giving away the direct answer.
 
@@ -202,22 +225,11 @@ Key Guidelines:
 - Never invent your own questions`;
     }
 
-    const llmConfig = {
-      type: llm?.provider || 'openai',
-      ...(llm?.model   && { model: llm.model }),
-      ...(systemPrompt && { system_prompt: systemPrompt }),
-    };
-
-    const ttsConfig = tts ? {
-      provider: tts.provider || 'openai',
-      ...(tts.voiceId && { voice_id: tts.voiceId }),
-    } : undefined;
-
+    // Do NOT pass any llm config — BP's AgentCreateParams has no `llm` field.
+    // BP's default is OpenAI Realtime (full STT+LLM+TTS voice pipeline).
     const agentConfig = {
       systemPrompt,
       greeting,
-      llm: llmConfig,
-      ...(ttsConfig && { tts: ttsConfig }),
     };
 
     const call = await bpRequestWithKeyRotation(
@@ -227,8 +239,28 @@ Key Guidelines:
       { requiresAgent: true, agentConfig }
     );
 
-    console.log('[BP] Call created:', call.id, '| livekit_url:', call.livekit_url ? 'present' : 'MISSING');
+    // Log the actual LiveKit URL so we can verify which project/cluster is used
+    let livekitHost = 'MISSING';
+    if (call.livekit_url) {
+      try { livekitHost = new URL(call.livekit_url).host; } catch { livekitHost = call.livekit_url; }
+    }
 
+    // Decode BP's token to log permissions for debugging
+    try {
+      const p = JSON.parse(Buffer.from(call.livekit_token.split('.')[1], 'base64').toString('utf8'));
+      console.log('[BP] Call created:', call.id, '| room:', p?.video?.room,
+        '| identity:', p?.sub, '| canPublish:', p?.video?.canPublish,
+        '| canSubscribe:', p?.video?.canSubscribe, '| cluster:', livekitHost);
+    } catch {
+      console.log('[BP] Call created:', call.id, '| livekit_url:', livekitHost);
+    }
+
+    // ── Use BP's token as-is ────────────────────────────────────────────────
+    // BP's livekit_token is signed for BP's own LiveKit cluster
+    // (prod-w0h88kyi.livekit.cloud).  Our LIVEKIT_API_KEY is for a different
+    // project.  Signing a token with our key for their domain causes 401.
+    // BP already grants canPublish:true in its token so the browser can
+    // publish the microphone without any custom token.
     res.json({
       success:     true,
       callId:      call.id,
@@ -251,6 +283,11 @@ router.get('/status', (req, res) => {
     configured:    !!(process.env.BEYOND_PRESENCE_AVATAR_ID && keyCount > 0),
     availableKeys: keyCount,
     cachedAgents:  Object.keys(_agentCache).length,
+    // Summarise which (keyPrefix, promptHash) combos are currently cached
+    cacheEntries:  Object.keys(_agentCache).map(k => {
+      const [keyPrefix, promptHash] = k.split('::');
+      return { keyPrefix: keyPrefix.substring(0, 8) + '...', promptHash };
+    }),
   });
 });
 

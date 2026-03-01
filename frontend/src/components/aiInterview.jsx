@@ -35,7 +35,7 @@ export default function AiInterview() {
     const [avatarEnabled, setAvatarEnabled] = useState(true)
     const [expression, setExpression] = useState('neutral')
     const [showCaptions, setShowCaptions] = useState(false)
-    const [bpSession, setBpSession] = useState(null)  // pre-warmed BP session
+    const [bpSession, setBpSession] = useState(null)
     const bpSessionRef = useRef(null)
 
     // Transcript state — collected from LiveKit Data Channel via BeyondPresenceAvatar callbacks
@@ -182,6 +182,21 @@ export default function AiInterview() {
     const startInterview = async () => {
         setLoading(true)
 
+        // ── 1. Request microphone permission NOW (user-gesture context).
+        //        We immediately stop the tracks so the hardware is free,
+        //        but the browser now remembers the "allow" grant.
+        //        When setMicrophoneEnabled() is called later inside the LiveKit
+        //        room it reuses that grant silently — no permission dialog.
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            stream.getTracks().forEach(t => t.stop()) // release hardware immediately
+            console.log('[Interview] ✅ Mic permission pre-granted')
+        } catch (micErr) {
+            console.warn('[Interview] ⚠️ Mic permission denied:', micErr.message)
+            // Non-fatal — setMicrophoneEnabled will try again and show a prompt if needed
+        }
+
+        // ── 2. Create the BP session (agent + LiveKit room + our custom token)
         try {
             const res = await fetch(`${API}/api/beyondpresence/create-session`, {
                 method: 'POST',
@@ -190,10 +205,6 @@ export default function AiInterview() {
                     llm: {
                         provider: 'openai',
                         model: 'gpt-4',
-                    },
-                    tts: {
-                        provider: 'elevenlabs',
-                        voiceId: 'burt',
                     },
                     questions: parsedQuestionsRef.current,
                     interviewConfig: {

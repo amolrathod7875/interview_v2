@@ -70,7 +70,10 @@ router.post('/add', async (req, resp) => {
         if(!geminiResp.candidates){
             resp.status(500).json({success: false, message: "something went wrong from external api"});
         }
-        const modifiedResponse = JSON.parse(geminiResp.candidates[0].content.parts[0].text);
+        let rawText = geminiResp.candidates[0].content.parts[0].text.trim();
+        // Cohere sometimes wraps JSON in ```json ... ``` fences — strip them
+        rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+        const modifiedResponse = JSON.parse(rawText);
         // console.log(modifiedResponse, modifiedResponse.score);
 
         const resultResponse = await resultModel.create({
