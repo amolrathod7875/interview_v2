@@ -26,6 +26,8 @@ import AcademicSingleColumnATS from "./components/ui/AcademicSingleColumnATS";
 
 // CodeX
 import Codex from "./components/Codex";
+import CodexDashboard from "./components/codex/CodexDashboard";
+import CodexWorkspace from "./components/codex/CodexWorkspace";
 import ComplexityPage from "./pages/ComplexityPage"; // NEW
 
 // Job Tracker
@@ -89,6 +91,32 @@ function App() {
         {/* ================= CODEX ================= */}
         <Route
           path="/codex"
+          element={
+            <ProtectedRoute>
+              <CodexDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/codex/practice/:problemId"
+          element={
+            <ProtectedRoute>
+              <CodexWorkspace type="core" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/codex/sandbox/:problemId"
+          element={
+            <ProtectedRoute>
+              <CodexWorkspace type="sandbox" />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Legacy Codex route */}
+        <Route
+          path="/codex/legacy"
           element={
             <ProtectedRoute>
               <Codex />

@@ -5,10 +5,14 @@ import mongoose from "mongoose";
 import Topic from "../models/Topic.js";
 import Problem from "../models/Problem.js";
 import UserProgress from "../models/UserProgress.js";
+import UserStats from "../models/UserStats.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// Token cost for generating a sandbox problem
+const SANDBOX_GENERATE_COST = 5;
 
 /* -------------------------------------------------------------------------- */
 /*                        STARTER CODE NORMALIZER                              */
@@ -32,9 +36,24 @@ const normalizeStarterCode = (code = "") => {
 router.post("/generate", authMiddleware, async (req, res) => {
   try {
     const { topicId, difficulty } = req.body;
+    const userId = req.user.id;
 
     if (!topicId || !difficulty) {
       return res.status(400).json({ error: "topicId and difficulty are required" });
+    }
+
+    // Check token balance
+    let stats = await UserStats.findOne({ userId });
+    if (!stats) {
+      stats = await UserStats.create({ userId });
+    }
+
+    if (stats.tokens < SANDBOX_GENERATE_COST) {
+      return res.status(402).json({ 
+        error: "Insufficient tokens",
+        tokens: stats.tokens,
+        cost: SANDBOX_GENERATE_COST
+      });
     }
 
     const topic = await Topic.findById(topicId);
@@ -115,7 +134,12 @@ starterCode rules:
       generatedBy: "ai"
     });
 
-    res.json(problem);
+    // Deduct tokens for generating problem
+    stats.tokens -= SANDBOX_GENERATE_COST;
+    stats.totalTokensSpent += SANDBOX_GENERATE_COST;
+    await stats.save();
+
+    res.json({ ...problem._doc, tokensSpent: SANDBOX_GENERATE_COST, remainingTokens: stats.tokens });
   } catch (err) {
     console.error(" Problem generation failed:", err.message);
     res.status(500).json({ error: "Failed to generate problem" });
@@ -212,6 +236,15 @@ JSON:
           progress.solvedProblems.length / totalProblems;
 
         await progress.save();
+      }
+      
+      // Update sandbox stats
+      if (analysis.correct === true && mongoose.Types.ObjectId.isValid(userId)) {
+        const stats = await UserStats.findOne({ userId });
+        if (stats) {
+          stats.sandboxProblemsAttempted += 1;
+          await stats.save();
+        }
       }
     } catch (progressErr) {
       console.warn("️ Progress update skipped:", progressErr.message);

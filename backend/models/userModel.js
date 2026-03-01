@@ -63,6 +63,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    // Codex stats reference
+    stats: { type: mongoose.Schema.Types.ObjectId, ref: "UserStats" }
   },
   {
     timestamps: true, // createdAt & updatedAt
