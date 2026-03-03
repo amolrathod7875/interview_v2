@@ -2,6 +2,8 @@ import axios from "axios"
 import { useState } from "react"
 import LoadingWave from "./ui/LoadingWave"
 import RoadmapTimeline from "./ui/RoadmapTimeline"
+import EmptyState from "./ui/EmptyState"
+import { Compass } from "lucide-react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -202,11 +204,11 @@ const Roadmap = () => {
 
         {/* Empty State */}
         {!roadmap && !loading && (
-          <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">
-              Enter a topic above to generate your learning roadmap.
-            </p>
-          </div>
+          <EmptyState
+            icon={Compass}
+            title="No roadmap generated yet"
+            description="Enter a topic above and generate a structured learning roadmap with beginner, intermediate, and advanced levels."
+          />
         )}
 
       </div>

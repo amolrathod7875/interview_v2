@@ -8,17 +8,17 @@ const OutputPanel = ({ output, analysis, running, analyzing }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="mt-4 bg-[#1e1e1e] rounded-lg border border-gray-700 flex flex-col h-full overflow-hidden">
+    <div className="bg-[#14171f] rounded-xl border border-[#2a2f3a] flex flex-col h-full overflow-hidden">
       {/* Tabs */}
-      <div className="flex border-b border-gray-700 shrink-0">
+      <div className="flex border-b border-[#2a2f3a] shrink-0 bg-[#11151e]">
         {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm transition ${
               activeTab === tab
-                ? "bg-[#252526] text-white border-b-2 border-blue-500"
-                : "text-gray-400 hover:text-white"
+                ? "bg-[#1a1f2b] text-white border-b-2 border-blue-500"
+                : "text-gray-400 hover:text-gray-200"
             }`}
           >
             {tab}

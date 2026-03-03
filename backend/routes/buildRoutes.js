@@ -14,7 +14,12 @@ const extractText = async (s3Url) => {
         language: 'eng'
     });
 
-    return result.ParsedResults[0].ParsedText;
+    const parsedText = result?.ParsedResults?.[0]?.ParsedText;
+    if (!parsedText) {
+        throw new Error('OCR parsing failed: no extracted text returned');
+    }
+
+    return parsedText;
 }
 
 

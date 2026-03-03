@@ -1,7 +1,9 @@
 import axios from "axios"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import LoadingWave from "./ui/LoadingWave"
+import { BookOpen } from "lucide-react"
+import EmptyState from "./ui/EmptyState"
+import Skeleton from "./ui/Skeleton"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -29,9 +31,28 @@ const QuizCards = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-[#f8fafc] gap-4">
-        <LoadingWave />
-        <p className="text-gray-600 text-sm">Loading quizzes...</p>
+      <div className="h-full bg-gray-100 px-4 md:px-6 py-9 overflow-y-auto">
+        <div className="max-w-3xl mx-auto space-y-5">
+          <div className="space-y-2 text-center">
+            <Skeleton className="mx-auto h-9 w-72" />
+            <Skeleton className="mx-auto h-4 w-80" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="mb-5 flex items-center gap-3">
+                  <Skeleton className="h-11 w-11 rounded-lg" />
+                  <div className="space-y-2 w-full">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                </div>
+                <Skeleton className="mb-6 h-3.5 w-2/5" />
+                <Skeleton className="h-9 w-full rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -93,18 +114,13 @@ const QuizCards = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16">
-            <p className="text-gray-500 text-base mb-6 text-center">
-              No quizzes available yet.
-            </p>
-            <button
-              onClick={() => navigate("/quiz-form")}
-              className="px-6 py-2.5 rounded-lg
-              bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
-            >
-              Create New Quiz
-            </button>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title="No quizzes available yet"
+            description="Generate your first quiz to start tracking progress and improve your interview readiness."
+            actionLabel="Create New Quiz"
+            onAction={() => navigate("/quiz-form")}
+          />
         )}
       </div>
     </div>

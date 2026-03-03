@@ -115,32 +115,18 @@ router.get("/", authMiddleware, async (req, res) => {
     if (topicId) query.topic = topicId;
     if (difficulty) query.difficulty = difficulty;
 
-    // Fetch core + generated problems in parallel
-    const [coreProblems, generatedProblems] = await Promise.all([
-      CoreProblem.find(query)
+    const coreProblems = await CoreProblem.find(query)
       .populate("topic", "name")
-      .sort({ difficulty: 1, title: 1 }),
-      Problem.find({
-        ...query,
-        questionNumber: { $type: "number" }
-      })
-        .populate("topic", "name")
-        .sort({ difficulty: 1, questionNumber: 1, title: 1 })
-    ]);
+      .sort({ difficulty: 1, title: 1 });
 
-    // Get user's progress for core + generated problems
-    const userProgressRecords = await UserProgress.find({ userId }).select("coreProgress solvedProblems");
+    // Get user's progress for core problems
+    const userProgressRecords = await UserProgress.find({ userId }).select("coreProgress");
+
     const solvedCoreIds = userProgressRecords
       .flatMap((record) => record.coreProgress || [])
       .filter((progress) => progress.status === "solved" && progress.problemId)
       .map((progress) => progress.problemId.toString());
     const solvedCoreIdSet = new Set(solvedCoreIds);
-
-    const solvedGeneratedIds = userProgressRecords
-      .flatMap((record) => record.solvedProblems || [])
-      .filter(Boolean)
-      .map((id) => id.toString());
-    const solvedGeneratedIdSet = new Set(solvedGeneratedIds);
 
     const coreWithStatus = coreProblems.map((problem) => ({
       _id: problem._id,
@@ -151,16 +137,7 @@ router.get("/", authMiddleware, async (req, res) => {
       sourceType: "core"
     }));
 
-    const generatedWithStatus = generatedProblems.map((problem) => ({
-      _id: problem._id,
-      title: problem.title,
-      topic: problem.topic,
-      difficulty: problem.difficulty,
-      status: solvedGeneratedIdSet.has(problem._id.toString()) ? "solved" : "unsolved",
-      sourceType: "generated"
-    }));
-
-    const combinedProblems = [...coreWithStatus, ...generatedWithStatus].sort((a, b) => {
+    const combinedProblems = [...coreWithStatus].sort((a, b) => {
       const difficultyOrder = { easy: 0, medium: 1, hard: 2 };
       const diffSort = (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99);
       if (diffSort !== 0) return diffSort;
@@ -181,7 +158,7 @@ router.get("/", authMiddleware, async (req, res) => {
       solved: combinedProblems.filter((problem) => problem.status === "solved").length,
       meta: {
         coreCount: coreWithStatus.length,
-        generatedCount: generatedWithStatus.length
+        generatedCount: 0
       }
     });
   } catch (err) {

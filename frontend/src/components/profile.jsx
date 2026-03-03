@@ -6,6 +6,8 @@ import LinkedinButton from "./ui/LinkedinButton"
 import GithubButton from "./ui/GithubButton"
 import LeetcodeButton from "./ui/LeetcodeButton"
 import EmailButton from "./ui/EmailButton"
+import EmptyState from "./ui/EmptyState"
+import { UserRoundX } from "lucide-react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -173,8 +175,14 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-600">
-        No profile found
+      <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-10">
+        <div className="max-w-xl mx-auto">
+          <EmptyState
+            icon={UserRoundX}
+            title="No profile found"
+            description="We couldn't find your profile details yet. Try refreshing or sign in again to sync your account."
+          />
+        </div>
       </div>
     )
   }

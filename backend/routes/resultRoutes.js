@@ -80,13 +80,13 @@ router.get("/getByInterviewId/:interviewId", async (req, res) => {
 router.get('/generateAfterFailure/:interviewId', async (req, resp) => {
   try {
     const questions = await questionModel.find({ interviewId: req.params.interviewId })
-    if (!questions) {
-      resp.status(404).json({ success: false, message: "something not found" });
+    if (!questions || questions.length === 0) {
+      return resp.status(404).json({ success: false, message: "Questions not found" });
     }
     const answers = await answerModel.find({ interviewId: req.params.interviewId })
 
-    if (!answers) {
-      resp.status(404).json({ success: false, message: "something not found" });
+    if (!answers || answers.length === 0) {
+      return resp.status(404).json({ success: false, message: "Answers not found" });
     }
 
     const res = await evaluateUsingOpenRouter(questions, answers);

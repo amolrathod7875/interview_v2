@@ -404,7 +404,7 @@ const CodexPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-6">
+    <div className="min-h-screen bg-[#f3f4f6] p-3 md:p-4">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">CodeX</h1>
@@ -414,19 +414,28 @@ const CodexPage = () => {
               : "Select topic + difficulty, solve questions, and validate with AI test cases."}
           </p>
         </div>
-        <div className="inline-flex rounded-lg border bg-white p-1">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setMode("core")}
-            className={`px-4 py-2 text-sm rounded-md ${mode === "core" ? "bg-blue-600 text-white" : "text-gray-600"}`}
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
-            Core
+            ← Back to Dashboard
           </button>
-          <button
-            onClick={() => setMode("sandbox")}
-            className={`px-4 py-2 text-sm rounded-md ${mode === "sandbox" ? "bg-blue-600 text-white" : "text-gray-600"}`}
-          >
-            Sandbox
-          </button>
+          <div className="inline-flex rounded-lg border bg-white p-1">
+            <button
+              onClick={() => setMode("core")}
+              className={`px-4 py-2 text-sm rounded-md ${mode === "core" ? "bg-blue-600 text-white" : "text-gray-600"}`}
+            >
+              Core
+            </button>
+            <button
+              onClick={() => setMode("sandbox")}
+              className={`px-4 py-2 text-sm rounded-md ${mode === "sandbox" ? "bg-blue-600 text-white" : "text-gray-600"}`}
+            >
+              Sandbox
+            </button>
+          </div>
         </div>
       </div>
 
@@ -528,8 +537,8 @@ const CodexPage = () => {
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-          <section className="xl:col-span-4 h-[78vh]">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-3 h-[calc(100vh-8.5rem)]">
+          <section className="xl:col-span-5 h-full min-h-[640px]">
             <ProblemPanel
               problem={problem}
               topics={topics}
@@ -547,8 +556,8 @@ const CodexPage = () => {
             />
           </section>
 
-          <section className="xl:col-span-5 h-[78vh] flex flex-col gap-3">
-            <div className="h-[58%] min-h-[320px]">
+          <section className="xl:col-span-7 h-full min-h-[640px] flex flex-col gap-3">
+            <div className="h-[68%] min-h-[360px]">
               <EditorPanel
                 code={code}
                 setCode={setCode}
@@ -562,7 +571,7 @@ const CodexPage = () => {
                 aiValidating={aiValidating}
               />
             </div>
-            <div className="h-[42%] min-h-[220px]">
+            <div className="h-[32%] min-h-[220px]">
               <OutputPanel
                 output={output}
                 analysis={analysis}
@@ -571,10 +580,6 @@ const CodexPage = () => {
               />
             </div>
           </section>
-
-          <aside className="xl:col-span-3 h-[78vh] flex flex-col gap-3">
-            {rightRail}
-          </aside>
         </div>
       )}
     </div>

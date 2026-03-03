@@ -8,7 +8,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node main.js",
     "dev": "nodemon main.js",
-    "seed:core": "node scripts/seedCoreProblems.js"
+    "seed:core": "node scripts/seedCoreProblems.js",
+    "dedupe:questions": "node scripts/dedupeProblemsByDescription.js",
+    "dedupe:questions:apply": "node scripts/dedupeProblemsByDescription.js --apply"
   },
   "keywords": [],
   "author": "",

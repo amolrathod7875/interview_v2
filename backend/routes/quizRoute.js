@@ -74,7 +74,12 @@ router.get('/questions/getAll/:quizId', async (req, resp) => {
 
 router.post('/answers/add', async (req, resp) => {
     try {
-        const questionIds = req.body.answers.map(a => a.questionId);
+        const answers = Array.isArray(req.body.answers) ? req.body.answers : [];
+        if (answers.length === 0) {
+            return resp.status(400).json({ success: false, message: 'answers are required' });
+        }
+
+        const questionIds = answers.map(a => a.questionId);
 
         const questions = await quizQuestionModel.find({
             _id: { $in: questionIds }
@@ -88,8 +93,11 @@ router.post('/answers/add', async (req, resp) => {
         let score = 0;
         const answerDocs = [];
 
-        for (const a of req.body.answers) {
+        for (const a of answers) {
             const correct = questionMap[a.questionId];
+            if (!correct || typeof a.answer !== 'string') {
+                continue;
+            }
 
             const submitted = a.answer.trim().toLowerCase();
             const expected = correct.trim().toLowerCase();
@@ -103,8 +111,13 @@ router.post('/answers/add', async (req, resp) => {
                 interviewId: req.body.interviewId
             });
         }
+
+        if (questions.length === 0) {
+            return resp.status(404).json({ success: false, message: 'Questions not found for provided answers' });
+        }
+
         await quizAnswerModel.insertMany(answerDocs);
-        await quizResultModel.insertOne({ quizId: questions[0].quizId.toString(), score: score });
+        await quizResultModel.create({ quizId: questions[0].quizId.toString(), score: score });
         resp.json({ success: true, score: score });
     } catch (e) {
         resp.json({ success: false, message: e.message });

@@ -14,6 +14,11 @@ const quizAnswerSchema = new mongoose.Schema({
     answer: {
         type: String,
         required: false
+    },
+    interviewId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'interviews',
+        required: false
     }
 });
 

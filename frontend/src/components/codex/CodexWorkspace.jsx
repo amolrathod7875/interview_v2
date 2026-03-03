@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { 
   fetchCoreProblem, 
   fetchSandboxProblem,
@@ -50,6 +50,7 @@ main();
 
 const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
   const { problemId } = useParams();
+  const navigate = useNavigate();
   const { incrementSolved, updateDailyActivity } = useUserStatsStore();
   
   /* ---------------- State ---------------- */
@@ -67,8 +68,8 @@ const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
   const [analyzing, setAnalyzing] = useState(false);
   
   /* ---------------- Layout State ---------------- */
-  const [leftWidth, setLeftWidth] = useState(40);
-  const [editorHeight, setEditorHeight] = useState(65);
+  const [leftWidth, setLeftWidth] = useState(42);
+  const [editorHeight, setEditorHeight] = useState(68);
   const containerRef = useRef(null);
 
   /* ---------------- Load Data ---------------- */
@@ -208,9 +209,16 @@ const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
   }
 
   return (
-    <div ref={containerRef} className="h-screen w-full flex bg-[#f8fafc]">
+    <div ref={containerRef} className="relative h-screen w-full flex bg-[#f3f4f6] p-3 gap-3">
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-6 right-6 z-20 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+      >
+        ← Back to Dashboard
+      </button>
       {/* Left: Problem Panel */}
-      <div style={{ width: `${leftWidth}%` }} className="h-full p-2">
+      <div style={{ width: `${leftWidth}%` }} className="h-full min-h-[640px]">
         <ProblemPanel
           problem={problem}
           topics={topics}
@@ -221,13 +229,13 @@ const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
       {/* Resize Handle */}
       <div
         onMouseDown={startHorizontalResize}
-        className="w-1 cursor-col-resize bg-gray-300 hover:bg-blue-400"
+        className="w-1.5 rounded cursor-col-resize bg-gray-300 hover:bg-blue-400"
       />
 
       {/* Right: Editor + Output */}
       <div
         style={{ width: `${100 - leftWidth}%` }}
-        className="h-full flex flex-col p-2"
+        className="h-full min-h-[640px] flex flex-col gap-3"
       >
         {/* Editor */}
         <div style={{ height: `${editorHeight}%` }}>
@@ -246,7 +254,7 @@ const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
         {/* Resize Handle */}
         <div
           onMouseDown={startVerticalResize}
-          className="h-1 cursor-row-resize bg-gray-300 hover:bg-blue-400"
+          className="h-1.5 rounded cursor-row-resize bg-gray-300 hover:bg-blue-400"
         />
 
         {/* Output */}

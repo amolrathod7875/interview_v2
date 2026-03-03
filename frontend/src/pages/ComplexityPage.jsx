@@ -82,10 +82,10 @@ const ComplexityPage = () => {
           Complexity Analysis
         </h1>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/dashboard")}
           className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 rounded text-sm"
         >
-          ← Back
+          ← Back to Dashboard
         </button>
       </div>
 

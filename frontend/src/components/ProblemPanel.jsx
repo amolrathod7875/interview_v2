@@ -22,15 +22,18 @@ const ProblemPanel = ({
   showSourceBadge = false
 }) => {
   const [activeTab, setActiveTab] = useState("Description");
+  const showHeaderControls = typeof setSelectedTopic === "function"
+    && typeof setDifficulty === "function"
+    && typeof onGenerate === "function";
 
   /* ---------- Header Controls ---------- */
   const HeaderControls = () => (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-center flex-wrap">
       {/* Topic Selector */}
       <select
         value={selectedTopic || ""}
         onChange={(e) => setSelectedTopic(e.target.value)}
-        className="border rounded px-2 py-1 text-sm"
+        className="border border-gray-300 bg-white rounded-md px-3 py-1.5 text-sm text-gray-700"
       >
         <option value="" disabled>
           Select Topic
@@ -46,7 +49,7 @@ const ProblemPanel = ({
       <select
         value={difficulty}
         onChange={(e) => setDifficulty(e.target.value)}
-        className="border rounded px-2 py-1 text-sm"
+        className="border border-gray-300 bg-white rounded-md px-3 py-1.5 text-sm text-gray-700"
       >
         <option value="easy">Easy</option>
         <option value="medium">Medium</option>
@@ -57,7 +60,7 @@ const ProblemPanel = ({
       <button
         onClick={onGenerate}
         disabled={!selectedTopic || loading}
-        className={`px-4 py-1.5 rounded text-sm text-white transition ${
+        className={`px-4 py-1.5 rounded-md text-sm text-white transition ${
           !selectedTopic || loading
             ? "bg-gray-400 cursor-not-allowed"
             : "bg-blue-600 hover:bg-blue-700"
@@ -72,7 +75,7 @@ const ProblemPanel = ({
     if (!selectedTopic || questionList.length === 0) return null;
 
     return (
-      <div className={`mb-3 border rounded p-2 ${questionListMaxHeightClass} overflow-y-auto bg-gray-50`}>
+      <div className={`mb-3 border border-gray-200 rounded-lg p-2 ${questionListMaxHeightClass} overflow-y-auto bg-gray-50`}>
         <p className={`${largeTypography ? "text-sm" : "text-xs"} font-semibold text-gray-600 mb-2`}>Questions</p>
         <div className="space-y-1">
           {questionList.map((q, index) => {
@@ -113,10 +116,12 @@ const ProblemPanel = ({
   /* ---------- Empty State ---------- */
   if (!problem) {
     return (
-      <div className="h-full flex flex-col bg-white rounded-lg border p-4">
-        <div className="flex justify-end mb-4">
-          <HeaderControls />
-        </div>
+      <div className="h-full flex flex-col bg-[#f8fafc] rounded-xl border border-gray-200 p-4">
+        {showHeaderControls ? (
+          <div className="flex justify-end mb-4">
+            <HeaderControls />
+          </div>
+        ) : null}
 
         <QuestionList />
 
@@ -139,14 +144,14 @@ const ProblemPanel = ({
 
   /* ---------- Normal State ---------- */
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg border p-4 overflow-hidden">
+    <div className="h-full flex flex-col bg-[#f8fafc] rounded-xl border border-gray-200 p-4 overflow-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-start gap-3 mb-3">
         <h2 className={`font-semibold ${largeTypography ? "text-xl" : "text-lg"} leading-tight`}>
           {problem.questionNumber ? `Q${problem.questionNumber}. ` : ""}
           {problem.title || "Untitled Problem"}
         </h2>
-        <HeaderControls />
+        {showHeaderControls ? <HeaderControls /> : null}
       </div>
 
       <QuestionList />
@@ -154,7 +159,7 @@ const ProblemPanel = ({
       {!hideDetails ? (
         <>
           {/* Tabs */}
-          <div className="flex gap-5 border-b mb-3 text-sm">
+          <div className="flex gap-5 border-b border-gray-200 mb-3 text-sm">
             {tabs.map((tab) => (
               <button
                 key={tab}

@@ -13,6 +13,12 @@
         "/^node --check \"backend/routes/codexAiRoutes\\.js\"$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "npm run dedupe:questions": true,
+        "npm run lint": true,
+        "/^node --check backend/routes/buildRoutes\\.js; node --check backend/routes/interviewRoutes\\.js; node --check backend/routes/quizRoute\\.js; node --check backend/routes/resultRoutes\\.js; node --check backend/routes/codexCoreRoutes\\.js; node --check backend/models/quizModel\\.js; node --check backend/models/quizAnswerModel\\.js; node --check backend/config/s3\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }

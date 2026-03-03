@@ -9,6 +9,7 @@ import ProblemCounter from "../models/ProblemCounter.js";
 import UserProgress from "../models/UserProgress.js";
 import UserStats from "../models/UserStats.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
+import { buildFingerprint, isNearDuplicate } from "../services/problemDedup.service.js";
 
 const router = express.Router();
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -195,66 +196,7 @@ const normalizeStarterCode = (code = "") => {
 
 const getCounterKey = (topicId, difficulty) => `${topicId}_${difficulty}`;
 
-const normalizeText = (text = "") =>
-  text
-    .toString()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const getTokenSet = (text = "") => {
-  const normalized = normalizeText(text);
-  if (!normalized) return new Set();
-  return new Set(normalized.split(" ").filter(Boolean));
-};
-
-const jaccardSimilarity = (setA, setB) => {
-  if (!setA.size && !setB.size) return 1;
-  if (!setA.size || !setB.size) return 0;
-
-  let intersection = 0;
-  for (const token of setA) {
-    if (setB.has(token)) intersection += 1;
-  }
-
-  const union = new Set([...setA, ...setB]).size;
-  return union ? intersection / union : 0;
-};
-
-const buildFingerprint = ({ title = "", description = "" }) => {
-  const normalizedTitle = normalizeText(title);
-  const normalizedDescription = normalizeText(description).slice(0, 300);
-  return {
-    normalizedTitle,
-    normalizedDescription,
-    titleTokens: getTokenSet(title),
-    descriptionTokens: getTokenSet(description)
-  };
-};
-
-const isNearDuplicate = (candidate, existingFingerprints) => {
-  if (!candidate.normalizedTitle) return true;
-
-  return existingFingerprints.some((existing) => {
-    if (candidate.normalizedTitle === existing.normalizedTitle) return true;
-    if (
-      candidate.normalizedDescription &&
-      existing.normalizedDescription &&
-      candidate.normalizedDescription === existing.normalizedDescription
-    ) {
-      return true;
-    }
-
-    const titleSimilarity = jaccardSimilarity(candidate.titleTokens, existing.titleTokens);
-    const descriptionSimilarity = jaccardSimilarity(
-      candidate.descriptionTokens,
-      existing.descriptionTokens
-    );
-
-    return titleSimilarity >= 0.8 || (titleSimilarity >= 0.6 && descriptionSimilarity >= 0.75);
-  });
-};
+const isDuplicateKeyError = (err) => err?.code === 11000;
 
 const pruneDuplicateProblems = async (topicId, difficulty) => {
   const publishedProblems = await Problem.find({
@@ -436,11 +378,30 @@ const createNumberedProblem = async (topic, difficulty) => {
       continue;
     }
 
+    if (
+      candidateFingerprint.descriptionFingerprint &&
+      (await Problem.exists({
+        descriptionFingerprint: candidateFingerprint.descriptionFingerprint
+      }))
+    ) {
+      continue;
+    }
+
     const questionNumber = await getNextQuestionNumber(topic._id.toString(), difficulty);
-    const created = await Problem.create({
-      ...payload,
-      questionNumber
-    });
+    let created;
+    try {
+      created = await Problem.create({
+        ...payload,
+        questionNumber
+      });
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        continue;
+      }
+      throw err;
+    }
+
+    fingerprints.push(candidateFingerprint);
 
     return created;
   }

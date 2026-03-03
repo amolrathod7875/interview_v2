@@ -14,7 +14,8 @@ const messages = [
     "Evaluating...",
     "Almost done..."
 ]
-const API = import.meta.env.VITE_API_BASE_URL
+const RAW_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/, "")
 
 export default function AiInterview() {
     const [isCompleted, setIsCompleted] = useState(false)
@@ -198,7 +199,7 @@ export default function AiInterview() {
 
         // ── 2. Create the BP session (agent + LiveKit room + our custom token)
         try {
-            const res = await fetch(`${API}/api/beyondpresence/create-session`, {
+            const res = await fetch(`${API}/beyondpresence/create-session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

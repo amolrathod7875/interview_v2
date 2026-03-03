@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { normalizeText, computeDescriptionFingerprint } from "../services/problemDedup.service.js";
 
 const ProblemSchema = new mongoose.Schema(
   {
@@ -10,6 +11,16 @@ const ProblemSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true
+    },
+
+    normalizedDescription: {
+      type: String,
+      default: ""
+    },
+
+    descriptionFingerprint: {
+      type: String,
+      default: ""
     },
 
     input: {
@@ -89,6 +100,33 @@ const ProblemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const applyDedupFields = (target = {}) => {
+  const description = String(target.description || "");
+  target.normalizedDescription = normalizeText(description).slice(0, 300);
+  target.descriptionFingerprint = computeDescriptionFingerprint(description);
+};
+
+ProblemSchema.pre("validate", function problemPreValidate(next) {
+  applyDedupFields(this);
+  next();
+});
+
+ProblemSchema.pre("findOneAndUpdate", function problemPreFindOneAndUpdate(next) {
+  const update = this.getUpdate() || {};
+  const directDescription = update.description;
+  const setDescription = update.$set?.description;
+  const description = directDescription ?? setDescription;
+
+  if (description !== undefined) {
+    if (!update.$set) update.$set = {};
+    update.$set.normalizedDescription = normalizeText(String(description)).slice(0, 300);
+    update.$set.descriptionFingerprint = computeDescriptionFingerprint(String(description));
+  }
+
+  this.setUpdate(update);
+  next();
+});
+
 ProblemSchema.index(
   { topic: 1, difficulty: 1, questionNumber: 1 },
   {
@@ -98,5 +136,13 @@ ProblemSchema.index(
 );
 
 ProblemSchema.index({ topic: 1, difficulty: 1, isPublished: 1, questionNumber: 1 });
+ProblemSchema.index(
+  { descriptionFingerprint: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { descriptionFingerprint: { $type: "string", $ne: "" } }
+  }
+);
+ProblemSchema.index({ normalizedDescription: 1 });
 
 export default mongoose.model("Problem", ProblemSchema);

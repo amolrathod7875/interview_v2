@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/authContext"
 import { FcGoogle } from "react-icons/fc"
 import { loginWithGoogle } from "@/services/authService"
 import axios from "axios"
-import { Zap } from "lucide-react"
+import { Lock, Mail, ShieldCheck, Zap } from "lucide-react"
 
 const RAW_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/, "")
@@ -28,6 +28,7 @@ export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -36,6 +37,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrorMessage("")
 
     try {
       const resp = await login(email, password)
@@ -48,6 +50,7 @@ export default function Login() {
       navigate("/dashboard")
     } catch (error) {
       console.error("Login failed:", error)
+      setErrorMessage(error?.message || "Login failed. Please check your credentials and try again.")
     } finally {
       setIsLoading(false)
     }
@@ -56,6 +59,7 @@ export default function Login() {
   // ---------------- GOOGLE LOGIN ----------------
   const handleSigninWithGoogle = async () => {
     setIsLoading(true)
+    setErrorMessage("")
 
     try {
       const resp = await loginWithGoogle()
@@ -68,6 +72,7 @@ export default function Login() {
       navigate("/dashboard")
     } catch (error) {
       console.error("Google login failed:", error)
+      setErrorMessage(error?.message || "Google sign-in failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -86,32 +91,43 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {errorMessage ? (
+              <p className="text-sm text-red-600">{errorMessage}</p>
+            ) : null}
             <div>
               <Label>Email</Label>
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <div className="relative mt-2">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="email"
+                  placeholder="you@example.com"
+                  className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             <div>
               <Label>Password</Label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative mt-2">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md"
+              className="w-full rounded-md bg-blue-600 py-2 font-medium text-white transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 active:scale-[0.99]"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
@@ -127,11 +143,18 @@ export default function Login() {
               type="button"
               onClick={handleSigninWithGoogle}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 border py-2 rounded-md"
+              className="w-full rounded-md border py-2 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-50"
             >
-              <FcGoogle />
-              Sign in with Google
+              <span className="flex items-center justify-center gap-2">
+                <FcGoogle />
+                Sign in with Google
+              </span>
             </button>
+
+            <div className="flex items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Secure login · Your data stays protected
+            </div>
           </form>
 
           <p className="mt-8 text-center text-sm text-gray-500">
