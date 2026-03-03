@@ -14,7 +14,8 @@ const ProblemPanel = ({
   questionList = [],
   selectedQuestionId = null,
   onSelectQuestion,
-  generateLabel = "Generate"
+  generateLabel = "Generate",
+  emptyHint = ""
 }) => {
   const [activeTab, setActiveTab] = useState("Description");
 
@@ -114,6 +115,11 @@ const ProblemPanel = ({
           <p>
             This helps track your progress and unlock advanced skills.
           </p>
+          {emptyHint ? (
+            <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
+              {emptyHint}
+            </p>
+          ) : null}
         </div>
       </div>
     );

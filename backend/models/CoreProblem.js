@@ -5,6 +5,9 @@ const CoreProblemSchema = new mongoose.Schema({
   topic: { type: mongoose.Schema.Types.ObjectId, ref: "Topic", required: true },
   difficulty: { type: String, enum: ["easy", "medium", "hard"], required: true },
   description: { type: String, required: true },
+  input: { type: String, default: "" },
+  output: { type: String, default: "" },
+  examples: { type: String, default: "" },
   constraints: { type: String, default: "" },
   starterCode: {
     python: { type: String, default: "" },

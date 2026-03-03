@@ -7,10 +7,12 @@ const EditorPanel = ({
   setLanguage,
   onRun,
   onAnalyze,
+  onAiValidate,
   running,
-  analyzing
+  analyzing,
+  aiValidating
 }) => {
-  const busy = running || analyzing;
+  const busy = running || analyzing || aiValidating;
 
   return (
     <div className="h-full flex flex-col bg-[#1e1e1e] rounded-lg border">
@@ -54,6 +56,18 @@ const EditorPanel = ({
             }`}
           >
             {analyzing ? "Analyzing…" : "Analyze"}
+          </button>
+
+          <button
+            onClick={onAiValidate}
+            disabled={busy || !onAiValidate}
+            className={`text-white text-sm px-4 py-1 rounded transition ${
+              busy || !onAiValidate
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-violet-600 hover:bg-violet-700"
+            }`}
+          >
+            {aiValidating ? "AI Testing…" : "AI Validate"}
           </button>
         </div>
       </div>

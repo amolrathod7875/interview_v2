@@ -28,7 +28,6 @@ import OverviewDashboard from "./overviewDashboard"
 import AnalyseResume from "./analyseResume"
 import Profile from "./profile"
 import Roadmap from "./roadmap"
-import Codex from "./Codex"
 import JobBoard from "./jobTracker/Board"
 
 const API = import.meta.env.VITE_API_BASE_URL
@@ -39,7 +38,7 @@ const navItems = [
   { label: "Overview", icon: LayoutGrid, type: "tab" },
   { label: "Mock Interview", icon: RiRobot3Line, type: "tab" },
   { label: "Quiz", icon: MdOutlineQuiz, type: "tab" },
-  { label: "CodeX", icon: Code, type: "tab" },
+  { label: "CodeX", icon: Code, type: "route", path: "/codex" },
   { label: "Job Tracker", icon: Briefcase, type: "tab" },
   { label: "Study Companion", icon: BookOpen, type: "route", path: "/study" },
   { label: "Analyse Resume", icon: MdOutlineFindInPage, type: "tab" },
@@ -217,7 +216,6 @@ const AfterLoginLayout = () => {
             {activeTab === "Analyse Resume" && <AnalyseResume />}
             {activeTab === "Roadmap" && <Roadmap />}
             {activeTab === "Profile" && <Profile />}
-            {activeTab === "CodeX" && <Codex />}
             {activeTab === "Job Tracker" && <JobBoard />}
           </div>
         )}

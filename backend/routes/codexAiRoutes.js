@@ -4,6 +4,7 @@ import { callCohere, parseCohereJSON } from "../services/cohere.service.js";
 import mongoose from "mongoose";
 import Topic from "../models/Topic.js";
 import Problem from "../models/Problem.js";
+import CoreProblem from "../models/CoreProblem.js";
 import ProblemCounter from "../models/ProblemCounter.js";
 import UserProgress from "../models/UserProgress.js";
 import UserStats from "../models/UserStats.js";
@@ -11,6 +12,14 @@ import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const JUDGE0_URL = process.env.JUDGE0_URL || "https://ce.judge0.com";
+
+const LANGUAGE_MAP = {
+  python: 71,
+  javascript: 63,
+  java: 62,
+  cpp: 54
+};
 
 // Token cost for generating a sandbox problem
 const SANDBOX_GENERATE_COST = 5;
@@ -19,6 +28,111 @@ const POOL_TARGET_CONFIG = Number(process.env.CODEX_POOL_TARGET || 15);
 const PROBLEM_POOL_MIN = Math.max(1, Math.min(POOL_MIN_CONFIG, POOL_TARGET_CONFIG));
 const PROBLEM_POOL_TARGET = Math.max(PROBLEM_POOL_MIN, POOL_TARGET_CONFIG);
 const MAX_UNIQUENESS_RETRIES = Number(process.env.CODEX_UNIQUENESS_RETRIES || 5);
+
+const executeCode = async (language, code, stdin = "") => {
+  const languageId = LANGUAGE_MAP[language];
+  if (!languageId) throw new Error(`Unsupported language: ${language}`);
+
+  const response = await axios.post(
+    `${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`,
+    {
+      source_code: code,
+      language_id: languageId,
+      stdin,
+      redirect_stderr_to_stdout: false
+    },
+    {
+      headers: { "Content-Type": "application/json" },
+      timeout: 20000
+    }
+  );
+
+  return response.data;
+};
+
+const generateAiTestCases = async ({ title, description, input, output, constraints, examples }) => {
+  const systemMsg = `
+You generate coding challenge test cases.
+Return ONLY valid JSON in this exact format:
+{
+  "testCases": [
+    {
+      "input": "string",
+      "expectedOutput": "string",
+      "reason": "string"
+    }
+  ]
+}
+
+Rules:
+- Generate 3 to 5 deterministic test cases.
+- expectedOutput must exactly match expected program output.
+- Include at least one edge case.
+`;
+
+  const userMsg = `
+Problem Title: ${title || "Untitled"}
+
+Description:
+${description || ""}
+
+Input:
+${input || ""}
+
+Output:
+${output || ""}
+
+Constraints:
+${constraints || ""}
+
+Examples:
+${examples || ""}
+`;
+
+  let parsed;
+
+  try {
+    const response = await axios.post(
+      OPENROUTER_URL,
+      {
+        model: process.env.OPENROUTER_MODEL_amol,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: systemMsg },
+          { role: "user", content: userMsg }
+        ]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const content = response.data?.choices?.[0]?.message?.content || "{}";
+    parsed = JSON.parse(content);
+  } catch (orErr) {
+    const cohereKey = process.env.COHERE_API_KEY_CODEX;
+    const text = await callCohere(userMsg, systemMsg, 1200, cohereKey);
+    parsed = parseCohereJSON(text);
+  }
+
+  const normalized = (parsed?.testCases || [])
+    .map((testCase) => ({
+      input: String(testCase?.input || "").trim(),
+      expectedOutput: String(testCase?.expectedOutput || "").trim(),
+      reason: String(testCase?.reason || "").trim()
+    }))
+    .filter((testCase) => testCase.input.length > 0 && testCase.expectedOutput.length > 0)
+    .slice(0, 5);
+
+  if (!normalized.length) {
+    throw new Error("Failed to generate valid AI test cases");
+  }
+
+  return normalized;
+};
 
 /* -------------------------------------------------------------------------- */
 /*                        STARTER CODE NORMALIZER                              */
@@ -475,6 +589,81 @@ JSON:
   } catch (err) {
     console.error(" Code analysis failed:", err.message);
     res.status(500).json({ error: "Failed to analyze code" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                         AI TESTCASE VALIDATION                              */
+/* -------------------------------------------------------------------------- */
+router.post("/validate", authMiddleware, async (req, res) => {
+  try {
+    const { problemType = "core", problemId, code, language } = req.body;
+
+    if (!problemId || !code || !language) {
+      return res.status(400).json({ error: "problemId, code, and language are required" });
+    }
+
+    const isCore = problemType === "core";
+    const problem = isCore
+      ? await CoreProblem.findById(problemId).populate("topic", "name")
+      : await Problem.findById(problemId).populate("topic", "name");
+
+    if (!problem) {
+      return res.status(404).json({ error: "Problem not found" });
+    }
+
+    const aiTestCases = await generateAiTestCases({
+      title: problem.title,
+      description: problem.description,
+      input: problem.input,
+      output: problem.output,
+      constraints: problem.constraints,
+      examples: problem.examples
+    });
+
+    const results = [];
+    let passed = 0;
+
+    for (const testCase of aiTestCases) {
+      try {
+        const execution = await executeCode(language, code, testCase.input);
+        const actualOutput = (execution.stdout || "").trim();
+        const expectedOutput = testCase.expectedOutput.trim();
+        const testPassed = actualOutput === expectedOutput;
+
+        if (testPassed) passed += 1;
+
+        results.push({
+          input: testCase.input,
+          expectedOutput,
+          output: actualOutput,
+          reason: testCase.reason,
+          status: execution.status?.description || "Unknown",
+          passed: testPassed
+        });
+      } catch (execErr) {
+        results.push({
+          input: testCase.input,
+          expectedOutput: testCase.expectedOutput,
+          output: "",
+          reason: testCase.reason,
+          passed: false,
+          error: execErr.message
+        });
+      }
+    }
+
+    return res.json({
+      success: passed === aiTestCases.length,
+      problemType,
+      total: aiTestCases.length,
+      passed,
+      aiTestCases,
+      results
+    });
+  } catch (err) {
+    console.error("AI testcase validation failed:", err.message);
+    return res.status(500).json({ error: "Failed to validate with AI test cases" });
   }
 });
 

@@ -1,13 +1,14 @@
 import { useMemo } from "react";
 import useUserStatsStore from "../../store/useUserStatsStore";
 
-const ActivityHeatmap = () => {
+const ActivityHeatmap = ({ days = 30 }) => {
   const { dailyActivityMap } = useUserStatsStore();
+  const windowDays = Math.max(1, Number(days) || 30);
 
-  // Generate last 30 days
-  const days = useMemo(() => {
+  // Generate recent days window
+  const heatmapDays = useMemo(() => {
     const result = [];
-    for (let i = 29; i >= 0; i--) {
+    for (let i = windowDays - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateKey = date.toISOString().split('T')[0];
@@ -18,7 +19,7 @@ const ActivityHeatmap = () => {
       });
     }
     return result;
-  }, [dailyActivityMap]);
+  }, [dailyActivityMap, windowDays]);
 
   // Calculate color intensity based on problems solved
   const getColor = (problemsSolved) => {
@@ -37,12 +38,12 @@ const ActivityHeatmap = () => {
     let currentWeek = [];
     
     // Fill in days before first day of data
-    const firstDay = days[0]?.day || 0;
+    const firstDay = heatmapDays[0]?.day || 0;
     for (let i = 0; i < firstDay; i++) {
       currentWeek.push(null);
     }
     
-    days.forEach(day => {
+    heatmapDays.forEach(day => {
       currentWeek.push(day);
       if (day.day === 6) {
         result.push(currentWeek);
@@ -55,9 +56,7 @@ const ActivityHeatmap = () => {
     }
     
     return result;
-  }, [days]);
-
-  const maxSolved = Math.max(...days.map(d => d.activity.problemsSolved), 1);
+  }, [heatmapDays]);
 
   return (
     <div className="overflow-x-auto">

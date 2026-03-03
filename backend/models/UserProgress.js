@@ -9,7 +9,8 @@ const UserProgressSchema = new mongoose.Schema({
   topic: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Topic",
-    required: true
+    required: false,
+    default: null
   },
   solvedProblems: [{
     type: mongoose.Schema.Types.ObjectId,

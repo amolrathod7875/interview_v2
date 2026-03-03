@@ -111,4 +111,14 @@ export const analyzeCode = async ({ problemId, code }) => {
   return res.data; // structured analysis JSON
 };
 
+export const validateWithAiTestcases = async ({ problemType, problemId, code, language }) => {
+  const res = await api.post("/codex/ai/validate", {
+    problemType,
+    problemId,
+    code,
+    language
+  });
+  return res.data;
+};
+
 export default api;

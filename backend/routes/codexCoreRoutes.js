@@ -120,10 +120,12 @@ router.get("/", authMiddleware, async (req, res) => {
       .sort({ difficulty: 1, title: 1 });
 
     // Get user's progress for core problems
-    const userProgress = await UserProgress.findOne({ userId });
-    const solvedCoreIds = userProgress?.coreProgress
-      .filter(p => p.status === "solved")
-      .map(p => p.problemId.toString()) || [];
+    const userProgressRecords = await UserProgress.find({ userId }).select("coreProgress");
+    const solvedCoreIds = userProgressRecords
+      .flatMap((record) => record.coreProgress || [])
+      .filter((progress) => progress.status === "solved" && progress.problemId)
+      .map((progress) => progress.problemId.toString());
+    const solvedCoreIdSet = new Set(solvedCoreIds);
 
     // Add status to problems
     const problemsWithStatus = problems.map(p => ({
@@ -131,7 +133,7 @@ router.get("/", authMiddleware, async (req, res) => {
       title: p.title,
       topic: p.topic,
       difficulty: p.difficulty,
-      status: solvedCoreIds.includes(p._id.toString()) ? "solved" : "unsolved"
+      status: solvedCoreIdSet.has(p._id.toString()) ? "solved" : "unsolved"
     }));
 
     // Filter by status if provided
@@ -150,28 +152,6 @@ router.get("/", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Error fetching core problems:", err.message);
     res.status(500).json({ error: "Failed to fetch problems" });
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/*                        GET SINGLE PROBLEM                                  */
-/* -------------------------------------------------------------------------- */
-/**
- * GET /api/codex/core/:id
- */
-router.get("/:id", authMiddleware, async (req, res) => {
-  try {
-    const problem = await CoreProblem.findById(req.params.id)
-      .populate("topic", "name");
-
-    if (!problem) {
-      return res.status(404).json({ error: "Problem not found" });
-    }
-
-    res.json(problem);
-  } catch (err) {
-    console.error("Error fetching problem:", err.message);
-    res.status(500).json({ error: "Failed to fetch problem" });
   }
 });
 
@@ -248,35 +228,33 @@ router.post("/submit", authMiddleware, async (req, res) => {
 
     // Update user progress if all tests pass
     if (success) {
-      const userProgress = await UserProgress.findOne({ userId });
-      
-      if (userProgress) {
-        const existingCoreProgress = userProgress.coreProgress.find(
-          cp => cp.problemId.toString() === problemId
-        );
-        
-        if (existingCoreProgress) {
-          // Already solved, just update if not already solved
-          if (existingCoreProgress.status !== "solved") {
-            existingCoreProgress.status = "solved";
-            existingCoreProgress.solvedAt = new Date();
-            existingCoreProgress.executionTime = totalExecutionTime;
-            existingCoreProgress.memoryUsed = totalMemory;
-          }
-        } else {
-          // New solve
-          userProgress.coreProgress.push({
-            problemId,
-            status: "solved",
-            executionTime: totalExecutionTime,
-            memoryUsed: totalMemory,
-            solvedAt: new Date()
-          });
-        }
-        
-        userProgress.lastAttemptAt = new Date();
-        await userProgress.save();
+      const userProgress = await UserProgress.findOneAndUpdate(
+        { userId },
+        { $setOnInsert: { userId, topic: null } },
+        { new: true, upsert: true }
+      );
+
+      const existingCoreProgress = userProgress.coreProgress.find(
+        (cp) => cp.problemId?.toString() === problemId
+      );
+
+      if (existingCoreProgress) {
+        existingCoreProgress.status = "solved";
+        existingCoreProgress.solvedAt = new Date();
+        existingCoreProgress.executionTime = totalExecutionTime;
+        existingCoreProgress.memoryUsed = totalMemory;
+      } else {
+        userProgress.coreProgress.push({
+          problemId,
+          status: "solved",
+          executionTime: totalExecutionTime,
+          memoryUsed: totalMemory,
+          solvedAt: new Date()
+        });
       }
+
+      userProgress.lastAttemptAt = new Date();
+      await userProgress.save();
 
       // Update streak and stats
       await updateStreak(userId);
@@ -310,6 +288,28 @@ router.get("/topics", async (req, res) => {
   } catch (err) {
     console.error("Error fetching topics:", err.message);
     res.status(500).json({ error: "Failed to fetch topics" });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
+/*                        GET SINGLE PROBLEM                                  */
+/* -------------------------------------------------------------------------- */
+/**
+ * GET /api/codex/core/:id
+ */
+router.get("/:id", authMiddleware, async (req, res) => {
+  try {
+    const problem = await CoreProblem.findById(req.params.id)
+      .populate("topic", "name");
+
+    if (!problem) {
+      return res.status(404).json({ error: "Problem not found" });
+    }
+
+    res.json(problem);
+  } catch (err) {
+    console.error("Error fetching problem:", err.message);
+    res.status(500).json({ error: "Failed to fetch problem" });
   }
 });
 
