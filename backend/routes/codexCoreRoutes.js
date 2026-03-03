@@ -110,8 +110,12 @@ router.get("/", authMiddleware, async (req, res) => {
     const { topicId, difficulty, status } = req.query;
     const userId = req.user.id;
 
+    const publishedFilter = {
+      $or: [{ isPublished: true }, { isPublished: { $exists: false } }]
+    };
+
     // Build query
-    const query = { isPublished: true };
+    const query = { ...publishedFilter };
     if (topicId) query.topic = topicId;
     if (difficulty) query.difficulty = difficulty;
 
@@ -119,8 +123,16 @@ router.get("/", authMiddleware, async (req, res) => {
       .populate("topic", "name")
       .sort({ difficulty: 1, title: 1 });
 
+    const generatedQuery = { ...publishedFilter };
+    if (topicId) generatedQuery.topic = topicId;
+    if (difficulty) generatedQuery.difficulty = difficulty;
+
+    const generatedProblems = await Problem.find(generatedQuery)
+      .populate("topic", "name")
+      .sort({ questionNumber: 1, createdAt: 1, title: 1 });
+
     // Get user's progress for core problems
-    const userProgressRecords = await UserProgress.find({ userId }).select("coreProgress");
+    const userProgressRecords = await UserProgress.find({ userId }).select("coreProgress solvedProblems topic");
 
     const solvedCoreIds = userProgressRecords
       .flatMap((record) => record.coreProgress || [])
@@ -128,19 +140,46 @@ router.get("/", authMiddleware, async (req, res) => {
       .map((progress) => progress.problemId.toString());
     const solvedCoreIdSet = new Set(solvedCoreIds);
 
+    const solvedGeneratedIds = userProgressRecords
+      .filter((record) => !topicId || record.topic?.toString() === topicId)
+      .flatMap((record) => record.solvedProblems || [])
+      .map((problemId) => problemId.toString());
+    const solvedGeneratedIdSet = new Set(solvedGeneratedIds);
+
     const coreWithStatus = coreProblems.map((problem) => ({
       _id: problem._id,
       title: problem.title,
       topic: problem.topic,
       difficulty: problem.difficulty,
+      questionNumber: problem.questionNumber,
       status: solvedCoreIdSet.has(problem._id.toString()) ? "solved" : "unsolved",
       sourceType: "core"
     }));
 
-    const combinedProblems = [...coreWithStatus].sort((a, b) => {
+    const generatedWithStatus = generatedProblems.map((problem) => ({
+      _id: problem._id,
+      title: problem.title,
+      topic: problem.topic,
+      difficulty: problem.difficulty,
+      questionNumber: problem.questionNumber,
+      status: solvedGeneratedIdSet.has(problem._id.toString()) ? "solved" : "unsolved",
+      sourceType: "generated"
+    }));
+
+    const combinedProblems = [...coreWithStatus, ...generatedWithStatus].sort((a, b) => {
       const difficultyOrder = { easy: 0, medium: 1, hard: 2 };
+      const sourceOrder = { core: 0, generated: 1 };
+
       const diffSort = (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99);
       if (diffSort !== 0) return diffSort;
+
+      const sourceSort = (sourceOrder[a.sourceType] ?? 99) - (sourceOrder[b.sourceType] ?? 99);
+      if (sourceSort !== 0) return sourceSort;
+
+      const aQuestionNumber = Number.isFinite(a.questionNumber) ? a.questionNumber : Number.MAX_SAFE_INTEGER;
+      const bQuestionNumber = Number.isFinite(b.questionNumber) ? b.questionNumber : Number.MAX_SAFE_INTEGER;
+      if (aQuestionNumber !== bQuestionNumber) return aQuestionNumber - bQuestionNumber;
+
       return a.title.localeCompare(b.title);
     });
 
@@ -158,7 +197,7 @@ router.get("/", authMiddleware, async (req, res) => {
       solved: combinedProblems.filter((problem) => problem.status === "solved").length,
       meta: {
         coreCount: coreWithStatus.length,
-        generatedCount: 0
+        generatedCount: generatedWithStatus.length
       }
     });
   } catch (err) {

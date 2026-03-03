@@ -6,11 +6,95 @@ import ScoreCircle from './ui/scoreCircle'
 import { Button } from './ui/button'
 import LoadingWave from './ui/LoadingWave'
 
-// Job Analytics
-import JobAnalytics from './jobTracker/JobAnalytics'
+// Skill tag colors based on technology
+const skillColors = {
+  // Frontend
+  react: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+  vue: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+  angular: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
+  javascript: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200' },
+  typescript: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+  css: { bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-200' },
+  html: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  // Backend
+  node: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+  'node.js': { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+  python: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200' },
+  java: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
+  spring: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+  // Database
+  sql: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
+  mongodb: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
+  postgresql: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+  mysql: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  // Cloud/DevOps
+  aws: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  docker: { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-200' },
+  kubernetes: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+  // Data Science
+  'machine learning': { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
+  ml: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
+  tensorflow: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  pytorch: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200' },
+  // Default
+  default: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
+}
+
+// Get color for a skill
+const getSkillColor = (skill) => {
+  const normalizedSkill = skill.toLowerCase().trim()
+  return skillColors[normalizedSkill] || skillColors.default
+}
+
+// Get relative time
+const getRelativeTime = (date) => {
+  if (!date) return ''
+  const now = new Date()
+  const past = new Date(date)
+  const diffMs = now - past
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  const diffWeeks = Math.floor(diffDays / 7)
+  const diffMonths = Math.floor(diffDays / 30)
+
+  if (diffSecs < 60) return 'Just now'
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+  if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`
+  if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`
+  return past.toLocaleDateString()
+}
+
+// Topic colors
+const topicColors = {
+  react: { bg: 'bg-blue-100', text: 'text-blue-700', icon: 'bg-blue-500' },
+  javascript: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'bg-yellow-500' },
+  python: { bg: 'bg-green-100', text: 'text-green-700', icon: 'bg-green-500' },
+  java: { bg: 'bg-red-100', text: 'text-red-700', icon: 'bg-red-500' },
+  node: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: 'bg-emerald-500' },
+  'node.js': { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: 'bg-emerald-500' },
+  typescript: { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: 'bg-indigo-500' },
+  angular: { bg: 'bg-red-100', text: 'text-red-700', icon: 'bg-red-500' },
+  vue: { bg: 'bg-teal-100', text: 'text-teal-700', icon: 'bg-teal-500' },
+  css: { bg: 'bg-pink-100', text: 'text-pink-700', icon: 'bg-pink-500' },
+  html: { bg: 'bg-orange-100', text: 'text-orange-700', icon: 'bg-orange-500' },
+  sql: { bg: 'bg-purple-100', text: 'text-purple-700', icon: 'bg-purple-500' },
+  mongodb: { bg: 'bg-green-100', text: 'text-green-700', icon: 'bg-green-500' },
+  default: { bg: 'bg-slate-100', text: 'text-slate-700', icon: 'bg-slate-500' }
+}
+
+const getTopicColor = (topic) => {
+  if (!topic) return topicColors.default
+  const normalizedTopic = topic.toLowerCase().trim()
+  return topicColors[normalizedTopic] || topicColors.default
+}
 
 // GitHub Analysis Card
 import GithubAnalysisCard from './dashboard/GithubAnalysisCard'
+import JobAnalytics from './jobTracker/JobAnalytics'
 
 // GitHub Icon
 import { FaGithub } from 'react-icons/fa'
@@ -174,16 +258,45 @@ const OverviewDashboard = () => {
                               state: { interviewId: item._id },
                             })
                           }
-                          className="flex gap-4 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer"
+                          className="flex gap-4 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer group transition-all hover:shadow-md"
                         >
-                          <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold">
-                            {item.topic?.[0]?.toUpperCase()}
+                          <div className={`h-12 w-12 flex items-center justify-center rounded-lg ${getTopicColor(item.topic).bg} ${getTopicColor(item.topic).text} font-semibold`}>
+                            <span className="text-lg">{item.topic?.[0]?.toUpperCase()}</span>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold truncate">{item.topic}</p>
-                            <p className="text-xs text-gray-500">
-                              Skills: {item.skills.join(', ')}
-                            </p>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold truncate group-hover:text-blue-700 transition-colors">{item.topic}</p>
+                              {item.score !== undefined && (
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                  item.score >= 80 ? 'bg-green-100 text-green-700' :
+                                  item.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {item.score}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {item.skills.slice(0, 3).map((skill, idx) => {
+                                const color = getSkillColor(skill)
+                                return (
+                                  <span
+                                    key={idx}
+                                    className={`px-2 py-0.5 text-xs rounded-md ${color.bg} ${color.text} border ${color.border}`}
+                                  >
+                                    {skill}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                            {item.completedAt && (
+                              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {getRelativeTime(item.completedAt)}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -221,23 +334,44 @@ const OverviewDashboard = () => {
                     : completedQuizzes.slice(0, 5)
                   return (
                     <>
-                      {displayedQuizzes.map(item => (
+                      {(displayedQuizzes.map(item => {
+                        const topicColor = getTopicColor(item.topic)
+                        return (
                         <div
                           key={item._id}
                           onClick={() => getQuizResult(item._id, item.noOfQuestions)}
-                          className="flex gap-4 p-4 border rounded-xl hover:bg-indigo-50 cursor-pointer"
+                          className="flex gap-4 p-4 border rounded-xl hover:bg-indigo-50 cursor-pointer group transition-all hover:shadow-md"
                         >
-                          <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
-                            {item.topic?.[0]?.toUpperCase() || 'Q'}
+                          <div className={`h-12 w-12 flex items-center justify-center rounded-lg ${topicColor.bg} ${topicColor.text} font-semibold`}>
+                            <span className="text-lg">{item.topic?.[0]?.toUpperCase() || 'Q'}</span>
                           </div>
-                          <div>
-                            <p className="font-semibold">{item.topic}</p>
-                            <p className="text-xs text-gray-500">
-                              Questions: {item.noOfQuestions}
-                            </p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold group-hover:text-indigo-700 transition-colors">{item.topic}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <p className="text-xs text-gray-500">
+                                {item.noOfQuestions} Questions
+                              </p>
+                              {item.score !== undefined && (
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                  item.score >= 80 ? 'bg-green-100 text-green-700' :
+                                  item.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {item.score}%
+                                </span>
+                              )}
+                            </div>
+                            {item.completedAt && (
+                              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {getRelativeTime(item.completedAt)}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      ))}
+                      )}))}
                       {completedQuizzes.length > 5 && (
                         <button
                           onClick={() => setShowAllQuizzes(!showAllQuizzes)}

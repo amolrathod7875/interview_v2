@@ -1,9 +1,9 @@
 import axios from "axios"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Button } from "./ui/button"
 import LoadingWave from "./ui/LoadingWave"
-import { ArrowLeft, CheckCircle2, AlertCircle, Clock, AlertTriangle } from "lucide-react"
+import { ArrowLeft, CheckCircle2, AlertCircle, Clock, AlertTriangle, Flag, ChevronLeft, ChevronRight } from "lucide-react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
@@ -16,8 +16,11 @@ const Quiz = () => {
 
     const [questions, setQuestions] = useState([])
     const [answers, setAnswers] = useState({})
+    const [flaggedQuestions, setFlaggedQuestions] = useState({})
     const [error, setError] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [currentQuestion, setCurrentQuestion] = useState(0)
+    const questionRefs = useRef({})
     
     const [timeRemaining, setTimeRemaining] = useState(timeInMinutes * 60)
     const [timerExpired, setTimerExpired] = useState(false)
@@ -74,6 +77,52 @@ const Quiz = () => {
         setAnswers(prev => ({ ...prev, [qIndex]: option }))
     }
 
+    const toggleFlag = (qIndex) => {
+        setFlaggedQuestions(prev => ({
+            ...prev,
+            [qIndex]: !prev[qIndex]
+        }))
+    }
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.target.tagName === 'INPUT') return
+            
+            // Number keys 1-9 for quick answer selection on current question
+            if (e.key >= '1' && e.key <= '9') {
+                const optionIndex = parseInt(e.key) - 1
+                if (questions[currentQuestion]?.options && optionIndex < questions[currentQuestion].options.length) {
+                    handleChange(currentQuestion, questions[currentQuestion].options[optionIndex])
+                }
+            }
+            
+            // Arrow keys for navigation
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault()
+                if (currentQuestion > 0) {
+                    setCurrentQuestion(prev => prev - 1)
+                    scrollToQuestion(currentQuestion - 1)
+                }
+            }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault()
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(prev => prev + 1)
+                    scrollToQuestion(currentQuestion + 1)
+                }
+            }
+            
+            // F key to flag current question
+            if (e.key === 'f' || e.key === 'F') {
+                toggleFlag(currentQuestion)
+            }
+        }
+        
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [currentQuestion, questions])
+
     const handleSubmit = useCallback(async (autoSubmit = false) => {
         try {
             setIsLoading(true);
@@ -124,7 +173,8 @@ const Quiz = () => {
     }
 
     const scrollToQuestion = (index) => {
-        const element = document.getElementById(`question-${index}`)
+        setCurrentQuestion(index)
+        const element = questionRefs.current[`question-${index}`]
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
@@ -211,17 +261,31 @@ const Quiz = () => {
                     <div className="w-full lg:flex-1 space-y-6">
                         {questions.map((q, qIndex) => (
                             <div
+                                ref={el => questionRefs.current[`question-${qIndex}`] = el}
                                 key={q._id}
                                 id={`question-${qIndex}`}
-                                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm scroll-mt-24"
+                                className={`bg-white border-2 rounded-2xl p-6 shadow-sm scroll-mt-24 transition-all ${
+                                    currentQuestion === qIndex ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'
+                                }`}
                             >
                                 <div className="flex gap-4 mb-6">
                                     <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-bold flex-shrink-0">
                                         {qIndex + 1}
                                     </div>
-                                    <p className="text-lg text-gray-900 font-semibold">
+                                    <p className="text-lg text-gray-900 font-semibold flex-1">
                                         {q.text.replace(/```/g, "")}
                                     </p>
+                                    <button
+                                        onClick={() => toggleFlag(qIndex)}
+                                        className={`p-2 rounded-lg transition-colors ${
+                                            flaggedQuestions[qIndex] 
+                                                ? 'bg-amber-100 text-amber-600' 
+                                                : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                        }`}
+                                        title={flaggedQuestions[qIndex] ? 'Unflag question (F)' : 'Flag for review (F)'}
+                                    >
+                                        <Flag className="h-5 w-5" />
+                                    </button>
                                 </div>
 
                                 <div className="space-y-3">
@@ -258,33 +322,77 @@ const Quiz = () => {
                         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-sm font-bold text-gray-900 uppercase">Navigator</h3>
-                                <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">
-                                    {Object.keys(answers).length}/{questions.length}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => { if (currentQuestion > 0) { scrollToQuestion(currentQuestion - 1); setCurrentQuestion(currentQuestion - 1) }}}
+                                        disabled={currentQuestion === 0}
+                                        className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="text-xs font-bold px-2 py-1 bg-blue-100 rounded text-blue-600">
+                                        {currentQuestion + 1}/{questions.length}
+                                    </span>
+                                    <button
+                                        onClick={() => { if (currentQuestion < questions.length - 1) { scrollToQuestion(currentQuestion + 1); setCurrentQuestion(currentQuestion + 1) }}}
+                                        disabled={currentQuestion === questions.length - 1}
+                                        className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-5 gap-2 mb-8">
+                            <div className="grid grid-cols-5 gap-2 mb-6">
                                 {questions.map((_, i) => (
                                     <button
                                         key={i}
                                         onClick={() => scrollToQuestion(i)}
-                                        className={`h-10 rounded-lg text-sm font-bold transition-all border
+                                        onMouseEnter={() => setCurrentQuestion(i)}
+                                        className={`h-12 rounded-lg text-sm font-bold transition-all border relative
                                             ${answers[i]
                                                 ? "bg-blue-600 border-blue-600 text-white"
                                                 : "bg-white border-gray-200 text-gray-400 hover:border-blue-400"
-                                            }`}
+                                            }
+                                            ${currentQuestion === i ? 'ring-2 ring-blue-300' : ''}
+                                            ${flaggedQuestions[i] ? 'ring-2 ring-amber-300' : ''}
+                                        `}
+                                        title={`Question ${i + 1}${flaggedQuestions[i] ? ' (Flagged)' : ''}`}
                                     >
                                         {i + 1}
+                                        {flaggedQuestions[i] && (
+                                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full" />
+                                        )}
                                     </button>
                                 ))}
                             </div>
 
+                            {/* Legend */}
+                            <div className="flex gap-4 mb-6 text-xs">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-blue-600 rounded" />
+                                    <span className="text-gray-500">Answered</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-white border-2 border-gray-200 rounded" />
+                                    <span className="text-gray-500">Unanswered</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-amber-500 rounded-full" />
+                                    <span className="text-gray-500">Flagged</span>
+                                </div>
+                            </div>
+
                             <div className="space-y-4">
-                                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                <div className="w-full bg-gray-100 rounded-full h-2">
                                     <div
-                                        className="h-1.5 rounded-full bg-blue-600 transition-all duration-300"
+                                        className="h-2 rounded-full bg-blue-600 transition-all duration-300"
                                         style={{ width: `${progressPercentage}%` }}
                                     />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">{Math.round(progressPercentage)}% Complete</span>
+                                    <span className="text-gray-500">{questions.length - Object.keys(answers).length} remaining</span>
                                 </div>
                                 <Button
                                     onClick={() => handleSubmit(false)}

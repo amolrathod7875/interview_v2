@@ -91,7 +91,7 @@ const CodexPage = () => {
   const emptyHint = useMemo(() => {
     if (loadingQuestions || !selectedTopic || questionList.length > 0) return "";
     if (mode === "core") {
-      return "No Core questions found for this topic and difficulty yet.";
+      return "No Core or generated questions found for this topic and difficulty yet.";
     }
     return "No Sandbox questions found for this topic and difficulty. Click Generate to create one.";
   }, [loadingQuestions, mode, questionList.length, selectedTopic]);

@@ -25,7 +25,6 @@ import SingleColumnATS from "./components/ui/SingleColumnATS";
 import AcademicSingleColumnATS from "./components/ui/AcademicSingleColumnATS";
 
 // CodeX
-import Codex from "./components/Codex";
 import CodexWorkspace from "./components/codex/CodexWorkspace";
 import ComplexityPage from "./pages/ComplexityPage"; // NEW
 import CodexPage from "./pages/CodexPage";
@@ -119,7 +118,7 @@ function App() {
           path="/codex/legacy"
           element={
             <ProtectedRoute>
-              <Codex />
+              <CodexPage />
             </ProtectedRoute>
           }
         />

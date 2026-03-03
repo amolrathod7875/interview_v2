@@ -97,9 +97,9 @@ const AfterLoginLayout = () => {
         onMouseEnter={() => setIsSidebarOpen(true)}
       />
 
-      {/* Toggle button */}
+      {/* Toggle button - visible always for click-to-toggle */}
       <button
-        onMouseEnter={() => setIsSidebarOpen(true)}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="fixed top-4 left-4 z-[70] p-2 rounded-lg bg-white border shadow-sm hover:bg-gray-50 transition-colors"
       >
         <FcMenu className="w-5 h-5" />
@@ -165,10 +165,10 @@ const AfterLoginLayout = () => {
                     setActiveTab(item.label)
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative
                 ${
                   activeTab === item.label && !isStudyRoute
-                    ? "bg-blue-50 text-blue-700 font-semibold"
+                    ? "bg-blue-50 text-blue-700 font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-8 before:bg-blue-600 before:rounded-r-full"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
@@ -179,6 +179,10 @@ const AfterLoginLayout = () => {
           </nav>
 
           <div className="px-4 py-4 border-t">
+            <div className="mb-3 px-4 py-2 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-400 font-medium">Keyboard Shortcut</p>
+              <p className="text-sm text-gray-600 font-semibold">⌘K to open menu</p>
+            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
