@@ -40,15 +40,15 @@ const InterviewCards = () => {
   const incompleteInterviews = data.filter(item => !item.isCompleted)
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 md:px-8 py-10">
+    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-10">
       <div className="mx-auto">
 
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-4xl font-bold text-center text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-center text-slate-900 mb-2">
             Incomplete Interviews
           </h1>
-          <p className="text-gray-500 text-center">
+          <p className="text-slate-500 text-center">
             Continue interviews that are not yet completed
           </p>
         </div>
@@ -64,8 +64,8 @@ const InterviewCards = () => {
                     state: { interviewId: item._id }
                   })
                 }
-                className="bg-white border border-gray-200 rounded-2xl p-6
-                shadow-sm hover:shadow-md transition cursor-pointer flex flex-col"
+                className="bg-white border border-slate-200 rounded-xl p-6
+                shadow-card hover:shadow-card-hover transition-shadow cursor-pointer flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-4">
@@ -74,10 +74,10 @@ const InterviewCards = () => {
                     {item.topic?.[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate capitalize">
+                    <h3 className="text-lg font-semibold text-slate-900 truncate capitalize">
                       {item.topic}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       Experience: {item.experience} year{item.experience > 1 ? "s" : ""}
                     </p>
                   </div>
@@ -88,15 +88,15 @@ const InterviewCards = () => {
                   {item.skills.slice(0, 3).map((skill, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 text-xs rounded-md
-                      bg-gray-100 text-gray-700 border border-gray-200"
+                      className="px-2.5 py-1 text-xs rounded-md
+                      bg-slate-100 text-slate-700 border border-slate-200"
                     >
                       {skill}
                     </span>
                   ))}
                   {item.skills.length > 3 && (
-                    <span className="px-2 py-1 text-xs rounded-md
-                      bg-gray-50 text-gray-500 border border-gray-200">
+                    <span className="px-2.5 py-1 text-xs rounded-md
+                      bg-slate-50 text-slate-500 border border-slate-200">
                       +{item.skills.length - 3} more
                     </span>
                   )}
@@ -104,8 +104,8 @@ const InterviewCards = () => {
 
                 {/* Action */}
                 <button
-                  className="mt-auto w-full py-2 rounded-lg
-                  bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
+                  className="mt-auto w-full py-2.5 rounded-lg
+                  bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
                 >
                   Continue Interview
                 </button>

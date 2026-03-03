@@ -176,15 +176,15 @@ const OverviewDashboard = () => {
   const github = user?.github
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-9">
+    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-8">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* HEADER */}
         <div>
-          <h1 className="text-4xl md:text-5xl font-bold text-black mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
             Dashboard
           </h1>
-          <p className="text-gray-500 text-lg">
+          <p className="text-slate-500 text-base">
             Track your progress and performance across interviews, quizzes, and job applications
           </p>
         </div>
@@ -200,12 +200,12 @@ const OverviewDashboard = () => {
 
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-6">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-card">
               <div className="flex items-center flex-col text-center">
-                <h3 className="text-xl font-semibold text-black mb-1">
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">
                   Interview Readiness Score
                 </h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-slate-500 mb-5">
                   Overall performance evaluation
                 </p>
 
@@ -220,24 +220,24 @@ const OverviewDashboard = () => {
             </div>
 
             <div
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm cursor-pointer"
+              className="bg-white border border-slate-200 rounded-xl p-6 shadow-card cursor-pointer hover:shadow-card-hover transition-shadow"
               onClick={() => navigate('/analyseResume')}
             >
-              <h3 className="text-xl font-semibold text-black mb-2">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 Analyse Your Resume
               </h3>
-              <p className="text-sm text-gray-600 mb-6">
+              <p className="text-sm text-slate-600 mb-5">
                 Get AI-powered feedback to improve your chances of getting hired
               </p>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
                 Start Resume Analysis
               </Button>
             </div>
           </div>
 
           {/* COMPLETED INTERVIEWS */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
-            <h3 className="text-xl font-semibold text-black mb-1">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-card flex flex-col">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">
               Completed Interviews
             </h3>
 
@@ -258,7 +258,7 @@ const OverviewDashboard = () => {
                               state: { interviewId: item._id },
                             })
                           }
-                          className="flex gap-4 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer group transition-all hover:shadow-md"
+                          className="flex gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer group transition-colors hover:shadow-sm"
                         >
                           <div className={`h-12 w-12 flex items-center justify-center rounded-lg ${getTopicColor(item.topic).bg} ${getTopicColor(item.topic).text} font-semibold`}>
                             <span className="text-lg">{item.topic?.[0]?.toUpperCase()}</span>
@@ -320,8 +320,8 @@ const OverviewDashboard = () => {
           </div>
 
           {/* COMPLETED QUIZZES */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
-            <h3 className="text-xl font-semibold text-black mb-1">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-card flex flex-col">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">
               Completed Quizzes
             </h3>
 
@@ -340,7 +340,7 @@ const OverviewDashboard = () => {
                         <div
                           key={item._id}
                           onClick={() => getQuizResult(item._id, item.noOfQuestions)}
-                          className="flex gap-4 p-4 border rounded-xl hover:bg-indigo-50 cursor-pointer group transition-all hover:shadow-md"
+                          className="flex gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer group transition-colors hover:shadow-sm"
                         >
                           <div className={`h-12 w-12 flex items-center justify-center rounded-lg ${topicColor.bg} ${topicColor.text} font-semibold`}>
                             <span className="text-lg">{item.topic?.[0]?.toUpperCase() || 'Q'}</span>

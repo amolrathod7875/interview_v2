@@ -58,13 +58,13 @@ const QuizCards = () => {
   }
 
   return (
-    <div className="h-full bg-gray-100 px-4 md:px-6 py-9 overflow-y-auto">
+    <div className="h-full bg-slate-50 px-4 md:px-6 py-8 overflow-y-auto">
       <div className="max-w-3xl mx-auto">
         <div className="mb-10 flex flex-col items-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
             Incomplete Quizzes
           </h1>
-          <p className="text-gray-500">
+          <p className="text-slate-500">
             Continue quizzes to test and improve your knowledge
           </p>
         </div>
@@ -77,8 +77,8 @@ const QuizCards = () => {
                 onClick={() =>
                   navigate("/quiz", { state: { quizId: item._id } })
                 }
-                className="bg-white border border-gray-200 rounded-xl p-5
-                shadow-sm hover:shadow-md transition cursor-pointer flex flex-col"
+                className="bg-white border border-slate-200 rounded-xl p-5
+                shadow-card hover:shadow-card-hover transition-shadow cursor-pointer flex flex-col"
               >
                 {/* Card Header */}
                 <div className="flex items-center gap-4 mb-4">
@@ -86,19 +86,19 @@ const QuizCards = () => {
                     {item.topic?.charAt(0).toUpperCase() || "Q"}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-gray-900 truncate capitalize">
+                    <h3 className="text-base font-semibold text-slate-900 truncate capitalize">
                       {item.topic}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       {item.noOfQuestions} Questions
                     </p>
                   </div>
                 </div>
 
                 {/* Meta */}
-                <div className="text-sm text-gray-600 mb-6">
+                <div className="text-sm text-slate-600 mb-6">
                   Estimated Time:{" "}
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-slate-900">
                     ~{Math.ceil(item.noOfQuestions * 1.5)} min
                   </span>
                 </div>
@@ -106,7 +106,7 @@ const QuizCards = () => {
                 {/* Action */}
                 <button
                   className="mt-auto w-full py-2 rounded-lg
-                  bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
+                  bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
                 >
                   Start Quiz
                 </button>

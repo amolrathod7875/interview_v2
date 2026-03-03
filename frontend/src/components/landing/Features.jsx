@@ -63,7 +63,7 @@ export default function Features() {
         </div>
 
         {/* Feature Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <div
               key={index}
@@ -71,38 +71,33 @@ export default function Features() {
                 group
                 bg-white
                 border border-slate-200
-                rounded-2xl
-                p-10
+                rounded-xl
+                p-8
                 transition-all
-                duration-300
-                ease-out
-                hover:-translate-y-1
-                hover:shadow-lg
-                hover:border-blue-300
-                hover:bg-blue-50/30
+                duration-200
+                hover:shadow-card-hover
               "
             >
               {/* Icon */}
               <div
                 className="
-                  flex h-14 w-14 items-center justify-center rounded-xl
+                  flex h-12 w-12 items-center justify-center rounded-lg
                   bg-blue-50
-                  mb-8
+                  mb-5
                   transition-colors
-                  duration-300
-                  group-hover:bg-blue-100
+                  duration-200
                 "
               >
                 <feature.icon
-                  className="h-7 w-7 text-blue-600 stroke-[1.5]"
+                  className="h-6 w-6 text-blue-600 stroke-[1.5]"
                 />
               </div>
 
-              <h3 className="text-xl font-semibold text-slate-900 mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 mb-3">
                 {feature.title}
               </h3>
 
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-slate-600 leading-relaxed text-sm">
                 {feature.description}
               </p>
             </div>

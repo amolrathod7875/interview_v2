@@ -89,7 +89,7 @@ const AfterLoginLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f8fafc]">
+    <div className="flex min-h-screen w-full bg-slate-50">
 
       {/* Hover trigger */}
       <div
@@ -106,13 +106,13 @@ const AfterLoginLayout = () => {
       </button>
 
       {/* Top Navigation Bar with Profile */}
-      <header className="fixed top-0 right-0 left-0 z-40 bg-white border-b shadow-sm">
+      <header className="fixed top-0 right-0 left-0 z-40 bg-white border-b border-slate-200 shadow-subtle">
         <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-3 ml-16">
+          <div className="flex items-center gap-3 ml-14">
             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
               <Zap className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-gray-900 text-lg">Interview.io</span>
+            <span className="font-bold text-slate-900 text-lg">Interview.io</span>
           </div>
           
           <button
@@ -142,16 +142,16 @@ const AfterLoginLayout = () => {
       <aside
         onMouseEnter={() => setIsSidebarOpen(true)}
         onMouseLeave={() => setIsSidebarOpen(false)}
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r shadow-xl
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 shadow-card
         transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex flex-col h-full">
-          <div className="px-6 py-5 flex items-center gap-3 border-b">
+          <div className="px-5 py-5 flex items-center gap-3 border-b border-slate-100">
             <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center">
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-gray-900">Interview.io</span>
+            <span className="font-bold text-slate-900">Interview.io</span>
           </div>
 
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -169,7 +169,7 @@ const AfterLoginLayout = () => {
                 ${
                   activeTab === item.label && !isStudyRoute
                     ? "bg-blue-50 text-blue-700 font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-8 before:bg-blue-600 before:rounded-r-full"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 <item.icon className={`h-5 w-5 ${activeTab === item.label ? "text-blue-600" : ""}`} />
@@ -178,14 +178,14 @@ const AfterLoginLayout = () => {
             ))}
           </nav>
 
-          <div className="px-4 py-4 border-t">
-            <div className="mb-3 px-4 py-2 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-400 font-medium">Keyboard Shortcut</p>
-              <p className="text-sm text-gray-600 font-semibold">⌘K to open menu</p>
+          <div className="px-4 py-4 border-t border-slate-100">
+            <div className="mb-3 px-4 py-2 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-400 font-medium">Keyboard Shortcut</p>
+              <p className="text-sm text-slate-600 font-semibold">⌘K to open menu</p>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <LogOut className="h-5 w-5" />
               <span className="font-medium">Logout</span>

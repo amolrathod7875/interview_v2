@@ -4,12 +4,12 @@ import { ArrowRight, Zap } from "lucide-react"
 
 export default function Hero() {
   return (
-    <section className="pt-48 pb-40 px-4 bg-white">
+    <section className="pt-48 pb-40 px-4 bg-gradient-to-b from-white to-slate-50">
       <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-24 items-center">
 
         {/* LEFT: TEXT */}
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 mb-10">
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 mb-10">
             <Zap className="h-4 w-4" />
             AI-Powered Interview Prep
           </div>
@@ -28,7 +28,7 @@ export default function Hero() {
             <Link to="/signup">
               <Button
                 size="lg"
-                className="px-8 py-6 text-base bg-blue-600 hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-blue-600/20 hover:ring-blue-600/40"
+                className="px-8 py-6 text-base bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-shadow duration-200"
               >
                 Start Free
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -39,7 +39,7 @@ export default function Hero() {
               <Button
                 size="lg"
                 variant="outline"
-                className="px-8 py-6 text-base border-slate-300 hover:border-slate-400"
+                className="px-8 py-6 text-base border-slate-200 hover:border-slate-300 hover:shadow-sm"
               >
                 I have an account
               </Button>
@@ -49,10 +49,10 @@ export default function Hero() {
 
         {/* RIGHT: DASHBOARD PREVIEW */}
         <div className="relative">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-card overflow-hidden">
 
             {/* Top Bar */}
-            <div className="h-12 bg-slate-50 border-b border-slate-200 flex items-center px-4 gap-2">
+            <div className="h-10 bg-slate-50 border-b border-slate-200 flex items-center px-4 gap-2">
               <div className="h-3 w-3 rounded-full bg-red-400" />
               <div className="h-3 w-3 rounded-full bg-yellow-400" />
               <div className="h-3 w-3 rounded-full bg-green-400" />

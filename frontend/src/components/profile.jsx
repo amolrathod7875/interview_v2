@@ -264,27 +264,27 @@ const Profile = () => {
       : user.github || "https://github.com"
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 px-4 md:px-8 py-10 transition-colors">
+    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-10">
       <div className="max-w-xl mx-auto space-y-8">
 
         {/* Header with Profile Completion */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
             Profile
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-slate-500">
             Manage your account information
           </p>
           
           {/* Profile Completion Bar */}
           <div className="mt-4 max-w-xs mx-auto">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Profile Completion</span>
+              <span className="text-xs font-medium text-slate-600">Profile Completion</span>
               <span className={`text-xs font-bold ${profileCompletion >= 80 ? 'text-green-600' : profileCompletion >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {profileCompletion}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-slate-200 rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all duration-500 ${getCompletionColor()}`}
                 style={{ width: `${profileCompletion}%` }}
@@ -294,10 +294,10 @@ const Profile = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm transition-colors">
+        <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-card transition-colors">
           
           {/* Avatar Section */}
-          <div className="flex flex-col items-center mb-8 pb-8 border-b border-gray-200 dark:border-slate-700">
+          <div className="flex flex-col items-center mb-8 pb-8 border-b border-slate-100">
             <div className="relative group">
               <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
                 {user.photoURL ? (
@@ -365,8 +365,8 @@ const Profile = () => {
           </div>
 
           {/* Settings Bar */}
-          <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-900">
               Your Details
             </h2>
             <div className="flex items-center gap-2">

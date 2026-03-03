@@ -6,7 +6,7 @@ export default function Navbar() {
   const navigate = useNavigate()
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-slate-200">
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-slate-200 shadow-subtle">
       <div className="container mx-auto max-w-6xl h-full px-6 flex items-center justify-between">
 
         {/* Logo */}

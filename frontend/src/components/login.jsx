@@ -80,12 +80,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-stretch bg-[#f8fafc]">
-      <div className="flex-1 flex items-center justify-center px-4 py-8 animate-fadein">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+      <div className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-card p-8">
           <div className="flex flex-col items-center mb-8">
             <Zap className="h-8 w-8 text-blue-600 mb-2" />
-            <h1 className="text-3xl font-bold text-black">Welcome back</h1>
-            <p className="text-gray-500 mt-1">
+            <h1 className="text-3xl font-bold text-slate-900">Welcome back</h1>
+            <p className="text-slate-500 mt-1">
               Enter your credentials to access your account
             </p>
           </div>
@@ -95,13 +95,13 @@ export default function Login() {
               <p className="text-sm text-red-600">{errorMessage}</p>
             ) : null}
             <div>
-              <Label>Email</Label>
-              <div className="relative mt-2">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Label className="text-sm font-medium text-slate-700">Email</Label>
+              <div className="relative mt-1.5">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   type="email"
                   placeholder="you@example.com"
-                  className="pl-10"
+                  className="pl-10 border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500/20"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -110,13 +110,13 @@ export default function Login() {
             </div>
 
             <div>
-              <Label>Password</Label>
-              <div className="relative mt-2">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Label className="text-sm font-medium text-slate-700">Password</Label>
+              <div className="relative mt-1.5">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   type="password"
                   placeholder="••••••••"
-                  className="pl-10"
+                  className="pl-10 border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500/20"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -127,7 +127,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-md bg-blue-600 py-2 font-medium text-white transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 active:scale-[0.99]"
+              className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 py-2.5 font-medium text-white transition-colors shadow-sm hover:shadow-md"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
@@ -143,7 +143,7 @@ export default function Login() {
               type="button"
               onClick={handleSigninWithGoogle}
               disabled={isLoading}
-              className="w-full rounded-md border py-2 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-50"
+              className="w-full rounded-lg border py-2.5 transition-colors hover:bg-slate-50 hover:border-slate-300"
             >
               <span className="flex items-center justify-center gap-2">
                 <FcGoogle />
@@ -151,15 +151,15 @@ export default function Login() {
               </span>
             </button>
 
-            <div className="flex items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Secure login · Your data stays protected
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+              <ShieldCheck className="h-4 w-4" />
+              Secure login — Your data stays protected
             </div>
           </form>
 
-          <p className="mt-8 text-center text-sm text-gray-500">
+          <p className="mt-8 text-center text-sm text-slate-500">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-blue-600 font-semibold">
+            <Link to="/signup" className="text-blue-600 font-semibold hover:text-blue-700">
               Sign up
             </Link>
           </p>
