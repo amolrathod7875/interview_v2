@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProblemPanel from "../components/ProblemPanel";
 import EditorPanel from "../components/EditorPanel";
@@ -8,7 +8,6 @@ import useUserStatsStore from "../store/useUserStatsStore";
 import {
   analyzeCode,
   executeCode,
-  fetchCoreProblem,
   fetchCoreProblems,
   fetchSandboxProblems,
   fetchTopics,
@@ -22,6 +21,17 @@ const FALLBACK_CODE = {
   cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}\n`,
   java: `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}\n`,
   javascript: `// Write your solution here\nfunction main() {\n\n}\nmain();\n`
+};
+
+const getCodexErrorMessage = (err, fallback) => {
+  const status = err?.response?.status;
+  if (status === 401) {
+    return "Authentication failed for Codex. Please log out and log in again.";
+  }
+  if (status === 402) {
+    return err?.response?.data?.error || "Insufficient tokens for this action.";
+  }
+  return err?.response?.data?.error || err?.message || fallback;
 };
 
 const CodexPage = () => {
@@ -46,6 +56,12 @@ const CodexPage = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [aiValidating, setAiValidating] = useState(false);
   const [coreEmptyForFilter, setCoreEmptyForFilter] = useState(false);
+  const [topicsError, setTopicsError] = useState("");
+  const [statsWarning, setStatsWarning] = useState("");
+  const [questionsError, setQuestionsError] = useState("");
+  const [coreSplitWidth, setCoreSplitWidth] = useState(72);
+  const [isResizingCore, setIsResizingCore] = useState(false);
+  const coreLayoutRef = useRef(null);
 
   const {
     currentStreak,
@@ -82,14 +98,25 @@ const CodexPage = () => {
 
   useEffect(() => {
     const loadInitial = async () => {
+      setTopicsError("");
+      setStatsWarning("");
+
       try {
-        const [topicData] = await Promise.all([fetchTopics(), fetchStats()]);
+        const topicData = await fetchTopics();
         setTopics(topicData || []);
         if (topicData?.length) {
           setSelectedTopic(topicData[0]._id);
         }
       } catch (err) {
-        console.error("Failed to initialize Codex page", err);
+        console.error("Failed to load Codex topics", err);
+        setTopicsError(getCodexErrorMessage(err, "Failed to load topics."));
+      }
+
+      try {
+        await fetchStats();
+      } catch (err) {
+        console.error("Failed to load Codex stats", err);
+        setStatsWarning(getCodexErrorMessage(err, "Unable to load stats right now."));
       }
     };
 
@@ -102,6 +129,7 @@ const CodexPage = () => {
     setOutput(null);
     setAnalysis(null);
     setCoreEmptyForFilter(false);
+    setQuestionsError("");
   }, [mode]);
 
   const loadQuestionDetail = useCallback(async (questionId, baseItem = null) => {
@@ -109,8 +137,7 @@ const CodexPage = () => {
 
     try {
       if (mode === "core") {
-        const detail = await fetchCoreProblem(questionId);
-        setProblem(detail);
+        setProblem(baseItem || null);
       } else {
         setProblem(baseItem);
       }
@@ -127,6 +154,7 @@ const CodexPage = () => {
 
     setLoadingQuestions(true);
     setCoreEmptyForFilter(false);
+    setQuestionsError("");
     try {
       if (mode === "core") {
         const data = await fetchCoreProblems({ topicId: selectedTopic, difficulty });
@@ -158,6 +186,7 @@ const CodexPage = () => {
       }
     } catch (err) {
       console.error("Failed to load questions", err);
+      setQuestionsError(getCodexErrorMessage(err, "Failed to load questions."));
       setQuestionList([]);
       setProblem(null);
       setSelectedQuestionId(null);
@@ -179,9 +208,41 @@ const CodexPage = () => {
     }
   }, [language, problem]);
 
+  useEffect(() => {
+    if (!isResizingCore) return;
+
+    const handleMouseMove = (event) => {
+      const container = coreLayoutRef.current;
+      if (!container) return;
+
+      const bounds = container.getBoundingClientRect();
+      const relativeX = event.clientX - bounds.left;
+      const percent = (relativeX / bounds.width) * 100;
+      const clamped = Math.max(55, Math.min(82, percent));
+      setCoreSplitWidth(clamped);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingCore(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizingCore]);
+
   const handleSelectQuestion = async (questionId) => {
     if (mode === "core") {
-      navigate(`/codex/practice/${questionId}`);
+      const selected = questionList.find((item) => item._id === questionId);
+      if (selected?.sourceType === "generated") {
+        navigate(`/codex/sandbox/${questionId}`);
+      } else {
+        navigate(`/codex/practice/${questionId}`);
+      }
       return;
     }
 
@@ -314,6 +375,34 @@ const CodexPage = () => {
     }
   };
 
+  const rightRail = (
+    <>
+      <div className="bg-white rounded-lg border p-4">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Task Manager</h2>
+        <div className="space-y-2 text-sm text-gray-600">
+          <p>Solved: <span className="font-semibold text-gray-900">{solvedCount}</span> / {totalCount}</p>
+          <p>Remaining: <span className="font-semibold text-gray-900">{Math.max(totalCount - solvedCount, 0)}</span></p>
+          <p>Streak: <span className="font-semibold text-gray-900">{currentStreak} days</span></p>
+          <p>Today: <span className="font-semibold text-gray-900">{todaySolved} solved</span></p>
+        </div>
+        <div className="mt-4">
+          <div className="h-2 w-full rounded bg-gray-100 overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all"
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-gray-500">Progress: {completionPct}%</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border p-4 overflow-hidden">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Engagement</h2>
+        <ActivityHeatmap days={365} />
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -341,45 +430,123 @@ const CodexPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <section className={`${mode === "core" ? "xl:col-span-9" : "xl:col-span-4"} h-[78vh]`}>
-          <ProblemPanel
-            problem={problem}
-            topics={topics}
-            selectedTopic={selectedTopic}
-            setSelectedTopic={setSelectedTopic}
-            difficulty={difficulty}
-            setDifficulty={setDifficulty}
-            onGenerate={mode === "sandbox" ? handleGenerateSandbox : loadQuestions}
-            loading={loadingQuestions}
-            questionList={normalizedQuestionList}
-            selectedQuestionId={selectedQuestionId}
-            onSelectQuestion={handleSelectQuestion}
-            generateLabel={mode === "sandbox" ? "Generate" : "Load Questions"}
-            emptyHint={emptyHint}
-          />
+      {topicsError ? (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {topicsError}
+        </div>
+      ) : null}
 
-          {mode === "core" && questionList.length > 0 ? (
-            <p className="mt-2 text-xs text-gray-500">
-              Click any question from the list to open full coding workspace.
-            </p>
-          ) : null}
+      {statsWarning ? (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+          {statsWarning}
+        </div>
+      ) : null}
 
-          {mode === "core" && coreEmptyForFilter ? (
-            <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-              <p className="mb-2">Core question bank is currently empty for this filter.</p>
-              <button
-                type="button"
-                onClick={() => setMode("sandbox")}
-                className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-              >
-                Switch to Sandbox Questions
-              </button>
-            </div>
-          ) : null}
-        </section>
+      {questionsError ? (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {questionsError}
+        </div>
+      ) : null}
 
-        {mode === "sandbox" ? (
+      {mode === "core" ? (
+        <>
+          <div ref={coreLayoutRef} className="hidden xl:flex gap-2 h-[calc(100vh-11rem)]">
+            <section style={{ width: `${coreSplitWidth}%` }} className="min-w-[520px] overflow-hidden">
+              <ProblemPanel
+                problem={problem}
+                topics={topics}
+                selectedTopic={selectedTopic}
+                setSelectedTopic={setSelectedTopic}
+                difficulty={difficulty}
+                setDifficulty={setDifficulty}
+                onGenerate={loadQuestions}
+                loading={loadingQuestions}
+                questionList={normalizedQuestionList}
+                selectedQuestionId={selectedQuestionId}
+                onSelectQuestion={handleSelectQuestion}
+                generateLabel="Load Questions"
+                emptyHint={emptyHint}
+                hideDetails={true}
+                largeTypography={true}
+                questionListMaxHeightClass="max-h-[28rem]"
+                showSourceBadge={true}
+              />
+
+              {questionList.length > 0 ? (
+                <p className="mt-2 text-xs text-gray-500">
+                  Click any question from the list to open full coding workspace.
+                </p>
+              ) : null}
+
+              {coreEmptyForFilter ? (
+                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                  <p className="mb-2">Core question bank is currently empty for this filter.</p>
+                  <button
+                    type="button"
+                    onClick={() => setMode("sandbox")}
+                    className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                  >
+                    Switch to Sandbox Questions
+                  </button>
+                </div>
+              ) : null}
+            </section>
+
+            <div
+              onMouseDown={() => setIsResizingCore(true)}
+              className="w-1.5 rounded cursor-col-resize bg-gray-300 hover:bg-blue-400"
+            />
+
+            <aside style={{ width: `${100 - coreSplitWidth}%` }} className="min-w-[320px] max-w-[460px] flex flex-col gap-3 overflow-y-auto pr-1 sticky top-4 self-start h-[calc(100vh-11rem)]">
+              {rightRail}
+            </aside>
+          </div>
+
+          <div className="xl:hidden flex flex-col gap-4">
+            <section className="min-h-[55vh]">
+              <ProblemPanel
+                problem={problem}
+                topics={topics}
+                selectedTopic={selectedTopic}
+                setSelectedTopic={setSelectedTopic}
+                difficulty={difficulty}
+                setDifficulty={setDifficulty}
+                onGenerate={loadQuestions}
+                loading={loadingQuestions}
+                questionList={normalizedQuestionList}
+                selectedQuestionId={selectedQuestionId}
+                onSelectQuestion={handleSelectQuestion}
+                generateLabel="Load Questions"
+                emptyHint={emptyHint}
+                hideDetails={true}
+                largeTypography={true}
+                questionListMaxHeightClass="max-h-[26rem]"
+                showSourceBadge={true}
+              />
+            </section>
+            <aside className="flex flex-col gap-3">{rightRail}</aside>
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+          <section className="xl:col-span-4 h-[78vh]">
+            <ProblemPanel
+              problem={problem}
+              topics={topics}
+              selectedTopic={selectedTopic}
+              setSelectedTopic={setSelectedTopic}
+              difficulty={difficulty}
+              setDifficulty={setDifficulty}
+              onGenerate={handleGenerateSandbox}
+              loading={loadingQuestions}
+              questionList={normalizedQuestionList}
+              selectedQuestionId={selectedQuestionId}
+              onSelectQuestion={handleSelectQuestion}
+              generateLabel="Generate"
+              emptyHint={emptyHint}
+            />
+          </section>
+
           <section className="xl:col-span-5 h-[78vh] flex flex-col gap-3">
             <div className="h-[58%] min-h-[320px]">
               <EditorPanel
@@ -404,34 +571,12 @@ const CodexPage = () => {
               />
             </div>
           </section>
-        ) : null}
 
-        <aside className="xl:col-span-3 h-[78vh] flex flex-col gap-3">
-          <div className="bg-white rounded-lg border p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Task Manager</h2>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>Solved: <span className="font-semibold text-gray-900">{solvedCount}</span> / {totalCount}</p>
-              <p>Remaining: <span className="font-semibold text-gray-900">{Math.max(totalCount - solvedCount, 0)}</span></p>
-              <p>Streak: <span className="font-semibold text-gray-900">{currentStreak} days</span></p>
-              <p>Today: <span className="font-semibold text-gray-900">{todaySolved} solved</span></p>
-            </div>
-            <div className="mt-4">
-              <div className="h-2 w-full rounded bg-gray-100 overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 transition-all"
-                  style={{ width: `${completionPct}%` }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-gray-500">Progress: {completionPct}%</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg border p-4 overflow-hidden">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Engagement</h2>
-            <ActivityHeatmap days={365} />
-          </div>
-        </aside>
-      </div>
+          <aside className="xl:col-span-3 h-[78vh] flex flex-col gap-3">
+            {rightRail}
+          </aside>
+        </div>
+      )}
     </div>
   );
 };

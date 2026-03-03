@@ -29,6 +29,35 @@ const PROBLEM_POOL_MIN = Math.max(1, Math.min(POOL_MIN_CONFIG, POOL_TARGET_CONFI
 const PROBLEM_POOL_TARGET = Math.max(PROBLEM_POOL_MIN, POOL_TARGET_CONFIG);
 const MAX_UNIQUENESS_RETRIES = Number(process.env.CODEX_UNIQUENESS_RETRIES || 5);
 
+const parseModelJSONWithRepair = async ({ raw, cohereKey, schemaHint = "" }) => {
+  try {
+    return parseCohereJSON(raw);
+  } catch (initialErr) {
+    const repairSystemMsg = `
+You convert model text into strict valid JSON.
+Return ONLY valid JSON.
+Do not add explanation, markdown, or extra text.
+`;
+
+    const repairUserMsg = `
+Convert the following content into strict valid JSON.
+${schemaHint ? `Target schema:\n${schemaHint}\n` : ""}
+Raw content:
+${String(raw || "")}
+`;
+
+    const repairedText = await callCohere(repairUserMsg, repairSystemMsg, 1400, cohereKey);
+
+    try {
+      return parseCohereJSON(repairedText);
+    } catch (repairErr) {
+      throw new Error(
+        `JSON parse recovery failed: ${initialErr?.message || "initial parse error"}; ${repairErr?.message || "repair parse error"}`
+      );
+    }
+  }
+};
+
 const executeCode = async (language, code, stdin = "") => {
   const languageId = LANGUAGE_MAP[language];
   if (!languageId) throw new Error(`Unsupported language: ${language}`);
@@ -111,11 +140,25 @@ ${examples || ""}
     );
 
     const content = response.data?.choices?.[0]?.message?.content || "{}";
-    parsed = JSON.parse(content);
+    parsed = parseCohereJSON(content);
   } catch (orErr) {
     const cohereKey = process.env.COHERE_API_KEY_CODEX;
     const text = await callCohere(userMsg, systemMsg, 1200, cohereKey);
-    parsed = parseCohereJSON(text);
+    parsed = await parseModelJSONWithRepair({
+      raw: text,
+      cohereKey,
+      schemaHint: `
+{
+  "testCases": [
+    {
+      "input": "string",
+      "expectedOutput": "string",
+      "reason": "string"
+    }
+  ]
+}
+`
+    });
   }
 
   const normalized = (parsed?.testCases || [])
@@ -335,12 +378,31 @@ starterCode rules:
       }
     );
 
-    parsed = JSON.parse(response.data.choices[0].message.content);
+    parsed = parseCohereJSON(response.data.choices[0].message.content);
   } catch (orErr) {
     console.warn("[CODEX] OpenRouter failed, falling back to Cohere (COHERE_API_KEY_CODEX):", orErr.message);
     const cohereKey = process.env.COHERE_API_KEY_CODEX;
     const text = await callCohere(userMsg, systemMsg, 2048, cohereKey);
-    parsed = parseCohereJSON(text);
+    parsed = await parseModelJSONWithRepair({
+      raw: text,
+      cohereKey,
+      schemaHint: `
+{
+  "title": "string",
+  "description": "string",
+  "input": "string",
+  "output": "string",
+  "constraints": "string",
+  "examples": "string",
+  "starterCode": {
+    "python": "string",
+    "javascript": "string",
+    "cpp": "string",
+    "java": "string"
+  }
+}
+`
+    });
   }
 
   return {
@@ -544,13 +606,19 @@ JSON:
       const cohereKey = process.env.COHERE_API_KEY_CODEX;
       raw = await callCohere(analyzeUserMsg, analyzeSystemMsg, 1024, cohereKey);
     }
-    const match = raw.match(/\{[\s\S]*\}/);
-
-    if (!match) {
-      return res.status(500).json({ error: "Invalid analysis response" });
-    }
-
-    const analysis = JSON.parse(match[0]);
+    const cohereKey = process.env.COHERE_API_KEY_CODEX;
+    const analysis = await parseModelJSONWithRepair({
+      raw,
+      cohereKey,
+      schemaHint: `
+{
+  "correct": true,
+  "timeComplexity": "O(...)",
+  "spaceComplexity": "O(...)",
+  "improvements": ["string"]
+}
+`
+    });
 
     /* ---------------- SAFE PROGRESS UPDATE ---------------- */
     try {
@@ -673,6 +741,36 @@ router.post("/validate", authMiddleware, async (req, res) => {
 router.get("/topics", async (req, res) => {
   const topics = await Topic.find().sort({ order: 1 });
   res.json(topics);
+});
+
+/* -------------------------------------------------------------------------- */
+/*                          GET SINGLE SANDBOX PROBLEM                        */
+/* -------------------------------------------------------------------------- */
+router.get("/problems/:id", authMiddleware, async (req, res) => {
+  try {
+    const problem = await Problem.findById(req.params.id)
+      .populate("topic", "name")
+      .lean();
+
+    if (!problem || !problem.isPublished) {
+      return res.status(404).json({ error: "Problem not found" });
+    }
+
+    const progress = await UserProgress.findOne({
+      userId: req.user.id,
+      topic: problem.topic?._id || problem.topic
+    }).select("solvedProblems");
+
+    const solvedSet = new Set((progress?.solvedProblems || []).map((id) => id.toString()));
+
+    return res.json({
+      ...problem,
+      solved: solvedSet.has(problem._id.toString())
+    });
+  } catch (err) {
+    console.error("Failed to fetch sandbox problem:", err.message);
+    return res.status(500).json({ error: "Failed to fetch problem" });
+  }
 });
 
 /* -------------------------------------------------------------------------- */

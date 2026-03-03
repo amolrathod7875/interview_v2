@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { 
   fetchCoreProblem, 
+  fetchSandboxProblem,
   fetchTopics,
   submitCoreSolution,
-  generateProblem,
   executeCode,
   analyzeCode
 } from "../api";
@@ -50,7 +50,6 @@ main();
 
 const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
   const { problemId } = useParams();
-  const navigate = useNavigate();
   const { incrementSolved, updateDailyActivity } = useUserStatsStore();
   
   /* ---------------- State ---------------- */
@@ -86,9 +85,7 @@ const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
           const problemData = await fetchCoreProblem(problemId);
           setProblem(problemData);
         } else {
-          // For sandbox, problemId is the Problem _id
-          // Need to fetch the problem differently - for now use the existing API
-          const problemData = await fetchCoreProblem(problemId);
+          const problemData = await fetchSandboxProblem(problemId);
           setProblem(problemData);
         }
       } catch (err) {
@@ -169,7 +166,7 @@ const CodexWorkspace = ({ type }) => {  // type: "core" | "sandbox"
         code
       });
       setAnalysis(result);
-    } catch (err) {
+    } catch {
       setAnalysis({ error: "Analysis failed" });
     } finally {
       setAnalyzing(false);

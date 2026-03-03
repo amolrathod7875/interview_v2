@@ -79,9 +79,101 @@ export const callCohere = async (
  * @returns {any} Parsed JSON object
  */
 export const parseCohereJSON = (raw) => {
-  const cleaned = raw
-    .replace(/```json\s*/gi, "")
-    .replace(/```\s*/g, "")
+  const text = String(raw || "").trim();
+  if (!text) {
+    throw new Error("Cohere returned empty content");
+  }
+
+  const cleaned = text
+    .replace(/\uFEFF/g, "")
+    .replace(/```json\s*/gi, "```")
     .trim();
-  return JSON.parse(cleaned);
+
+  const candidates = [];
+
+  const fencedBlocks = [...cleaned.matchAll(/```([\s\S]*?)```/g)]
+    .map((match) => (match?.[1] || "").trim())
+    .filter(Boolean);
+
+  candidates.push(cleaned);
+  candidates.push(...fencedBlocks);
+
+  const findBalancedJSON = (input) => {
+    const startObject = input.indexOf("{");
+    const startArray = input.indexOf("[");
+
+    let start = -1;
+    let opening = "";
+    let closing = "";
+
+    if (startObject === -1 && startArray === -1) return null;
+
+    if (startObject === -1 || (startArray !== -1 && startArray < startObject)) {
+      start = startArray;
+      opening = "[";
+      closing = "]";
+    } else {
+      start = startObject;
+      opening = "{";
+      closing = "}";
+    }
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let index = start; index < input.length; index += 1) {
+      const char = input[index];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (char === "\\") {
+          escaped = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (char === opening) {
+        depth += 1;
+      } else if (char === closing) {
+        depth -= 1;
+        if (depth === 0) {
+          return input.slice(start, index + 1).trim();
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const balanced = findBalancedJSON(cleaned);
+  if (balanced) {
+    candidates.push(balanced);
+  }
+
+  let lastError = null;
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    try {
+      return JSON.parse(candidate);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw new Error(`Failed to parse Cohere JSON: ${lastError?.message || "Invalid JSON response"}`);
 };

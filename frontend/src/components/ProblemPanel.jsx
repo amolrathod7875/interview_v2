@@ -15,7 +15,11 @@ const ProblemPanel = ({
   selectedQuestionId = null,
   onSelectQuestion,
   generateLabel = "Generate",
-  emptyHint = ""
+  emptyHint = "",
+  hideDetails = false,
+  largeTypography = false,
+  questionListMaxHeightClass = "max-h-36",
+  showSourceBadge = false
 }) => {
   const [activeTab, setActiveTab] = useState("Description");
 
@@ -68,19 +72,20 @@ const ProblemPanel = ({
     if (!selectedTopic || questionList.length === 0) return null;
 
     return (
-      <div className="mb-3 border rounded p-2 max-h-36 overflow-y-auto bg-gray-50">
-        <p className="text-xs font-semibold text-gray-600 mb-2">Questions</p>
+      <div className={`mb-3 border rounded p-2 ${questionListMaxHeightClass} overflow-y-auto bg-gray-50`}>
+        <p className={`${largeTypography ? "text-sm" : "text-xs"} font-semibold text-gray-600 mb-2`}>Questions</p>
         <div className="space-y-1">
           {questionList.map((q, index) => {
             const isActive = selectedQuestionId === q._id;
             const number = q.questionNumber || index + 1;
+            const isGenerated = q.sourceType === "generated";
 
             return (
               <button
                 key={q._id}
                 type="button"
                 onClick={() => onSelectQuestion?.(q._id)}
-                className={`w-full text-left text-xs px-2 py-1.5 rounded border transition ${
+                className={`w-full text-left ${largeTypography ? "text-sm" : "text-xs"} px-2 py-1.5 rounded border transition ${
                   isActive
                     ? "bg-blue-50 border-blue-300"
                     : "bg-white border-gray-200 hover:bg-gray-100"
@@ -88,7 +93,14 @@ const ProblemPanel = ({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate">Q{number}. {q.title || "Untitled"}</span>
-                  {q.solved ? <span className="text-green-600">Solved</span> : null}
+                  <div className="flex items-center gap-2">
+                    {showSourceBadge ? (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${isGenerated ? "bg-violet-100 text-violet-700" : "bg-blue-100 text-blue-700"}`}>
+                        {isGenerated ? "Generated" : "Core"}
+                      </span>
+                    ) : null}
+                    {q.solved ? <span className="text-green-600">Solved</span> : null}
+                  </div>
                 </div>
               </button>
             );
@@ -130,7 +142,7 @@ const ProblemPanel = ({
     <div className="h-full flex flex-col bg-white rounded-lg border p-4 overflow-hidden">
       {/* Header */}
       <div className="flex justify-between items-center mb-3">
-        <h2 className="font-semibold text-lg leading-tight">
+        <h2 className={`font-semibold ${largeTypography ? "text-xl" : "text-lg"} leading-tight`}>
           {problem.questionNumber ? `Q${problem.questionNumber}. ` : ""}
           {problem.title || "Untitled Problem"}
         </h2>
@@ -139,55 +151,59 @@ const ProblemPanel = ({
 
       <QuestionList />
 
-      {/* Tabs */}
-      <div className="flex gap-5 border-b mb-3 text-sm">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2 transition ${
-              activeTab === tab
-                ? "border-b-2 border-blue-600 text-blue-600 font-medium"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      {!hideDetails ? (
+        <>
+          {/* Tabs */}
+          <div className="flex gap-5 border-b mb-3 text-sm">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-2 transition ${
+                  activeTab === tab
+                    ? "border-b-2 border-blue-600 text-blue-600 font-medium"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto text-sm whitespace-pre-wrap leading-relaxed pr-1">
-        {activeTab === "Description" && (
-          <>
-            <p className="mb-4">
-              {problem.description || "No description provided."}
-            </p>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto text-sm whitespace-pre-wrap leading-relaxed pr-1">
+            {activeTab === "Description" && (
+              <>
+                <p className="mb-4">
+                  {problem.description || "No description provided."}
+                </p>
 
-            <h4 className="font-semibold mb-1">Input</h4>
-            <p className="mb-4">
-              {problem.input || "No input description."}
-            </p>
+                <h4 className="font-semibold mb-1">Input</h4>
+                <p className="mb-4">
+                  {problem.input || "No input description."}
+                </p>
 
-            <h4 className="font-semibold mb-1">Output</h4>
-            <p>
-              {problem.output || "No output description."}
-            </p>
-          </>
-        )}
+                <h4 className="font-semibold mb-1">Output</h4>
+                <p>
+                  {problem.output || "No output description."}
+                </p>
+              </>
+            )}
 
-        {activeTab === "Examples" && (
-          <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-            {problem.examples || "No examples provided."}
-          </pre>
-        )}
+            {activeTab === "Examples" && (
+              <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                {problem.examples || "No examples provided."}
+              </pre>
+            )}
 
-        {activeTab === "Constraints" && (
-          <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-            {problem.constraints || "No constraints provided."}
-          </pre>
-        )}
-      </div>
+            {activeTab === "Constraints" && (
+              <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                {problem.constraints || "No constraints provided."}
+              </pre>
+            )}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 };

@@ -91,6 +91,11 @@ export const fetchSandboxProblems = async ({ topicId, difficulty }) => {
   return res.data;
 };
 
+export const fetchSandboxProblem = async (id) => {
+  const res = await api.get(`/codex/ai/problems/${id}`);
+  return res.data;
+};
+
 /* ---------------- CODE EXECUTION ---------------- */
 
 export const executeCode = async (language, code) => {
