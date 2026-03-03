@@ -303,7 +303,7 @@ router.post("/submit", authMiddleware, async (req, res) => {
 /**
  * GET /api/codex/core/topics
  */
-router.get("/topics", authMiddleware, async (req, res) => {
+router.get("/topics", async (req, res) => {
   try {
     const topics = await Topic.find().sort({ order: 1 });
     res.json(topics);

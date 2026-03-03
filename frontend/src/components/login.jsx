@@ -8,7 +8,21 @@ import { loginWithGoogle } from "@/services/authService"
 import axios from "axios"
 import { Zap } from "lucide-react"
 
-const API = import.meta.env.VITE_API_BASE_URL
+const RAW_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
+const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/, "")
+
+async function syncUserToBackend(resp) {
+  try {
+    await axios.post(`${API}/user/sync`, {
+      name: resp.displayName || "",
+      email: resp.email,
+      firebaseId: resp.uid,
+      photoURL: resp.photoURL || "",
+    })
+  } catch (error) {
+    console.warn("User sync skipped (backend unavailable):", error?.message)
+  }
+}
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -29,12 +43,7 @@ export default function Login() {
       localStorage.setItem("userUid", resp.uid)
       localStorage.setItem("name", resp.displayName || "")
 
-      await axios.post(`${API}/user/sync`, {
-        name: resp.displayName || "",
-        email: resp.email,
-        firebaseId: resp.uid,
-        photoURL: resp.photoURL || "",
-      })
+      await syncUserToBackend(resp)
 
       navigate("/dashboard")
     } catch (error) {
@@ -54,12 +63,7 @@ export default function Login() {
       localStorage.setItem("userUid", resp.uid)
       localStorage.setItem("name", resp.displayName || "")
 
-      await axios.post(`${API}/user/sync`, {
-        name: resp.displayName || "",
-        email: resp.email,
-        firebaseId: resp.uid,
-        photoURL: resp.photoURL || "",
-      })
+      await syncUserToBackend(resp)
 
       navigate("/dashboard")
     } catch (error) {

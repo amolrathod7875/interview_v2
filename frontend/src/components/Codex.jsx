@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import {
   executeCode,
-  generateProblem,
+  generateNewSandboxProblem,
   analyzeCode,
-  fetchTopics
+  fetchTopics,
+  fetchSandboxProblems
 } from "./api";
 
 import ProblemPanel from "./ProblemPanel";
@@ -51,6 +52,8 @@ const Codex = () => {
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [difficulty, setDifficulty] = useState("easy");
+  const [questionList, setQuestionList] = useState([]);
+  const [selectedQuestionId, setSelectedQuestionId] = useState(null);
 
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState(FALLBACK_CODE.python);
@@ -72,9 +75,51 @@ const Codex = () => {
   /* ---------- Load Topics Once ---------- */
   useEffect(() => {
     fetchTopics()
-      .then(setTopics)
+      .then((data) => {
+        setTopics(data);
+        if (data.length > 0) {
+          setSelectedTopic(data[0]._id);
+        }
+      })
       .catch(() => console.error("Failed to load topics"));
   }, []);
+
+  const loadQuestionList = async (topicId, level) => {
+    if (!topicId) {
+      setQuestionList([]);
+      setProblem(null);
+      setSelectedQuestionId(null);
+      return;
+    }
+
+    try {
+      const data = await fetchSandboxProblems({ topicId, difficulty: level });
+      const list = data?.problems || [];
+      setQuestionList(list);
+
+      if (list.length === 0) {
+        setProblem(null);
+        setSelectedQuestionId(null);
+        return;
+      }
+
+      const selected = list.find((item) => item._id === selectedQuestionId)
+        || list.find((item) => !item.solved)
+        || list[0];
+
+      setSelectedQuestionId(selected._id);
+      setProblem(selected);
+    } catch (err) {
+      console.error("Failed to load question list:", err);
+      setQuestionList([]);
+      setProblem(null);
+      setSelectedQuestionId(null);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestionList(selectedTopic, difficulty);
+  }, [selectedTopic, difficulty]);
 
   /* ---------- Update code on language OR problem change ---------- */
   useEffect(() => {
@@ -95,12 +140,16 @@ const Codex = () => {
     setOutput(null);
 
     try {
-      const p = await generateProblem({
+      const p = await generateNewSandboxProblem({
         topicId: selectedTopic,
         difficulty
       });
 
       setProblem(p);
+      setSelectedQuestionId(p._id);
+
+      const data = await fetchSandboxProblems({ topicId: selectedTopic, difficulty });
+      setQuestionList(data?.problems || []);
 
       if (p?.starterCode?.[language]) {
         setCode(p.starterCode[language]);
@@ -111,6 +160,16 @@ const Codex = () => {
       console.error("Generate failed:", err);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSelectQuestion = (problemId) => {
+    setSelectedQuestionId(problemId);
+    const selected = questionList.find((item) => item._id === problemId);
+    if (selected) {
+      setProblem(selected);
+      setAnalysis(null);
+      setOutput(null);
     }
   };
 
@@ -147,6 +206,11 @@ const Codex = () => {
       });
 
       setAnalysis(res);
+
+      if (res?.correct === true && selectedTopic) {
+        const data = await fetchSandboxProblems({ topicId: selectedTopic, difficulty });
+        setQuestionList(data?.problems || []);
+      }
     } catch {
       setAnalysis({ error: "Analysis failed" });
     } finally {
@@ -198,6 +262,10 @@ const Codex = () => {
             setDifficulty={setDifficulty}
             onGenerate={handleGenerate}
             loading={generating}
+            questionList={questionList}
+            selectedQuestionId={selectedQuestionId}
+            onSelectQuestion={handleSelectQuestion}
+            generateLabel="Generate New"
           />
         )}
       </div>

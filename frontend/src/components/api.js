@@ -1,8 +1,22 @@
 import axios from "axios";
+import { auth } from "../firebase";
+
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "").replace(/\/api$/, "");
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true
+});
+
+api.interceptors.request.use(async (config) => {
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    const token = await currentUser.getIdToken();
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 /* ---------------- TOPICS ---------------- */
@@ -57,6 +71,22 @@ export const generateProblem = async ({ topicId, difficulty }) => {
   // Now includes token deduction
   const res = await api.post("/codex/ai/generate", {
     topicId, difficulty
+  });
+  return res.data;
+};
+
+export const generateNewSandboxProblem = async ({ topicId, difficulty }) => {
+  const res = await api.post("/codex/ai/generate", {
+    topicId,
+    difficulty,
+    forceNew: true
+  });
+  return res.data;
+};
+
+export const fetchSandboxProblems = async ({ topicId, difficulty }) => {
+  const res = await api.get("/codex/ai/problems", {
+    params: { topicId, difficulty }
   });
   return res.data;
 };

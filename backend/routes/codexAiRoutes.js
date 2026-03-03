@@ -4,6 +4,7 @@ import { callCohere, parseCohereJSON } from "../services/cohere.service.js";
 import mongoose from "mongoose";
 import Topic from "../models/Topic.js";
 import Problem from "../models/Problem.js";
+import ProblemCounter from "../models/ProblemCounter.js";
 import UserProgress from "../models/UserProgress.js";
 import UserStats from "../models/UserStats.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
@@ -13,6 +14,11 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Token cost for generating a sandbox problem
 const SANDBOX_GENERATE_COST = 5;
+const POOL_MIN_CONFIG = Number(process.env.CODEX_POOL_MIN || 10);
+const POOL_TARGET_CONFIG = Number(process.env.CODEX_POOL_TARGET || 15);
+const PROBLEM_POOL_MIN = Math.max(1, Math.min(POOL_MIN_CONFIG, POOL_TARGET_CONFIG));
+const PROBLEM_POOL_TARGET = Math.max(PROBLEM_POOL_MIN, POOL_TARGET_CONFIG);
+const MAX_UNIQUENESS_RETRIES = Number(process.env.CODEX_UNIQUENESS_RETRIES || 5);
 
 /* -------------------------------------------------------------------------- */
 /*                        STARTER CODE NORMALIZER                              */
@@ -30,38 +36,135 @@ const normalizeStarterCode = (code = "") => {
     .trim();
 };
 
-/* -------------------------------------------------------------------------- */
-/*                             GENERATE PROBLEM                               */
-/* -------------------------------------------------------------------------- */
-router.post("/generate", authMiddleware, async (req, res) => {
-  try {
-    const { topicId, difficulty } = req.body;
-    const userId = req.user.id;
+const getCounterKey = (topicId, difficulty) => `${topicId}_${difficulty}`;
 
-    if (!topicId || !difficulty) {
-      return res.status(400).json({ error: "topicId and difficulty are required" });
+const normalizeText = (text = "") =>
+  text
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getTokenSet = (text = "") => {
+  const normalized = normalizeText(text);
+  if (!normalized) return new Set();
+  return new Set(normalized.split(" ").filter(Boolean));
+};
+
+const jaccardSimilarity = (setA, setB) => {
+  if (!setA.size && !setB.size) return 1;
+  if (!setA.size || !setB.size) return 0;
+
+  let intersection = 0;
+  for (const token of setA) {
+    if (setB.has(token)) intersection += 1;
+  }
+
+  const union = new Set([...setA, ...setB]).size;
+  return union ? intersection / union : 0;
+};
+
+const buildFingerprint = ({ title = "", description = "" }) => {
+  const normalizedTitle = normalizeText(title);
+  const normalizedDescription = normalizeText(description).slice(0, 300);
+  return {
+    normalizedTitle,
+    normalizedDescription,
+    titleTokens: getTokenSet(title),
+    descriptionTokens: getTokenSet(description)
+  };
+};
+
+const isNearDuplicate = (candidate, existingFingerprints) => {
+  if (!candidate.normalizedTitle) return true;
+
+  return existingFingerprints.some((existing) => {
+    if (candidate.normalizedTitle === existing.normalizedTitle) return true;
+    if (
+      candidate.normalizedDescription &&
+      existing.normalizedDescription &&
+      candidate.normalizedDescription === existing.normalizedDescription
+    ) {
+      return true;
     }
 
-    // Check token balance
-    let stats = await UserStats.findOne({ userId });
-    if (!stats) {
-      stats = await UserStats.create({ userId });
+    const titleSimilarity = jaccardSimilarity(candidate.titleTokens, existing.titleTokens);
+    const descriptionSimilarity = jaccardSimilarity(
+      candidate.descriptionTokens,
+      existing.descriptionTokens
+    );
+
+    return titleSimilarity >= 0.8 || (titleSimilarity >= 0.6 && descriptionSimilarity >= 0.75);
+  });
+};
+
+const pruneDuplicateProblems = async (topicId, difficulty) => {
+  const publishedProblems = await Problem.find({
+    topic: topicId,
+    difficulty,
+    isPublished: true,
+    questionNumber: { $type: "number" }
+  })
+    .select("_id title description questionNumber createdAt")
+    .sort({ questionNumber: 1, createdAt: 1 })
+    .lean();
+
+  if (publishedProblems.length <= 1) {
+    return { removed: 0, remaining: publishedProblems.length };
+  }
+
+  const keptFingerprints = [];
+  const duplicateIds = [];
+
+  for (const problem of publishedProblems) {
+    const fingerprint = buildFingerprint(problem);
+    if (isNearDuplicate(fingerprint, keptFingerprints)) {
+      duplicateIds.push(problem._id);
+      continue;
     }
+    keptFingerprints.push(fingerprint);
+  }
 
-    if (stats.tokens < SANDBOX_GENERATE_COST) {
-      return res.status(402).json({ 
-        error: "Insufficient tokens",
-        tokens: stats.tokens,
-        cost: SANDBOX_GENERATE_COST
-      });
-    }
+  if (duplicateIds.length > 0) {
+    await Problem.updateMany(
+      { _id: { $in: duplicateIds } },
+      { $set: { isPublished: false } }
+    );
+  }
 
-    const topic = await Topic.findById(topicId);
-    if (!topic) return res.status(404).json({ error: "Topic not found" });
+  return {
+    removed: duplicateIds.length,
+    remaining: publishedProblems.length - duplicateIds.length
+  };
+};
 
-    // Try OpenRouter first; if it fails, fallback to Cohere using COHERE_API_KEY_CODEX
-    let parsed;
-    const systemMsg = `
+const getExistingFingerprints = async (topicId, difficulty) => {
+  const existingProblems = await Problem.find({
+    topic: topicId,
+    difficulty,
+    isPublished: true,
+    questionNumber: { $type: "number" }
+  })
+    .select("title description")
+    .lean();
+
+  return existingProblems.map((problem) => buildFingerprint(problem));
+};
+
+const getNextQuestionNumber = async (topicId, difficulty) => {
+  const key = getCounterKey(topicId, difficulty);
+  const counter = await ProblemCounter.findOneAndUpdate(
+    { key },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+  return counter.seq;
+};
+
+const generateProblemPayload = async (topic, difficulty, existingFingerprints = []) => {
+  let parsed;
+  const systemMsg = `
 You are a LeetCode-style problem generator.
 
 Return ONLY valid JSON.
@@ -87,59 +190,177 @@ starterCode rules:
 - NO main / input / print
 - NO implementation
 `;
-    const userMsg = `Generate a ${difficulty} problem for topic: ${topic.name}`;
+  const avoidTitles = existingFingerprints
+    .map((f) => f.normalizedTitle)
+    .filter(Boolean)
+    .slice(-8)
+    .join(" | ");
 
-    try {
-      const response = await axios.post(
-        OPENROUTER_URL,
+  const uniquenessHint = avoidTitles
+    ? `\nAvoid repeating or closely paraphrasing these existing problems: ${avoidTitles}`
+    : "";
+
+  const userMsg = `Generate a ${difficulty} problem for topic: ${topic.name}.${uniquenessHint}\nUse a distinctly different core idea than previous problems.`;
+
+  try {
+    const response = await axios.post(
+      OPENROUTER_URL,
+      {
+        model: process.env.OPENROUTER_MODEL_amol,
+        temperature: 0.3,
+        messages: [
+          { role: "system", content: systemMsg },
+          { role: "user", content: userMsg }
+        ]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    parsed = JSON.parse(response.data.choices[0].message.content);
+  } catch (orErr) {
+    console.warn("[CODEX] OpenRouter failed, falling back to Cohere (COHERE_API_KEY_CODEX):", orErr.message);
+    const cohereKey = process.env.COHERE_API_KEY_CODEX;
+    const text = await callCohere(userMsg, systemMsg, 2048, cohereKey);
+    parsed = parseCohereJSON(text);
+  }
+
+  return {
+    title: parsed.title,
+    description: parsed.description,
+    input: parsed.input,
+    output: parsed.output,
+    constraints: parsed.constraints,
+    examples: parsed.examples,
+    starterCode: {
+      python: normalizeStarterCode(parsed.starterCode?.python),
+      javascript: normalizeStarterCode(parsed.starterCode?.javascript),
+      cpp: normalizeStarterCode(parsed.starterCode?.cpp),
+      java: normalizeStarterCode(parsed.starterCode?.java)
+    },
+    topic: topic._id,
+    difficulty,
+    generatedBy: "ai",
+    isPublished: true
+  };
+};
+
+const createNumberedProblem = async (topic, difficulty) => {
+  const fingerprints = await getExistingFingerprints(topic._id, difficulty);
+
+  for (let attempt = 1; attempt <= MAX_UNIQUENESS_RETRIES; attempt += 1) {
+    const payload = await generateProblemPayload(topic, difficulty, fingerprints);
+    const candidateFingerprint = buildFingerprint(payload);
+
+    if (isNearDuplicate(candidateFingerprint, fingerprints)) {
+      continue;
+    }
+
+    const questionNumber = await getNextQuestionNumber(topic._id.toString(), difficulty);
+    const created = await Problem.create({
+      ...payload,
+      questionNumber
+    });
+
+    return created;
+  }
+
+  throw new Error("Failed to generate a unique problem after multiple attempts");
+};
+
+const getPoolCount = async (topicId, difficulty) =>
+  Problem.countDocuments({
+    topic: topicId,
+    difficulty,
+    isPublished: true,
+    questionNumber: { $type: "number" }
+  });
+
+const topUpProblemPool = async (topic, difficulty) => {
+  let count = await getPoolCount(topic._id, difficulty);
+  if (count >= PROBLEM_POOL_MIN) return count;
+
+  while (count < PROBLEM_POOL_TARGET) {
+    await createNumberedProblem(topic, difficulty);
+    count += 1;
+  }
+
+  return count;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                             GENERATE PROBLEM                               */
+/* -------------------------------------------------------------------------- */
+router.post("/generate", authMiddleware, async (req, res) => {
+  try {
+    const { topicId, difficulty, forceNew = false } = req.body;
+    const userId = req.user.id;
+
+    if (!topicId || !difficulty) {
+      return res.status(400).json({ error: "topicId and difficulty are required" });
+    }
+
+    // Check token balance
+    let stats = await UserStats.findOne({ userId });
+    if (!stats) {
+      stats = await UserStats.create({ userId });
+    }
+
+    if (stats.tokens < SANDBOX_GENERATE_COST) {
+      return res.status(402).json({ 
+        error: "Insufficient tokens",
+        tokens: stats.tokens,
+        cost: SANDBOX_GENERATE_COST
+      });
+    }
+
+    const topic = await Topic.findById(topicId);
+    if (!topic) return res.status(404).json({ error: "Topic not found" });
+
+    await pruneDuplicateProblems(topic._id, difficulty);
+
+    let poolCount = await topUpProblemPool(topic, difficulty);
+
+    let problem;
+    if (forceNew) {
+      problem = await createNumberedProblem(topic, difficulty);
+      poolCount += 1;
+    } else {
+      problem = await Problem.findOneAndUpdate(
         {
-          model: process.env.OPENROUTER_MODEL_amol,
-          temperature: 0.3,
-          messages: [
-            { role: "system", content: systemMsg },
-            { role: "user", content: userMsg }
-          ]
+          topic: topic._id,
+          difficulty,
+          isPublished: true,
+          questionNumber: { $type: "number" }
         },
+        { $set: { lastServedAt: new Date() } },
         {
-          headers: {
-            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY_amol}`,
-            "Content-Type": "application/json"
-          }
+          new: true,
+          sort: { lastServedAt: 1, questionNumber: 1 }
         }
       );
 
-      parsed = JSON.parse(response.data.choices[0].message.content);
-    } catch (orErr) {
-      console.warn("[CODEX] OpenRouter failed, falling back to Cohere (COHERE_API_KEY_CODEX):", orErr.message);
-      const cohereKey = process.env.COHERE_API_KEY_CODEX;
-      const text = await callCohere(userMsg, systemMsg, 2048, cohereKey);
-      parsed = parseCohereJSON(text);
+      if (!problem) {
+        problem = await createNumberedProblem(topic, difficulty);
+        poolCount = 1;
+      }
     }
-
-    const problem = await Problem.create({
-      title: parsed.title,
-      description: parsed.description,
-      input: parsed.input,
-      output: parsed.output,
-      constraints: parsed.constraints,
-      examples: parsed.examples,
-      starterCode: {
-        python: normalizeStarterCode(parsed.starterCode?.python),
-        javascript: normalizeStarterCode(parsed.starterCode?.javascript),
-        cpp: normalizeStarterCode(parsed.starterCode?.cpp),
-        java: normalizeStarterCode(parsed.starterCode?.java)
-      },
-      topic: topic._id,
-      difficulty,
-      generatedBy: "ai"
-    });
 
     // Deduct tokens for generating problem
     stats.tokens -= SANDBOX_GENERATE_COST;
     stats.totalTokensSpent += SANDBOX_GENERATE_COST;
     await stats.save();
 
-    res.json({ ...problem._doc, tokensSpent: SANDBOX_GENERATE_COST, remainingTokens: stats.tokens });
+    res.json({
+      ...problem._doc,
+      tokensSpent: SANDBOX_GENERATE_COST,
+      remainingTokens: stats.tokens,
+      poolSize: poolCount
+    });
   } catch (err) {
     console.error(" Problem generation failed:", err.message);
     res.status(500).json({ error: "Failed to generate problem" });
@@ -260,7 +481,7 @@ JSON:
 /* -------------------------------------------------------------------------- */
 /*                               GET TOPICS                                   */
 /* -------------------------------------------------------------------------- */
-router.get("/topics", authMiddleware, async (req, res) => {
+router.get("/topics", async (req, res) => {
   const topics = await Topic.find().sort({ order: 1 });
   res.json(topics);
 });
@@ -269,15 +490,53 @@ router.get("/topics", authMiddleware, async (req, res) => {
 /*                              GET PROBLEMS                                  */
 /* -------------------------------------------------------------------------- */
 router.get("/problems", authMiddleware, async (req, res) => {
-  const { topicId, difficulty } = req.query;
-  if (!topicId) return res.status(400).json({ error: "topicId is required" });
+  try {
+    const { topicId, difficulty } = req.query;
+    if (!topicId) return res.status(400).json({ error: "topicId is required" });
 
-  const problems = await Problem.find({
-    topic: topicId,
-    ...(difficulty && { difficulty })
-  });
+    if (difficulty) {
+      await pruneDuplicateProblems(topicId, difficulty);
+    }
 
-  res.json(problems);
+    const problems = await Problem.find({
+      topic: topicId,
+      isPublished: true,
+      questionNumber: { $type: "number" },
+      ...(difficulty && { difficulty })
+    }).sort({ questionNumber: 1, createdAt: 1 });
+
+    const progress = await UserProgress.findOne({
+      userId: req.user.id,
+      topic: topicId
+    }).select("solvedProblems");
+
+    const solvedSet = new Set((progress?.solvedProblems || []).map((id) => id.toString()));
+
+    const fingerprints = [];
+    const dedupedProblems = problems.filter((problem) => {
+      const candidate = buildFingerprint(problem);
+      if (isNearDuplicate(candidate, fingerprints)) {
+        return false;
+      }
+      fingerprints.push(candidate);
+      return true;
+    });
+
+    const enrichedProblems = dedupedProblems.map((problem, index) => ({
+      ...problem.toObject(),
+      questionNumber: problem.questionNumber || index + 1,
+      solved: solvedSet.has(problem._id.toString())
+    }));
+
+    res.json({
+      problems: enrichedProblems,
+      total: enrichedProblems.length,
+      solved: enrichedProblems.filter((p) => p.solved).length
+    });
+  } catch (err) {
+    console.error("Failed to fetch sandbox problems:", err.message);
+    res.status(500).json({ error: "Failed to fetch problems" });
+  }
 });
 
 export default router;

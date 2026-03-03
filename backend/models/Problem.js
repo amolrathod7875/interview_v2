@@ -64,6 +64,22 @@ const ProblemSchema = new mongoose.Schema(
       required: true
     },
 
+    questionNumber: {
+      type: Number,
+      min: 1,
+      default: null
+    },
+
+    isPublished: {
+      type: Boolean,
+      default: true
+    },
+
+    lastServedAt: {
+      type: Date,
+      default: null
+    },
+
     generatedBy: {
       type: String,
       enum: ["ai", "admin"],
@@ -72,5 +88,15 @@ const ProblemSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+ProblemSchema.index(
+  { topic: 1, difficulty: 1, questionNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { questionNumber: { $type: "number" } }
+  }
+);
+
+ProblemSchema.index({ topic: 1, difficulty: 1, isPublished: 1, questionNumber: 1 });
 
 export default mongoose.model("Problem", ProblemSchema);

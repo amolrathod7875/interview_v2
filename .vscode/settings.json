@@ -5,6 +5,14 @@
             "matchCommandLine": true
         },
         "Get-Process": true,
-        "Set-Content": true
+        "Set-Content": true,
+        "Test-NetConnection": true,
+        "Push-Location": true,
+        "npm run dev": true,
+        "Pop-Location": true,
+        "/^node --check \"backend/routes/codexAiRoutes\\.js\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }
