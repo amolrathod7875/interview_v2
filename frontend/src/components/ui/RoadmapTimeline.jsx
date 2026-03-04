@@ -1,8 +1,9 @@
 // components/ui/RoadmapTimeline.jsx
 import React from "react"
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "./hover-card"
+import { CheckCircle } from "lucide-react"
 
-const RoadmapTimeline = ({ levels, formatHoverContent }) => {
+const RoadmapTimeline = ({ levels, formatHoverContent, onItemClick }) => {
   return (
     <div className="relative flex gap-10">
 
@@ -37,10 +38,31 @@ const RoadmapTimeline = ({ levels, formatHoverContent }) => {
                 {level.items.map((item, i) => (
                   <HoverCard key={i} openDelay={150}>
                     <HoverCardTrigger asChild>
-                      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer">
-                        <p className="text-gray-700 font-medium">
-                          {item.key}
-                        </p>
+                      <div 
+                        onClick={() => onItemClick && onItemClick(item, level.title.toLowerCase())}
+                        className={`
+                          border rounded-xl p-5 shadow-sm transition cursor-pointer
+                          ${item.completed 
+                            ? "bg-green-50 border-green-200 hover:shadow-md hover:border-green-300" 
+                            : "bg-white border-gray-200 hover:shadow-md"
+                          }
+                        `}
+                      >
+                        <div className="flex items-start gap-2">
+                          {item.completed && (
+                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <p className={`text-gray-700 font-medium ${item.completed ? "line-through text-gray-500" : ""}`}>
+                              {item.key}
+                            </p>
+                            {item.quizScore !== null && item.quizScore !== undefined && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Score: {item.quizScore}%
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </HoverCardTrigger>
 

@@ -2,10 +2,23 @@ import axios from "axios"
 import { useState } from "react"
 import LoadingWave from "./ui/LoadingWave"
 import RoadmapTimeline from "./ui/RoadmapTimeline"
+import QuizModal from "./ui/QuizModal"
 import EmptyState from "./ui/EmptyState"
-import { Compass } from "lucide-react"
+import { Compass, CheckCircle } from "lucide-react"
 
 const API = import.meta.env.VITE_API_BASE_URL
+
+const getOrCreateRoadmapUserId = () => {
+  const primaryId = localStorage.getItem("userUid")
+  if (primaryId) return primaryId
+
+  const existingGuestId = localStorage.getItem("roadmapGuestId")
+  if (existingGuestId) return existingGuestId
+
+  const newGuestId = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+  localStorage.setItem("roadmapGuestId", newGuestId)
+  return newGuestId
+}
 
 // Clean formatter for hover content
 const formatHoverContent = (text) => {
@@ -69,6 +82,8 @@ const Roadmap = () => {
   const [error, setError] = useState("")
   const [roadmap, setRoadmap] = useState(null)
   const [fromCache, setFromCache] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -76,11 +91,12 @@ const Roadmap = () => {
     setError("")
     setRoadmap(null)
     setFromCache(false)
+    const roadmapUserId = getOrCreateRoadmapUserId()
 
     try {
       // Try using GET endpoint first (supports caching)
       const res = await axios.get(`${API}/roadmap/${encodeURIComponent(topic)}`, {
-        params: { userId: localStorage.getItem("userUid") }
+        params: { userId: roadmapUserId }
       })
 
       if (!res.data.success) {
@@ -99,7 +115,7 @@ const Roadmap = () => {
       try {
         const postRes = await axios.post(`${API}/roadmap/add`, {
           topic,
-          userId: localStorage.getItem("userUid"),
+          userId: roadmapUserId,
         })
 
         if (!postRes.data.success) {
@@ -118,6 +134,56 @@ const Roadmap = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Calculate progress percentage
+  const calculateProgress = () => {
+    if (!roadmap) return 0
+    const levels = ['beginner', 'intermediate', 'advanced']
+    let total = 0
+    let completed = 0
+    levels.forEach(level => {
+      const items = roadmap[level] || []
+      items.forEach(item => {
+        total++
+        if (item.completed) completed++
+      })
+    })
+    return total === 0 ? 0 : Math.round((completed / total) * 100)
+  }
+
+  // Handle item click - open quiz for uncompleted items, show score for completed
+  const handleItemClick = (item, level) => {
+    if (item.completed) {
+      // Show score if already completed
+      alert(`Quiz Score: ${item.quizScore}%`)
+      return
+    }
+    setSelectedItem({ ...item, level, roadmapId: roadmap._id })
+    setIsQuizModalOpen(true)
+  }
+
+  // Handle quiz completion - update local state
+  const handleQuizComplete = (updatedItem) => {
+    if (!updatedItem || !roadmap) return
+    
+    const { level, _id, completed, quizScore } = updatedItem
+    setRoadmap(prev => {
+      if (!prev) return prev
+      const updatedRoadmap = { ...prev }
+      const levelItems = updatedRoadmap[level] || []
+      const itemIndex = levelItems.findIndex(item => item._id === _id)
+      
+      if (itemIndex !== -1) {
+        updatedRoadmap[level] = [...levelItems]
+        updatedRoadmap[level][itemIndex] = {
+          ...updatedRoadmap[level][itemIndex],
+          completed,
+          quizScore
+        }
+      }
+      return updatedRoadmap
+    })
   }
 
   // TIMELINE STRUCTURE
@@ -194,11 +260,32 @@ const Roadmap = () => {
           </div>
         )}
 
+        {/* Progress Bar */}
+        {roadmap && (
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">Your Progress</span>
+              <span className="text-sm font-bold text-blue-600">{calculateProgress()}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${calculateProgress()}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+              <CheckCircle className="w-3 h-3 text-green-500" />
+              <span>Complete quizzes to mark items as done</span>
+            </div>
+          </div>
+        )}
+
         {/* TIMELINE ROADMAP */}
         {roadmap && (
           <RoadmapTimeline
             levels={roadmapLevels}
             formatHoverContent={formatHoverContent}
+            onItemClick={handleItemClick}
           />
         )}
 
@@ -208,6 +295,19 @@ const Roadmap = () => {
             icon={Compass}
             title="No roadmap generated yet"
             description="Enter a topic above and generate a structured learning roadmap with beginner, intermediate, and advanced levels."
+          />
+        )}
+
+        {/* Quiz Modal */}
+        {isQuizModalOpen && selectedItem && (
+          <QuizModal
+            item={selectedItem}
+            topic={topic}
+            onClose={() => {
+              setIsQuizModalOpen(false)
+              setSelectedItem(null)
+            }}
+            onComplete={handleQuizComplete}
           />
         )}
 
