@@ -179,10 +179,6 @@ const AfterLoginLayout = () => {
           </nav>
 
           <div className="px-4 py-4 border-t border-slate-100">
-            <div className="mb-3 px-4 py-2 bg-slate-50 rounded-lg">
-              <p className="text-xs text-slate-400 font-medium">Keyboard Shortcut</p>
-              <p className="text-sm text-slate-600 font-semibold">⌘K to open menu</p>
-            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
