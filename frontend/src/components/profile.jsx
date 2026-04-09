@@ -24,28 +24,6 @@ const Profile = ({ theme = "light", toggleTheme }) => {
   const fileInputRef = useRef(null)
   const menuRef = useRef(null)
 
-  // Calculate profile completion
-  const calculateProfileCompletion = () => {
-    const fields = [
-      user?.name,
-      user?.email,
-      user?.dob,
-      user?.linkedin,
-      user?.github,
-      user?.leetcode,
-      user?.photoURL
-    ]
-    const completed = fields.filter(f => f && f.toString().trim() !== '').length
-    return Math.round((completed / fields.length) * 100)
-  }
-
-  const profileCompletion = user ? calculateProfileCompletion() : 0
-  const getCompletionColor = () => {
-    if (profileCompletion >= 80) return 'bg-green-500'
-    if (profileCompletion >= 50) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
-
   // Close user menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -257,7 +235,7 @@ const Profile = ({ theme = "light", toggleTheme }) => {
     <div className="min-h-screen bg-background px-4 md:px-8 py-10">
       <div className="max-w-xl mx-auto space-y-8">
 
-        {/* Header with Profile Completion */}
+        {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Profile
@@ -265,22 +243,6 @@ const Profile = ({ theme = "light", toggleTheme }) => {
           <p className="text-muted-foreground">
             Manage your account information
           </p>
-          
-          {/* Profile Completion Bar */}
-          <div className="mt-4 max-w-xs mx-auto">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-muted-foreground">Profile Completion</span>
-              <span className={`text-xs font-bold ${profileCompletion >= 80 ? 'text-green-600' : profileCompletion >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                {profileCompletion}%
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-500 ${getCompletionColor()}`}
-                style={{ width: `${profileCompletion}%` }}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Profile Card */}
