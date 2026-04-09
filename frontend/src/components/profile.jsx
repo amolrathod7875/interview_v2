@@ -1,25 +1,24 @@
 import axios from "axios"
 import { useEffect, useState, useRef } from "react"
-import { FaPencilAlt, FaCamera, FaDice, FaCheck, FaTimes } from "react-icons/fa"
-import { Sun, Moon, Settings, LogOut } from "lucide-react"
+import { FaPencilAlt, FaCamera, FaDice, FaTimes } from "react-icons/fa"
+import { Sun, Moon } from "lucide-react"
 import LoadingWave from "./ui/LoadingWave"
 import LinkedinButton from "./ui/LinkedinButton"
 import GithubButton from "./ui/GithubButton"
 import LeetcodeButton from "./ui/LeetcodeButton"
 import EmailButton from "./ui/EmailButton"
 import EmptyState from "./ui/EmptyState"
-import { UserRoundX, CheckCircle, AlertCircle } from "lucide-react"
+import { UserRoundX } from "lucide-react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
-const Profile = () => {
+const Profile = ({ theme = "light", toggleTheme }) => {
   const [user, setUser] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [showAvatarOptions, setShowAvatarOptions] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
   const [editingField, setEditingField] = useState(null)
   const [savingField, setSavingField] = useState(null)
   const fileInputRef = useRef(null)
@@ -57,15 +56,6 @@ const Profile = () => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  // Dark mode toggle
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [darkMode])
 
   const [form, setForm] = useState({
     name: "",
@@ -231,16 +221,16 @@ const Profile = () => {
   // ---------------- LOADING ----------------
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#f8fafc] gap-4">
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
         <LoadingWave />
-        <p className="text-gray-600 text-sm">Loading profile...</p>
+        <p className="text-muted-foreground text-sm">Loading profile...</p>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-10">
+      <div className="min-h-screen bg-background px-4 md:px-8 py-10">
         <div className="max-w-xl mx-auto">
           <EmptyState
             icon={UserRoundX}
@@ -264,27 +254,27 @@ const Profile = () => {
       : user.github || "https://github.com"
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-10">
+    <div className="min-h-screen bg-background px-4 md:px-8 py-10">
       <div className="max-w-xl mx-auto space-y-8">
 
         {/* Header with Profile Completion */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Profile
           </h1>
-          <p className="text-slate-500">
+          <p className="text-muted-foreground">
             Manage your account information
           </p>
           
           {/* Profile Completion Bar */}
           <div className="mt-4 max-w-xs mx-auto">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-slate-600">Profile Completion</span>
+              <span className="text-xs font-medium text-muted-foreground">Profile Completion</span>
               <span className={`text-xs font-bold ${profileCompletion >= 80 ? 'text-green-600' : profileCompletion >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {profileCompletion}%
               </span>
             </div>
-            <div className="w-full bg-slate-200 rounded-full h-2">
+            <div className="w-full bg-muted rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all duration-500 ${getCompletionColor()}`}
                 style={{ width: `${profileCompletion}%` }}
@@ -294,10 +284,10 @@ const Profile = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-card transition-colors">
+        <div className="bg-card border border-border rounded-xl p-8 shadow-card transition-colors">
           
           {/* Avatar Section */}
-          <div className="flex flex-col items-center mb-8 pb-8 border-b border-slate-100">
+          <div className="flex flex-col items-center mb-8 pb-8 border-b border-border">
             <div className="relative group">
               <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
                 {user.photoURL ? (
@@ -313,7 +303,7 @@ const Profile = () => {
               
               <button
                 onClick={() => setShowAvatarOptions(!showAvatarOptions)}
-                className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+                className="absolute bottom-0 right-0 w-10 h-10 bg-primary hover:brightness-90 text-primary-foreground rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
                 disabled={uploadingAvatar}
               >
                 {uploadingAvatar ? (
@@ -326,10 +316,10 @@ const Profile = () => {
 
             {/* Avatar Options Popup */}
             {showAvatarOptions && !uploadingAvatar && (
-              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 w-full max-w-xs">
+              <div className="mt-4 bg-muted border border-border rounded-lg p-4 space-y-2 w-full max-w-xs">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700 font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-card border border-border rounded-lg hover:bg-background transition text-foreground font-medium"
                 >
                   <FaCamera />
                   Upload Photo
@@ -337,7 +327,7 @@ const Profile = () => {
                 
                 <button
                   onClick={generateAIAvatar}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:brightness-90 transition font-medium"
                 >
                   <FaDice />
                   Generate AI Avatar
@@ -345,7 +335,7 @@ const Profile = () => {
                 
                 <button
                   onClick={() => setShowAvatarOptions(false)}
-                  className="w-full px-4 py-2 text-gray-600 text-sm hover:text-gray-800"
+                  className="w-full px-4 py-2 text-muted-foreground text-sm hover:text-foreground"
                 >
                   Cancel
                 </button>
@@ -360,23 +350,23 @@ const Profile = () => {
               className="hidden"
             />
 
-            <h3 className="mt-4 text-2xl font-bold text-gray-900">{user.name}</h3>
-            <p className="text-gray-500 text-sm">{user.email}</p>
+            <h3 className="mt-4 text-2xl font-bold text-foreground">{user.name}</h3>
+            <p className="text-muted-foreground text-sm">{user.email}</p>
           </div>
 
           {/* Settings Bar */}
-          <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-900">
+          <div className="flex items-center justify-between mb-6 pb-6 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground">
               Your Details
             </h2>
             <div className="flex items-center gap-2">
               {/* Dark Mode Toggle */}
               <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-                title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                onClick={toggleTheme}
+                className="p-2 rounded-lg border border-border hover:bg-muted transition"
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
-                {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
+                {theme === "dark" ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
               </button>
               
               {/* Edit Button */}
@@ -384,8 +374,8 @@ const Profile = () => {
                 onClick={() => setEditMode(!editMode)}
                 className={`p-2 rounded-lg border transition ${
                   editMode 
-                    ? 'bg-blue-100 border-blue-300 text-blue-700' 
-                    : 'border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300'
+                    ? 'bg-primary/15 border-primary/40 text-primary'
+                    : 'border-border hover:bg-muted text-muted-foreground'
                 }`}
               >
                 {editMode ? <FaTimes className="text-sm" /> : <FaPencilAlt className="text-sm" />}
@@ -397,10 +387,10 @@ const Profile = () => {
             <div className="space-y-4">
               <Field label="Name" value={user.name} />
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between">
+              <div className="bg-muted border border-border rounded-lg p-4 flex justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Email</p>
-                  <p className="text-gray-900 font-medium break-all">
+                  <p className="text-xs text-muted-foreground mb-1">Email</p>
+                  <p className="text-foreground font-medium break-all">
                     {user.email}
                   </p>
                 </div>
@@ -467,14 +457,14 @@ const Profile = () => {
 
               <button
                 onClick={handleSave}
-                className="w-full mt-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                className="w-full mt-4 py-3 rounded-lg bg-primary hover:brightness-90 text-primary-foreground font-medium"
               >
                 Save Changes
               </button>
 
               <button
                 onClick={() => setEditMode(false)}
-                className="w-full py-3 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100"
+                className="w-full py-3 rounded-lg border border-border text-foreground hover:bg-muted"
               >
                 Cancel
               </button>
@@ -487,19 +477,19 @@ const Profile = () => {
 }
 
 const Field = ({ label, value }) => (
-  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-    <p className="text-xs text-gray-500 mb-1">{label}</p>
-    <p className="text-gray-900 font-medium break-all">
+  <div className="bg-muted border border-border rounded-lg p-4">
+    <p className="text-xs text-muted-foreground mb-1">{label}</p>
+    <p className="text-foreground font-medium break-all">
       {value || "-"}
     </p>
   </div>
 )
 
 const SocialField = ({ label, text, link, Button }) => (
-  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between">
+  <div className="bg-muted border border-border rounded-lg p-4 flex justify-between">
     <div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className="text-gray-900 font-medium break-all">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-foreground font-medium break-all">
         {text || "Not added"}
       </p>
     </div>
@@ -509,12 +499,12 @@ const SocialField = ({ label, text, link, Button }) => (
 
 const Input = ({ label, ...props }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
+    <label className="block text-sm font-medium text-foreground mb-1">
       {label}
     </label>
     <input
       {...props}
-      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+      className="w-full bg-card border border-border rounded-lg px-4 py-2 text-foreground focus:ring-2 focus:ring-primary focus:outline-none"
     />
   </div>
 )

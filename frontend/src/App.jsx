@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 // Public pages
@@ -37,6 +38,27 @@ import GithubRepos from "./pages/GithubRepos";
 import GithubAnalysis from "./pages/GithubAnalysis";
 
 function App() {
+  const [theme, setTheme] = useState(() => {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "light" || storedTheme === "dark") {
+      return storedTheme;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((previousTheme) => (previousTheme === "dark" ? "light" : "dark"));
+  };
+
   return (
     <BrowserRouter>
       <Routes>
@@ -50,7 +72,11 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <AfterLoginLayout />
+              <AfterLoginLayout
+                theme={theme}
+                setTheme={setTheme}
+                toggleTheme={toggleTheme}
+              />
             </ProtectedRoute>
           }
         />
