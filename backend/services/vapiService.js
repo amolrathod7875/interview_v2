@@ -27,7 +27,7 @@ Experience: ${experience || "Not specified"}
 
 Ask one question at a time, wait for the user response, and give concise feedback.
 Only use these questions in this exact order:
-${limitedQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+${limitedQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")}
 
 When all questions are done, close the interview politely.`
 
