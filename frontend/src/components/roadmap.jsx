@@ -239,7 +239,7 @@ const Roadmap = () => {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
+              className="px-6 py-3 rounded-lg bg-white dark:bg-card border border-gray-300 dark:border-orange-500/40 text-black dark:text-orange-400 font-medium transition hover:bg-gray-100 dark:hover:bg-orange-500/10"
             >
               Generate Roadmap
             </button>
