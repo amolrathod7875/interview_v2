@@ -89,8 +89,8 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`rounded-lg bg-white p-4 border shadow-sm transition-all
-          ${snapshot.isDragging ? "shadow-lg ring-2 ring-blue-200" : ""}`}
+          className={`rounded-lg bg-card p-4 border border-border shadow-sm transition-all
+          ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : ""}`}
         >
           {/* Header */}
           <div className="flex justify-between items-start">
@@ -101,7 +101,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
                   src={getLogoUrl(job.company)}
                   alt={job.company}
                   onError={() => setLogoError(true)}
-                  className="w-10 h-10 rounded-full object-contain bg-white border"
+                  className="w-10 h-10 rounded-full object-contain bg-background border border-border"
                 />
               ) : (
                 <div
@@ -115,10 +115,10 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
 
               {/* Company + Role */}
               <div>
-                <h4 className="font-medium text-gray-800 leading-tight">
+                <h4 className="font-medium text-foreground leading-tight">
                   {job.company}
                 </h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {job.role || "—"}
                 </p>
               </div>
@@ -134,7 +134,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
 
               <button
                 onClick={handleDelete}
-                className="text-gray-400 hover:text-red-600"
+                className="text-muted-foreground hover:text-red-500"
                 title="Delete job"
               >
                 <Trash2 size={16} />
@@ -144,7 +144,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
 
           {/* Notes Preview */}
           {job.notes && !showNotes && (
-            <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+            <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
               {job.notes}
             </p>
           )}
@@ -152,7 +152,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
           {/* Notes Editor */}
           {showNotes && (
             <textarea
-              className="mt-3 w-full border rounded-md p-2 text-sm"
+              className="mt-3 w-full bg-background text-foreground border border-border rounded-md p-2 text-sm"
               rows={3}
               value={draftNotes}
               onChange={(e) => setDraftNotes(e.target.value)}
@@ -164,7 +164,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
             {!showNotes ? (
               <button
                 onClick={() => setShowNotes(true)}
-                className="text-blue-600"
+                className="text-primary"
               >
                 Add Notes
               </button>
@@ -183,7 +183,7 @@ const Card = ({ job, index, onNotesSave, onDelete }) => {
                     setShowNotes(false);
                     setDraftNotes(job.notes || "");
                   }}
-                  className="text-gray-500"
+                  className="text-muted-foreground"
                 >
                   Cancel
                 </button>

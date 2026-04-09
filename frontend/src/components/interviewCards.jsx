@@ -31,7 +31,7 @@ const InterviewCards = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#f8fafc]">
+      <div className="flex items-center justify-center h-screen bg-background">
         <LoadingWave />
       </div>
     )
@@ -40,15 +40,15 @@ const InterviewCards = () => {
   const incompleteInterviews = data.filter(item => !item.isCompleted)
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-10">
+    <div className="min-h-screen bg-background px-4 md:px-8 py-10">
       <div className="mx-auto">
 
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-center text-slate-900 mb-2">
+          <h1 className="text-3xl font-bold text-center text-foreground mb-2">
             Incomplete Interviews
           </h1>
-          <p className="text-slate-500 text-center">
+          <p className="text-muted-foreground text-center">
             Continue interviews that are not yet completed
           </p>
         </div>
@@ -64,20 +64,20 @@ const InterviewCards = () => {
                     state: { interviewId: item._id }
                   })
                 }
-                className="bg-white border border-slate-200 rounded-xl p-6
+                className="bg-card border border-border rounded-xl p-6
                 shadow-card hover:shadow-card-hover transition-shadow cursor-pointer flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="h-12 w-12 flex items-center justify-center
-                    rounded-lg bg-blue-100 text-blue-700 font-semibold text-lg">
+                    rounded-lg bg-primary/15 text-primary font-semibold text-lg">
                     {item.topic?.[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-lg font-semibold text-slate-900 truncate capitalize">
+                    <h3 className="text-lg font-semibold text-foreground truncate capitalize">
                       {item.topic}
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-muted-foreground">
                       Experience: {item.experience} year{item.experience > 1 ? "s" : ""}
                     </p>
                   </div>
@@ -89,14 +89,14 @@ const InterviewCards = () => {
                     <span
                       key={idx}
                       className="px-2.5 py-1 text-xs rounded-md
-                      bg-slate-100 text-slate-700 border border-slate-200"
+                      bg-muted text-foreground border border-border"
                     >
                       {skill}
                     </span>
                   ))}
                   {item.skills.length > 3 && (
                     <span className="px-2.5 py-1 text-xs rounded-md
-                      bg-slate-50 text-slate-500 border border-slate-200">
+                      bg-muted/60 text-muted-foreground border border-border">
                       +{item.skills.length - 3} more
                     </span>
                   )}
@@ -105,7 +105,7 @@ const InterviewCards = () => {
                 {/* Action */}
                 <button
                   className="mt-auto w-full py-2.5 rounded-lg
-                  bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
+                  bg-primary hover:brightness-90 text-primary-foreground text-sm font-medium transition-colors shadow-sm"
                 >
                   Continue Interview
                 </button>
@@ -114,13 +114,13 @@ const InterviewCards = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-gray-500 text-lg mb-6 text-center">
+            <p className="text-muted-foreground text-lg mb-6 text-center">
               No incomplete interviews available.
             </p>
             <button
               onClick={() => navigate('/ai-interview-form')}
               className="px-8 py-3 rounded-lg
-              bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
+              bg-primary hover:brightness-90 text-primary-foreground font-medium transition"
             >
               Start New Interview
             </button>

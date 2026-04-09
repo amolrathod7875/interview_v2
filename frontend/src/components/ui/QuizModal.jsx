@@ -229,12 +229,12 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-foreground mb-2">
             Generating Quiz
           </h3>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Creating questions for "{item?.key}"...
           </p>
         </div>
@@ -246,22 +246,22 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
   if (error) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+        <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full mx-4 text-center">
           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-foreground mb-2">
             Error
           </h3>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-muted-foreground mb-6">{error}</p>
           <div className="flex gap-3 justify-center">
             <button
               onClick={handleRetry}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="px-4 py-2 bg-white dark:bg-card border border-gray-300 dark:border-orange-500/40 text-black dark:text-orange-400 rounded-lg hover:bg-gray-100 dark:hover:bg-orange-500/10 transition"
             >
               Try Again
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition"
             >
               Close
             </button>
@@ -276,14 +276,14 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
     const passed = score >= passThreshold
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+        <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full mx-4 text-center">
           {passed ? (
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           ) : (
             <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           )}
           
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          <h3 className="text-2xl font-bold text-foreground mb-2">
             {passed ? "Congratulations!" : "Keep Learning!"}
           </h3>
           
@@ -291,7 +291,7 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
             {score}%
           </p>
           
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             {passed 
               ? "You've passed! This item has been marked as complete." 
               : `You need ${passThreshold}% to pass. Don't give up - try again!`
@@ -302,7 +302,7 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
             {!passed && (
               <button
                 onClick={handleRetry}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 py-2 bg-white dark:bg-card border border-gray-300 dark:border-orange-500/40 text-black dark:text-orange-400 rounded-lg hover:bg-gray-100 dark:hover:bg-orange-500/10 transition"
               >
                 Try Again
               </button>
@@ -312,7 +312,7 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
               className={`px-4 py-2 rounded-lg transition ${
                 passed 
                   ? "bg-green-600 text-white hover:bg-green-700" 
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "bg-muted text-foreground hover:bg-muted/80"
               }`}
             >
               {passed ? "Continue" : "Close"}
@@ -326,22 +326,22 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
   // Render quiz questions
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-card border border-border rounded-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               Quiz: {item?.key}
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Topic: {topic} • {questionCount} questions • Pass: {passThreshold}%
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
+            className="p-2 hover:bg-muted rounded-full transition"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -349,7 +349,7 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {questions.map((q, qIdx) => (
             <div key={qIdx} className="space-y-3">
-              <p className="font-medium text-gray-900">
+              <p className="font-medium text-foreground">
                 {qIdx + 1}. {q.question}
               </p>
               <div className="space-y-2">
@@ -363,8 +363,8 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
                       className={`
                         w-full text-left p-3 rounded-lg border transition
                         ${isSelected 
-                          ? "border-blue-500 bg-blue-50 text-blue-700" 
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          ? "border-primary bg-primary/10 text-primary" 
+                          : "border-border text-foreground hover:border-primary/30 hover:bg-muted"
                         }
                       `}
                     >
@@ -381,15 +381,15 @@ const QuizModal = ({ item, topic, onClose, onComplete }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50">
+        <div className="p-4 border-t border-border bg-muted/40">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {Object.keys(selectedAnswers).length} / {questions.length} answered
             </p>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-2 bg-white dark:bg-card border border-gray-300 dark:border-orange-500/40 text-black dark:text-orange-400 rounded-lg hover:bg-gray-100 dark:hover:bg-orange-500/10 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {submitting ? (
                 <>

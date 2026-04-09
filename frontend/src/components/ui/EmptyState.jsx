@@ -84,14 +84,14 @@ export default function EmptyState({
   const Illustration = illustrationMap[StateIcon?.name] || DefaultIllustration
 
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-6 py-12 text-center">
+    <div className="rounded-2xl border border-dashed border-border bg-card/80 px-6 py-12 text-center">
       <Illustration />
-      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-      <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">{description}</p>
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">{description}</p>
       {actionLabel && onAction ? (
         <button
           onClick={onAction}
-          className="mt-6 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 hover:scale-105 active:scale-95"
+          className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:brightness-90 hover:scale-105 active:scale-95"
         >
           {actionLabel}
         </button>

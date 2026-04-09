@@ -14,17 +14,17 @@ const AddJobForm = ({ onAdd }) => {
   return (
     <form
       onSubmit={submit}
-      className="flex gap-3 items-center bg-white p-4 rounded-xl border shadow-sm"
+      className="flex gap-3 items-center bg-card p-4 rounded-xl border border-border shadow-sm"
     >
       <input
-        className="flex-1 px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+        className="flex-1 bg-background text-foreground px-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         placeholder="Company - Role (e.g. Google - SDE)"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
 
       <select
-        className="px-3 py-2 border rounded-lg text-sm"
+        className="px-3 py-2 bg-background text-foreground border border-border rounded-lg text-sm"
         value={priority}
         onChange={(e) => setPriority(e.target.value)}
       >
@@ -35,7 +35,7 @@ const AddJobForm = ({ onAdd }) => {
 
       <button
         type="submit"
-        className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+        className="px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:brightness-90 transition"
       >
         Add
       </button>

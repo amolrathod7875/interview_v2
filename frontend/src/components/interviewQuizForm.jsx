@@ -60,9 +60,9 @@ const InterviewQuizForm = () => {
 
   if (isSubmitting) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#f8fafc] gap-4">
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
         <LoadingWave />
-        <p className="text-gray-600 text-sm">
+        <p className="text-muted-foreground text-sm">
           {messages[msgIndex]}
         </p>
       </div>
@@ -70,26 +70,26 @@ const InterviewQuizForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-10">
+    <div className="min-h-screen bg-background px-4 md:px-8 py-10">
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             Quiz Generator
           </h1>
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             Create an AI-generated quiz based on your selected topic
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
           <div className="space-y-6">
 
             {/* Topic */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Quiz Topic
               </label>
               <input
@@ -97,15 +97,15 @@ const InterviewQuizForm = () => {
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="Java, Python, Data Structures"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-background text-foreground px-4 py-3 rounded-lg border border-border
+                focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 required
               />
             </div>
 
             {/* Question Count */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Number of Questions
               </label>
               <input
@@ -114,18 +114,18 @@ const InterviewQuizForm = () => {
                 onChange={(e) => setNoOfQuestions(e.target.value)}
                 min="1"
                 max="50"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-background text-foreground px-4 py-3 rounded-lg border border-border
+                focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Choose between 1 and 50 questions
               </p>
             </div>
 
             {/* Time Duration */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Time Duration (minutes)
               </label>
               <input
@@ -134,11 +134,11 @@ const InterviewQuizForm = () => {
                 onChange={(e) => setTimeInMinutes(e.target.value)}
                 min="1"
                 max="120"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-background text-foreground px-4 py-3 rounded-lg border border-border
+                focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Choose between 1 and 120 minutes
               </p>
             </div>
@@ -148,7 +148,7 @@ const InterviewQuizForm = () => {
               <Button
                 onClick={handleSubmit}
                 disabled={!topic || isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base"
+                className="w-full bg-primary hover:brightness-90 text-primary-foreground py-3 text-base"
               >
                 Start Quiz
               </Button>
@@ -157,8 +157,8 @@ const InterviewQuizForm = () => {
           </div>
 
           {/* Info */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
+          <div className="mt-6 pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
               Questions are generated dynamically based on the topic you provide.
             </p>
           </div>

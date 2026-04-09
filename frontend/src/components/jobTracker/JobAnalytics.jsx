@@ -3,8 +3,8 @@ import { fetchJobs } from "@/services/jobService";
 import { useAuth } from "@/contexts/authContext";
 
 const StatCard = ({ label, value, color }) => (
-  <div className="bg-white p-4 rounded-xl border shadow-sm">
-    <p className="text-sm text-gray-500">{label}</p>
+  <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
+    <p className="text-sm text-muted-foreground">{label}</p>
     <p className={`text-2xl font-semibold ${color}`}>{value}</p>
   </div>
 );
@@ -55,22 +55,22 @@ const JobAnalytics = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Job Analytics</h2>
+      <h2 className="text-lg font-semibold text-foreground">Job Analytics</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard label="Total" value={stats.total} color="text-gray-800" />
+        <StatCard label="Total" value={stats.total} color="text-foreground" />
         <StatCard label="Applied" value={stats.Applied} color="text-blue-600" />
         <StatCard label="Interview" value={stats.Interview} color="text-yellow-600" />
         <StatCard label="Offer" value={stats.Offer} color="text-green-600" />
         <StatCard label="Rejected" value={stats.Rejected} color="text-red-600" />
       </div>
 
-      <div className="bg-white p-4 rounded-xl border shadow-sm">
-        <p className="text-sm text-gray-500">Conversion Funnel</p>
-        <p className="mt-2 text-sm">
+      <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
+        <p className="text-sm text-muted-foreground">Conversion Funnel</p>
+        <p className="mt-2 text-sm text-foreground">
           Interview Rate: <b>{interviewRate}%</b>
         </p>
-        <p className="text-sm">
+        <p className="text-sm text-foreground">
           Offer Rate: <b>{offerRate}%</b>
         </p>
       </div>

@@ -31,7 +31,7 @@ const QuizCards = () => {
 
   if (loading) {
     return (
-      <div className="h-full bg-gray-100 px-4 md:px-6 py-9 overflow-y-auto">
+      <div className="h-full bg-background px-4 md:px-6 py-9 overflow-y-auto">
         <div className="max-w-3xl mx-auto space-y-5">
           <div className="space-y-2 text-center">
             <Skeleton className="mx-auto h-9 w-72" />
@@ -39,7 +39,7 @@ const QuizCards = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[...Array(4)].map((_, index) => (
-              <div key={index} className="rounded-xl border border-gray-200 bg-white p-5">
+              <div key={index} className="rounded-xl border border-border bg-card p-5">
                 <div className="mb-5 flex items-center gap-3">
                   <Skeleton className="h-11 w-11 rounded-lg" />
                   <div className="space-y-2 w-full">
@@ -58,13 +58,13 @@ const QuizCards = () => {
   }
 
   return (
-    <div className="h-full bg-slate-50 px-4 md:px-6 py-8 overflow-y-auto">
+    <div className="h-full bg-background px-4 md:px-6 py-8 overflow-y-auto">
       <div className="max-w-3xl mx-auto">
         <div className="mb-10 flex flex-col items-center">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Incomplete Quizzes
           </h1>
-          <p className="text-slate-500">
+          <p className="text-muted-foreground">
             Continue quizzes to test and improve your knowledge
           </p>
         </div>
@@ -77,28 +77,28 @@ const QuizCards = () => {
                 onClick={() =>
                   navigate("/quiz", { state: { quizId: item._id } })
                 }
-                className="bg-white border border-slate-200 rounded-xl p-5
+                className="bg-card border border-border rounded-xl p-5
                 shadow-card hover:shadow-card-hover transition-shadow cursor-pointer flex flex-col"
               >
                 {/* Card Header */}
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold text-base">
+                  <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-primary/15 text-primary font-semibold text-base">
                     {item.topic?.charAt(0).toUpperCase() || "Q"}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-slate-900 truncate capitalize">
+                    <h3 className="text-base font-semibold text-foreground truncate capitalize">
                       {item.topic}
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-muted-foreground">
                       {item.noOfQuestions} Questions
                     </p>
                   </div>
                 </div>
 
                 {/* Meta */}
-                <div className="text-sm text-slate-600 mb-6">
+                <div className="text-sm text-muted-foreground mb-6">
                   Estimated Time:{" "}
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-foreground">
                     ~{Math.ceil(item.noOfQuestions * 1.5)} min
                   </span>
                 </div>
@@ -106,7 +106,7 @@ const QuizCards = () => {
                 {/* Action */}
                 <button
                   className="mt-auto w-full py-2 rounded-lg
-                  bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
+                  bg-primary hover:brightness-90 text-primary-foreground text-sm font-medium transition-colors shadow-sm"
                 >
                   Start Quiz
                 </button>

@@ -63,9 +63,9 @@ const AiInterviewForm = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-[#f8fafc]">
+      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-background">
         <LoadingWave />
-        <p className="text-gray-600 text-sm">
+        <p className="text-muted-foreground text-sm">
           {messages[msgIndex]}
         </p>
       </div>
@@ -73,23 +73,23 @@ const AiInterviewForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-10">
+    <div className="min-h-screen bg-background px-4 md:px-8 py-10">
       <div className="max-w-2xl mx-auto">
 
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             AI Interview
           </h1>
-          <p className="text-slate-500">
+          <p className="text-muted-foreground">
             Generate personalized interview questions based on your profile
           </p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-card">
+        <div className="bg-card border border-border rounded-xl p-8 shadow-card">
           <div className="space-y-6">
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 Interview Topic / Role
               </label>
               <input
@@ -97,14 +97,14 @@ const AiInterviewForm = () => {
                 value={interviewTopic}
                 onChange={(e) => setInterviewTopic(e.target.value)}
                 placeholder="Frontend Developer, Data Scientist"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                className="w-full bg-background text-foreground px-4 py-2.5 rounded-lg border border-border
+                focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 Experience (years)
               </label>
               <input
@@ -112,14 +112,14 @@ const AiInterviewForm = () => {
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
                 placeholder="1 - 20"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                className="w-full bg-background text-foreground px-4 py-2.5 rounded-lg border border-border
+                focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 Primary Skills
               </label>
               <input
@@ -127,15 +127,15 @@ const AiInterviewForm = () => {
                 value={skills}
                 onChange={(e) => setSkills(e.target.value)}
                 placeholder="React, Node.js, SQL"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                className="w-full bg-background text-foreground px-4 py-2.5 rounded-lg border border-border
+                focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 required
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-foreground mb-1.5">
                   Number of Questions
                 </label>
                 <input
@@ -145,14 +145,14 @@ const AiInterviewForm = () => {
                   min="3"
                   max="15"
                   placeholder="5"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                  focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  className="w-full bg-background text-foreground px-4 py-2.5 rounded-lg border border-border
+                  focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-foreground mb-1.5">
                   Time Duration (minutes)
                 </label>
                 <input
@@ -162,8 +162,8 @@ const AiInterviewForm = () => {
                   min="5"
                   max="60"
                   placeholder="15"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                  focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  className="w-full bg-background text-foreground px-4 py-2.5 rounded-lg border border-border
+                  focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                   required
                 />
               </div>
@@ -173,7 +173,7 @@ const AiInterviewForm = () => {
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 text-base shadow-sm"
+                className="w-full bg-primary hover:brightness-90 text-primary-foreground py-2.5 text-base shadow-sm"
               >
                 Start Interview
               </Button>
@@ -181,8 +181,8 @@ const AiInterviewForm = () => {
 
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
+          <div className="mt-6 pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
               This information is used to generate relevant interview questions.
             </p>
           </div>

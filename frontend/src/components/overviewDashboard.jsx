@@ -176,15 +176,15 @@ const OverviewDashboard = () => {
   const github = user?.github
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 md:px-8 py-8">
+    <div className="min-h-screen bg-background px-4 md:px-8 py-8">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* HEADER */}
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Dashboard
           </h1>
-          <p className="text-slate-500 text-base">
+          <p className="text-muted-foreground text-base">
             Track your progress and performance across interviews, quizzes, and job applications
           </p>
         </div>
@@ -200,17 +200,17 @@ const OverviewDashboard = () => {
 
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-card">
+            <div className="bg-card border border-border rounded-xl p-6 shadow-card">
               <div className="flex items-center flex-col text-center">
-                <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                <h3 className="text-lg font-semibold text-foreground mb-1">
                   Interview Readiness Score
                 </h3>
-                <p className="text-sm text-slate-500 mb-5">
+                <p className="text-sm text-muted-foreground mb-5">
                   Overall performance evaluation
                 </p>
 
                 {data.length === 0 ? (
-                  <p className="text-gray-400 font-medium">
+                  <p className="text-muted-foreground font-medium">
                     Attempt at least one interview to view score
                   </p>
                 ) : (
@@ -220,24 +220,24 @@ const OverviewDashboard = () => {
             </div>
 
             <div
-              className="bg-white border border-slate-200 rounded-xl p-6 shadow-card cursor-pointer hover:shadow-card-hover transition-shadow"
+              className="bg-card border border-border rounded-xl p-6 shadow-card cursor-pointer hover:shadow-card-hover transition-shadow"
               onClick={() => navigate('/analyseResume')}
             >
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Analyse Your Resume
               </h3>
-              <p className="text-sm text-slate-600 mb-5">
+              <p className="text-sm text-muted-foreground mb-5">
                 Get AI-powered feedback to improve your chances of getting hired
               </p>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+              <Button className="bg-primary hover:brightness-90 text-primary-foreground shadow-sm">
                 Start Resume Analysis
               </Button>
             </div>
           </div>
 
           {/* COMPLETED INTERVIEWS */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-card flex flex-col">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-card flex flex-col">
+            <h3 className="text-lg font-semibold text-foreground mb-3">
               Completed Interviews
             </h3>
 
@@ -258,14 +258,14 @@ const OverviewDashboard = () => {
                               state: { interviewId: item._id },
                             })
                           }
-                          className="flex gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer group transition-colors hover:shadow-sm"
+                          className="flex gap-4 p-4 border border-border rounded-lg hover:bg-muted cursor-pointer group transition-colors hover:shadow-sm"
                         >
                           <div className={`h-12 w-12 flex items-center justify-center rounded-lg ${getTopicColor(item.topic).bg} ${getTopicColor(item.topic).text} font-semibold`}>
                             <span className="text-lg">{item.topic?.[0]?.toUpperCase()}</span>
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold truncate group-hover:text-blue-700 transition-colors">{item.topic}</p>
+                              <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{item.topic}</p>
                               {item.score !== undefined && (
                                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                                   item.score >= 80 ? 'bg-green-100 text-green-700' :
@@ -290,7 +290,7 @@ const OverviewDashboard = () => {
                               })}
                             </div>
                             {item.completedAt && (
-                              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -303,7 +303,7 @@ const OverviewDashboard = () => {
                       {completedInterviews.length > 5 && (
                         <button
                           onClick={() => setShowAllInterviews(!showAllInterviews)}
-                          className="w-full mt-2 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          className="w-full mt-2 py-2 text-sm text-primary hover:brightness-90 font-medium"
                         >
                           {showAllInterviews ? 'Show Less' : `Show More (${completedInterviews.length - 5} more)`}
                         </button>
@@ -312,7 +312,7 @@ const OverviewDashboard = () => {
                   )
                 })()
               ) : (
-                <p className="text-gray-400 text-center mt-8">
+                <p className="text-muted-foreground text-center mt-8">
                   No completed interviews yet
                 </p>
               )}
@@ -320,8 +320,8 @@ const OverviewDashboard = () => {
           </div>
 
           {/* COMPLETED QUIZZES */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-card flex flex-col">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-card flex flex-col">
+            <h3 className="text-lg font-semibold text-foreground mb-3">
               Completed Quizzes
             </h3>
 
@@ -340,15 +340,15 @@ const OverviewDashboard = () => {
                         <div
                           key={item._id}
                           onClick={() => getQuizResult(item._id, item.noOfQuestions)}
-                          className="flex gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer group transition-colors hover:shadow-sm"
+                          className="flex gap-4 p-4 border border-border rounded-lg hover:bg-muted cursor-pointer group transition-colors hover:shadow-sm"
                         >
                           <div className={`h-12 w-12 flex items-center justify-center rounded-lg ${topicColor.bg} ${topicColor.text} font-semibold`}>
                             <span className="text-lg">{item.topic?.[0]?.toUpperCase() || 'Q'}</span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold group-hover:text-indigo-700 transition-colors">{item.topic}</p>
+                            <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{item.topic}</p>
                             <div className="flex items-center gap-3 mt-1">
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {item.noOfQuestions} Questions
                               </p>
                               {item.score !== undefined && (
@@ -362,7 +362,7 @@ const OverviewDashboard = () => {
                               )}
                             </div>
                             {item.completedAt && (
-                              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -375,7 +375,7 @@ const OverviewDashboard = () => {
                       {completedQuizzes.length > 5 && (
                         <button
                           onClick={() => setShowAllQuizzes(!showAllQuizzes)}
-                          className="w-full mt-2 py-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                          className="w-full mt-2 py-2 text-sm text-primary hover:brightness-90 font-medium"
                         >
                           {showAllQuizzes ? 'Show Less' : `Show More (${completedQuizzes.length - 5} more)`}
                         </button>
@@ -384,7 +384,7 @@ const OverviewDashboard = () => {
                   )
                 })()
               ) : (
-                <p className="text-gray-400 text-center mt-8">
+                <p className="text-muted-foreground text-center mt-8">
                   No completed quizzes yet
                 </p>
               )}

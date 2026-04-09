@@ -251,7 +251,7 @@ const Profile = ({ theme = "light", toggleTheme }) => {
           {/* Avatar Section */}
           <div className="flex flex-col items-center mb-8 pb-8 border-b border-border">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-primary/20 text-primary flex items-center justify-center text-4xl font-bold shadow-lg">
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}

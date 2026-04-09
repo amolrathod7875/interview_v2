@@ -8,7 +8,7 @@ const RoadmapTimeline = ({ levels, formatHoverContent, onItemClick }) => {
     <div className="relative flex gap-10">
 
       {/* Vertical timeline line */}
-      <div className="absolute left-5 top-0 bottom-0 w-[8px] bg-blue-500 rounded-full" />
+      <div className="absolute left-5 top-0 bottom-0 w-[8px] bg-primary rounded-full" />
 
       {/* Content */}
       <div className="flex flex-col gap-20 w-full pl-16">
@@ -21,14 +21,14 @@ const RoadmapTimeline = ({ levels, formatHoverContent, onItemClick }) => {
                 absolute -left-[55px] top-2
                 w-8 h-8
                 rounded-full
-                bg-blue-600
-                border-[5px] border-white
+                bg-primary
+                border-[5px] border-background
                 shadow-lg
               "
             />
 
             {/* Section title */}
-            <h2 className="text-2xl font-semibold text-gray-900 mb-5">
+            <h2 className="text-2xl font-semibold text-foreground mb-5">
               {level.title}
             </h2>
 
@@ -43,8 +43,8 @@ const RoadmapTimeline = ({ levels, formatHoverContent, onItemClick }) => {
                         className={`
                           border rounded-xl p-5 shadow-sm transition cursor-pointer
                           ${item.completed 
-                            ? "bg-green-50 border-green-200 hover:shadow-md hover:border-green-300" 
-                            : "bg-white border-gray-200 hover:shadow-md"
+                            ? "bg-green-500/10 border-green-500/30 hover:shadow-md hover:border-green-500/40" 
+                            : "bg-card border-border hover:shadow-md hover:border-primary/30"
                           }
                         `}
                       >
@@ -53,11 +53,11 @@ const RoadmapTimeline = ({ levels, formatHoverContent, onItemClick }) => {
                             <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                           )}
                           <div className="flex-1">
-                            <p className={`text-gray-700 font-medium ${item.completed ? "line-through text-gray-500" : ""}`}>
+                            <p className={`text-foreground font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
                               {item.key}
                             </p>
                             {item.quizScore !== null && item.quizScore !== undefined && (
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 Score: {item.quizScore}%
                               </p>
                             )}
@@ -73,7 +73,7 @@ const RoadmapTimeline = ({ levels, formatHoverContent, onItemClick }) => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">
+              <p className="text-muted-foreground text-sm">
                 No items available for this level.
               </p>
             )}

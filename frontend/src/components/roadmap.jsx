@@ -54,7 +54,7 @@ const formatHoverContent = (text) => {
 
       {links.length > 0 && (
         <>
-          <div className="mt-2 font-semibold text-gray-700">
+          <div className="mt-2 font-semibold text-foreground">
             Resources:
           </div>
           {links.map((link, i) => (
@@ -64,7 +64,7 @@ const formatHoverContent = (text) => {
                 href={link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline break-all"
+                className="text-primary underline break-all"
               >
                 {link}
               </a>
@@ -198,9 +198,9 @@ const Roadmap = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#f8fafc] gap-4">
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
         <LoadingWave />
-        <p className="text-gray-600 text-sm">
+        <p className="text-muted-foreground text-sm">
           Generating roadmap...
         </p>
       </div>
@@ -208,15 +208,15 @@ const Roadmap = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-4 md:px-8 py-10">
+    <div className="min-h-screen bg-background px-4 md:px-8 py-10">
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             Learning Roadmap
           </h1>
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             Generate a structured learning path for any topic
           </p>
         </div>
@@ -224,7 +224,7 @@ const Roadmap = () => {
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-12"
+          className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-12"
         >
           <div className="flex flex-col md:flex-row gap-4">
             <input
@@ -232,14 +232,14 @@ const Roadmap = () => {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="DevOps, Node.js, Machine Learning"
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300
-              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 bg-background text-foreground px-4 py-3 rounded-lg border border-border
+              focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               required
             />
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 rounded-lg bg-white dark:bg-card border border-gray-300 dark:border-orange-500/40 text-black dark:text-orange-400 font-medium transition hover:bg-gray-100 dark:hover:bg-orange-500/10"
+              className="px-6 py-3 rounded-lg bg-white dark:bg-card border border-gray-300 dark:border-orange-500/40 text-black dark:text-orange-400 font-medium transition hover:bg-gray-100 dark:hover:bg-orange-500/10 disabled:opacity-50"
             >
               Generate Roadmap
             </button>
@@ -255,7 +255,7 @@ const Roadmap = () => {
 
         {/* Cache Indicator */}
         {fromCache && roadmap && (
-          <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-sm flex items-center gap-2">
             <span>Loaded from cache (Oracle Cloud) - No API cost!</span>
           </div>
         )}
@@ -264,16 +264,16 @@ const Roadmap = () => {
         {roadmap && (
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Your Progress</span>
-              <span className="text-sm font-bold text-blue-600">{calculateProgress()}%</span>
+              <span className="text-sm font-medium text-foreground">Your Progress</span>
+              <span className="text-sm font-bold text-primary">{calculateProgress()}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
               <div 
-                className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                className="bg-primary h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${calculateProgress()}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
               <CheckCircle className="w-3 h-3 text-green-500" />
               <span>Complete quizzes to mark items as done</span>
             </div>
