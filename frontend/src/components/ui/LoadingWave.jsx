@@ -2,10 +2,10 @@ const LoadingWave = () => {
   return (
     <div className="w-full flex items-center justify-center py-6">
       <div className="flex items-end gap-2 h-16">
-        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-0" style={{ height: '8px' }} />
-        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-100" style={{ height: '8px' }} />
-        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-200" style={{ height: '8px' }} />
-        <span className="block w-2 rounded-sm bg-[#3b82f6] animate-wave delay-300" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-black dark:bg-orange-500 animate-wave delay-0" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-black dark:bg-orange-500 animate-wave delay-100" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-black dark:bg-orange-500 animate-wave delay-200" style={{ height: '8px' }} />
+        <span className="block w-2 rounded-sm bg-black dark:bg-orange-500 animate-wave delay-300" style={{ height: '8px' }} />
       </div>
 
       <style>{`
