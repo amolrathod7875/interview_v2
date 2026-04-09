@@ -14,8 +14,13 @@ const messages = [
 ]
 const RAW_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
 const API = RAW_API.replace(/\/+$/, "").replace(/\/api$/, "")
-const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY
-const VAPI_ASSISTANT_ID = import.meta.env.VITE_VAPI_ASSISTANT_ID
+const VAPI_PUBLIC_KEY = (import.meta.env.VITE_VAPI_PUBLIC_KEY || "").split("#")[0].trim()
+
+const getInterviewWsUrl = () => {
+  const parsed = new URL(API)
+  const protocol = parsed.protocol === "https:" ? "wss:" : "ws:"
+  return `${protocol}//${parsed.host}/ws/interview`
+}
 
 export default function AiInterview() {
   const [isCompleted, setIsCompleted] = useState(false)
@@ -39,6 +44,7 @@ export default function AiInterview() {
   const interviewId = state?.interviewId
   const hangUpRef = useRef(null)
   const vapiRef = useRef(null)
+  const wsRef = useRef(null)
   const listenersAttachedRef = useRef(false)
   const parsedQuestionsRef = useRef([])
 
@@ -118,6 +124,22 @@ export default function AiInterview() {
     }
   }
 
+  const closeInterviewSocket = () => {
+    if (!wsRef.current) return
+    try {
+      wsRef.current.close()
+    } catch {
+      // ignore close failures
+    } finally {
+      wsRef.current = null
+    }
+  }
+
+  const sendSocketEvent = (type, payload = {}) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+    wsRef.current.send(JSON.stringify({ type, payload }))
+  }
+
   const handleVapiMessage = (message) => {
     const role = message?.role || message?.speaker || message?.from
     const text = message?.transcript || message?.text || message?.content || ""
@@ -131,6 +153,7 @@ export default function AiInterview() {
         setCurrentTranscript("")
         setCurrentQuestionIndex((previous) => previous + 1)
         setUserSpeaking(false)
+        sendSocketEvent("transcript_user", { text })
       } else {
         setCurrentTranscript(text)
         setUserSpeaking(true)
@@ -176,6 +199,8 @@ export default function AiInterview() {
       setIsCompleted(true)
       setIsActive(false)
       stopVapi()
+      sendSocketEvent("session_end", { interviewId })
+      closeInterviewSocket()
 
       const finalAnswers = currentTranscript.trim()
         ? [...transcriptHistory, currentTranscript.trim()]
@@ -201,12 +226,58 @@ export default function AiInterview() {
   useEffect(() => {
     return () => {
       stopVapi()
+      closeInterviewSocket()
     }
   }, [])
 
+  const initializeSessionOverSocket = async () => {
+    return new Promise((resolve, reject) => {
+      closeInterviewSocket()
+
+      const socket = new WebSocket(getInterviewWsUrl())
+      wsRef.current = socket
+
+      const onSocketError = () => {
+        reject(new Error("WebSocket connection failed."))
+      }
+
+      socket.addEventListener("open", () => {
+        socket.send(
+          JSON.stringify({
+            type: "session_init",
+            payload: {
+              interviewId,
+              topic: interview.topic,
+              noOfQuestions,
+              experience: interview.experience,
+              candidateName: user?.name || "Candidate",
+              questions: parsedQuestionsRef.current
+            }
+          })
+        )
+      })
+
+      socket.addEventListener("message", (event) => {
+        const parsed = JSON.parse(event.data || "{}")
+        if (parsed?.type === "session_ready") {
+          socket.removeEventListener("error", onSocketError)
+          resolve(parsed.payload?.assistantId)
+          return
+        }
+
+        if (parsed?.type === "session_error") {
+          socket.removeEventListener("error", onSocketError)
+          reject(new Error(parsed.payload?.message || "Session initialization failed."))
+        }
+      })
+
+      socket.addEventListener("error", onSocketError)
+    })
+  }
+
   const startInterview = async () => {
-    if (!VAPI_PUBLIC_KEY || !VAPI_ASSISTANT_ID) {
-      setSessionError("Vapi credentials are missing. Please configure VITE_VAPI_PUBLIC_KEY and VITE_VAPI_ASSISTANT_ID.")
+    if (!VAPI_PUBLIC_KEY) {
+      setSessionError("Vapi public key is missing. Please configure VITE_VAPI_PUBLIC_KEY.")
       return
     }
 
@@ -219,7 +290,12 @@ export default function AiInterview() {
       }
       attachVapiListeners()
 
-      await vapiRef.current.start(VAPI_ASSISTANT_ID, {
+      const runtimeAssistantId = await initializeSessionOverSocket()
+      if (!runtimeAssistantId) {
+        throw new Error("Assistant id was not provided by session gateway.")
+      }
+
+      await vapiRef.current.start(runtimeAssistantId, {
         metadata: {
           interviewId,
           topic: interview.topic,
@@ -236,6 +312,7 @@ export default function AiInterview() {
       setSessionError(error?.message || "Unable to start interview voice session.")
       setLoading(false)
       setIsActive(false)
+      closeInterviewSocket()
     }
   }
 

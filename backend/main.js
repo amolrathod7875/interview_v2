@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -25,10 +26,12 @@ import jobRoutes from "./routes/jobRoutes.js";
 import githubAuthRoutes from "./routes/githubAuth.routes.js";
 import githubApiRoutes from "./routes/githubApi.routes.js";
 import githubAiRoutes from "./routes/githubAiRoutes.js";
+import { setupInterviewSocket } from "./ws/interviewSocket.js";
 // ------------------------------------------------
 
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
 
 /* ================= MIDDLEWARE ================= */
 
@@ -139,6 +142,8 @@ mongoose
 /* ================= SERVER ================= */
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+setupInterviewSocket(server);
+
+server.listen(PORT, () => {
   console.log(` Server running on port ${PORT}`);
 });

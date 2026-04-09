@@ -37,6 +37,7 @@
     "ocr-space-api-wrapper": "^2.4.2",
     
     "pdf-parse": "^1.1.1",
+    "ws": "^8.18.3",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
