@@ -22,6 +22,7 @@ const AiInterviewForm = () => {
   const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [msgIndex, setMsgIndex] = useState(0)
+  const [submitError, setSubmitError] = useState("")
 
   const setTrigger = TabStore(state => state.setTrigger)
   const navigate = useNavigate()
@@ -37,28 +38,68 @@ const AiInterviewForm = () => {
     return () => clearTimeout(timer)
   }, [loading, msgIndex])
 
+  const parsedExperience = Number(experience)
+  const skillsList = skills
+    .split(",")
+    .map((skill) => skill.trim())
+    .filter(Boolean)
+
+  const isFormValid =
+    interviewTopic.trim().length > 0 &&
+    Number.isFinite(parsedExperience) &&
+    parsedExperience > 0 &&
+    skillsList.length > 0 &&
+    noOfQuestions >= 3 &&
+    noOfQuestions <= 15 &&
+    timeInMinutes >= 5 &&
+    timeInMinutes <= 60
+
   const handleSubmit = async () => {
     if (isSubmitting) return
+    setSubmitError("")
+
+    if (!isFormValid) {
+      setSubmitError("Please fill all fields with valid values before starting the interview.")
+      return
+    }
+
     setIsSubmitting(true)
     setLoading(true)
 
-    const resp = await axios.post(`${API}/interview/add`, {
-      userId: localStorage.getItem("userUid"),
-      topic: interviewTopic,
-      experience,
-      skills,
-      noOfQuestions,
-      timeInMinutes
-    })
-
-    setTrigger()
-    navigate("/ai-interview", {
-      state: { 
-        interviewId: resp.data.data._id,
+    try {
+      const resp = await axios.post(`${API}/interview/add`, {
+        userId: localStorage.getItem("userUid"),
+        topic: interviewTopic.trim(),
+        experience: String(parsedExperience),
+        skills: skillsList,
         noOfQuestions,
         timeInMinutes
+      })
+
+      const interviewId = resp?.data?.data?._id
+      if (!resp?.data?.success || !interviewId) {
+        throw new Error(resp?.data?.message || "Failed to create interview session.")
       }
-    })
+
+      setTrigger()
+      navigate("/ai-interview", {
+        state: {
+          interviewId,
+          noOfQuestions,
+          timeInMinutes
+        }
+      })
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to start interview. Please try again."
+      setSubmitError(message)
+      console.error("Failed to create interview:", error)
+    } finally {
+      setLoading(false)
+      setIsSubmitting(false)
+    }
   }
 
   if (loading) {
@@ -87,6 +128,11 @@ const AiInterviewForm = () => {
 
         <div className="bg-card border border-border rounded-xl p-8 shadow-card">
           <div className="space-y-6">
+            {submitError && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                {submitError}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -172,7 +218,7 @@ const AiInterviewForm = () => {
             <div className="pt-4">
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isFormValid}
                 className="w-full bg-primary hover:brightness-90 text-primary-foreground py-2.5 text-base shadow-sm"
               >
                 Start Interview
