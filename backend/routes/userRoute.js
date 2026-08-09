@@ -17,6 +17,20 @@ router.post("/sync", async (req, res) => {
       });
     }
 
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          _id: firebaseId,
+          firebaseId,
+          name: name || "",
+          email,
+          photoURL: photoURL || "",
+        },
+        offline: true,
+      });
+    }
+
     let user = await userModel.findOne({ firebaseId });
 
     if (!user) {

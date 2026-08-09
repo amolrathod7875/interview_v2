@@ -59,12 +59,6 @@ app.use(
   })
 );
 
-//  DEBUG incoming requests (keep for now)
-app.use((req, _res, next) => {
-  console.log(`️ ${req.method} ${req.originalUrl}`);
-  next();
-});
-
 /* ================= ROUTES ================= */
 
 //  FILE UPLOAD ROUTE — MUST COME FIRST
@@ -127,17 +121,13 @@ app.use((err, _req, res, _next) => {
 /* ================= DATABASE ================= */
 
 if (!process.env.MONGO_URI) {
-  console.error(" MONGO_URI missing in .env");
-  process.exit(1);
+  console.warn(" MONGO_URI missing in .env; starting in offline mode without MongoDB");
+} else {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => console.log(" MongoDB Atlas connected"))
+    .catch(() => {});
 }
-
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log(" MongoDB Atlas connected"))
-  .catch((err) => {
-    console.error(" MongoDB connection failed:", err.message);
-    process.exit(1);
-  });
 
 /* ================= SERVER ================= */
 

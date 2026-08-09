@@ -1,5 +1,6 @@
 import admin, { isFirebaseAdminEnabled } from "../config/firebase.js";
 import User from "../models/userModel.js";
+import mongoose from "mongoose";
 
 function decodeJwtPayload(token) {
   try {
@@ -12,6 +13,18 @@ function decodeJwtPayload(token) {
     return JSON.parse(decoded);
   } catch {
     return null;
+  }
+}
+
+function decodeLocalToken(token) {
+  try {
+    const parts = token.split(".")
+    if (parts.length < 3 || parts[0] !== "local") return null
+
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"))
+    return payload?.uid ? payload : null
+  } catch {
+    return null
   }
 }
 
@@ -40,26 +53,37 @@ export default async function authMiddleware(req, res, next) {
 
       decoded = decodeJwtPayload(token);
       if (!decoded?.user_id && !decoded?.sub && !decoded?.uid) {
+        decoded = decodeLocalToken(token);
+      }
+
+      if (!decoded?.user_id && !decoded?.sub && !decoded?.uid) {
         return res.status(401).json({ error: "Unauthorized: invalid token payload" });
       }
     }
 
     const firebaseUid = decoded.uid || decoded.user_id || decoded.sub;
 
-    const user = await User.findOne({ firebaseId: firebaseUid }).select("_id firebaseId email");
-    if (!user) {
-      return res.status(401).json({ error: "Unauthorized: user not synced" });
-    }
+    if (mongoose.connection.readyState === 1) {
+      const user = await User.findOne({ firebaseId: firebaseUid }).select("_id firebaseId email");
+      if (!user) {
+        return res.status(401).json({ error: "Unauthorized: user not synced" });
+      }
 
-    req.user = {
-      id: user._id.toString(),
-      firebaseId: user.firebaseId,
-      email: user.email || decoded.email || ""
-    };
+      req.user = {
+        id: user._id.toString(),
+        firebaseId: user.firebaseId,
+        email: user.email || decoded.email || ""
+      };
+    } else {
+      req.user = {
+        id: firebaseUid,
+        firebaseId: firebaseUid,
+        email: decoded.email || ""
+      };
+    }
 
     next();
   } catch (err) {
-    console.error("Auth middleware error:", err.message);
     return res.status(401).json({ error: "Unauthorized: invalid token" });
   }
 }

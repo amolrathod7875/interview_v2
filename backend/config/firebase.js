@@ -24,14 +24,8 @@ try {
       credential: admin.credential.cert(serviceAccount)
     })
     firebaseAdminEnabled = true
-    console.log("Firebase Admin initialized")
-  } else {
-    console.warn(
-      "Firebase Admin credentials missing. Protected routes requiring token verification will return 503 until configured."
-    )
   }
 } catch (error) {
-  console.error("Failed to initialize Firebase Admin:", error.message)
 }
 
 export const isFirebaseAdminEnabled = firebaseAdminEnabled

@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
     return unsub
   }, [])
 
-  const value = { user, signup, login, googleLogin, logout }
+  const value = { user, loading, signup, login, googleLogin, logout }
 
   return (
     <AuthContext.Provider value={value}>

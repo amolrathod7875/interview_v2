@@ -12,7 +12,6 @@ let storage;
 
 // Priority 1: Oracle Cloud Object Storage (if configured)
 if (process.env.ORACLE_BUCKET && process.env.ORACLE_ENDPOINT && process.env.ORACLE_ACCESS_KEY_ID) {
-  console.log('Using Oracle Cloud Object Storage')
   storage = multerS3({
     s3: oracleStorage,
     bucket: process.env.ORACLE_BUCKET,
