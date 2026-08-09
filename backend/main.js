@@ -120,13 +120,16 @@ app.use((err, _req, res, _next) => {
 
 /* ================= DATABASE ================= */
 
+// Fail fast instead of buffering forever when the DB is unreachable
+mongoose.set("bufferCommands", false);
+
 if (!process.env.MONGO_URI) {
   console.warn(" MONGO_URI missing in .env; starting in offline mode without MongoDB");
 } else {
   mongoose
     .connect(process.env.MONGO_URI)
     .then(() => console.log(" MongoDB Atlas connected"))
-    .catch(() => {});
+    .catch((err) => console.error(" MongoDB connection error:", err?.message || err));
 }
 
 /* ================= SERVER ================= */

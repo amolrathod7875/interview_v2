@@ -63,6 +63,13 @@ router.get("/me", async (req, res) => {
   try {
     const { firebaseId } = req.query;
 
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Database unavailable",
+      });
+    }
+
     if (!firebaseId) {
       return res.status(400).json({
         success: false,
@@ -98,6 +105,13 @@ router.get("/me", async (req, res) => {
 router.put("/update", async (req, res) => {
   try {
     const { firebaseId } = req.body;
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Database unavailable",
+      });
+    }
 
     if (!firebaseId) {
       return res.status(400).json({
@@ -148,6 +162,13 @@ router.put("/update", async (req, res) => {
 router.post("/github/repo", async (req, res) => {
   try {
     const { firebaseId, owner, repo } = req.body;
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Database unavailable",
+      });
+    }
 
     if (!firebaseId || !owner || !repo) {
       return res.status(400).json({

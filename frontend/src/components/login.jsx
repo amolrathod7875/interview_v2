@@ -20,7 +20,7 @@ async function syncUserToBackend(resp) {
       photoURL: resp.photoURL || "",
     })
   } catch (error) {
-    console.warn("User sync skipped (backend unavailable):", error?.message)
+    console.error("User sync failed (backend unavailable):", error?.response?.data || error?.message)
   }
 }
 

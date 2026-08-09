@@ -1,21 +1,25 @@
 import axios from "axios"
 import { useEffect, useState, useRef } from "react"
 import { FaPencilAlt, FaCamera, FaDice, FaTimes } from "react-icons/fa"
-import { Sun, Moon } from "lucide-react"
+import { Sun, Moon, UserRoundX, AlertTriangle } from "lucide-react"
 import LoadingWave from "./ui/LoadingWave"
 import LinkedinButton from "./ui/LinkedinButton"
 import GithubButton from "./ui/GithubButton"
 import LeetcodeButton from "./ui/LeetcodeButton"
 import EmailButton from "./ui/EmailButton"
 import EmptyState from "./ui/EmptyState"
-import { UserRoundX } from "lucide-react"
+import { useAuth } from "@/contexts/authContext"
 
 const API = import.meta.env.VITE_API_BASE_URL
 
 const Profile = ({ theme = "light", toggleTheme }) => {
+  const { user: authUser } = useAuth()
+
   const [user, setUser] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [retryKey, setRetryKey] = useState(0)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [showAvatarOptions, setShowAvatarOptions] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -45,38 +49,106 @@ const Profile = ({ theme = "light", toggleTheme }) => {
     photoURL: "",
   })
 
-  const firebaseId = localStorage.getItem("userUid")
+  const firebaseId = authUser?.uid ?? localStorage.getItem("userUid")
+
+  const syncToBackend = async () => {
+    if (!authUser) throw new Error("No authenticated user")
+    await axios.post(
+      `${API}/user/sync`,
+      {
+        name: authUser.displayName || "",
+        email: authUser.email,
+        firebaseId: authUser.uid,
+        photoURL: authUser.photoURL || "",
+      },
+      { timeout: 10000 }
+    )
+  }
+
+  const applyUser = (data) => {
+    setUser(data)
+    setForm({
+      name: data.name || "",
+      email: data.email || "",
+      dob: data.dob || "",
+      linkedin: data.linkedin || "",
+      github: githubToText(data.github),
+      leetcode: data.leetcode || "",
+      photoURL: data.photoURL || "",
+    })
+  }
+
+  const githubToText = (g) =>
+    typeof g === "object" && g?.owner && g?.repo
+      ? `${g.owner}/${g.repo}`
+      : (typeof g === "string" ? g : "")
 
   // ---------------- FETCH PROFILE ----------------
   useEffect(() => {
+    if (!firebaseId) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+
     const fetchUser = async () => {
       try {
         const res = await axios.get(`${API}/user/me`, {
           params: { firebaseId },
+          timeout: 10000,
         })
 
-        const data = res.data.data
-        setUser(data)
-
-        setForm({
-          name: data.name || "",
-          email: data.email || "",
-          dob: data.dob || "",
-          linkedin: data.linkedin || "",
-          github: "",
-          leetcode: data.leetcode || "",
-          photoURL: data.photoURL || "",
-        })
+        if (cancelled) return
+        applyUser(res.data.data)
+        setError(null)
       } catch (err) {
+        if (cancelled) return
+
+        // Database unavailable — distinguish so we don't show an infinite loader
+        if (err.response?.status === 503) {
+          setError("The database is temporarily unavailable. Please try again in a moment.")
+          return
+        }
+
+        // User not found — attempt to auto-sync, then refetch
+        if (err.response?.status === 404) {
+          try {
+            await syncToBackend()
+            const res2 = await axios.get(`${API}/user/me`, {
+              params: { firebaseId },
+              timeout: 10000,
+            })
+            if (cancelled) return
+            applyUser(res2.data.data)
+            setError(null)
+            return
+          } catch (syncErr) {
+            if (cancelled) return
+            console.error("Profile auto-sync failed:", syncErr)
+            setError("We couldn't find your profile. Try refreshing or signing in again to sync your account.")
+            return
+          }
+        }
+
         console.error("Profile fetch failed:", err)
+        setError("Failed to load your profile. Please check your connection and try again.")
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
-    if (firebaseId) fetchUser()
-    else setLoading(false)
-  }, [firebaseId])
+    fetchUser()
+    return () => {
+      cancelled = true
+    }
+  }, [firebaseId, retryKey])
+
+  const handleRetry = () => {
+    setError(null)
+    setLoading(true)
+    setRetryKey((k) => k + 1)
+  }
 
   // ---------------- SAVE PROFILE ----------------
   const handleSave = async () => {
@@ -95,6 +167,7 @@ const Profile = ({ theme = "light", toggleTheme }) => {
       setEditMode(false)
     } catch (err) {
       console.error("Profile update failed:", err)
+      alert("Failed to save changes. Please check your connection and try again.")
     }
   }
 
@@ -110,6 +183,7 @@ const Profile = ({ theme = "light", toggleTheme }) => {
       setEditingField(null)
     } catch (err) {
       console.error("Field update failed:", err)
+      alert("Failed to save this field. Please check your connection and try again.")
     } finally {
       setSavingField(null)
     }
@@ -206,6 +280,22 @@ const Profile = ({ theme = "light", toggleTheme }) => {
     )
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background px-4 md:px-8 py-10">
+        <div className="max-w-xl mx-auto">
+          <EmptyState
+            icon={AlertTriangle}
+            title="Something went wrong"
+            description={error}
+            actionLabel="Retry"
+            onAction={handleRetry}
+          />
+        </div>
+      </div>
+    )
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-background px-4 md:px-8 py-10">
@@ -214,6 +304,8 @@ const Profile = ({ theme = "light", toggleTheme }) => {
             icon={UserRoundX}
             title="No profile found"
             description="We couldn't find your profile details yet. Try refreshing or sign in again to sync your account."
+            actionLabel="Retry"
+            onAction={handleRetry}
           />
         </div>
       </div>
@@ -229,7 +321,9 @@ const Profile = ({ theme = "light", toggleTheme }) => {
   const githubLink =
     typeof user.github === "object" && user.github?.owner && user.github?.repo
       ? `https://github.com/${user.github.owner}/${user.github.repo}`
-      : user.github || "https://github.com"
+      : (typeof user.github === "string" && user.github.includes("/")
+          ? `https://github.com/${user.github}`
+          : user.github) || "https://github.com"
 
   return (
     <div className="min-h-screen bg-background px-4 md:px-8 py-10">

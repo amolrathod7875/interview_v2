@@ -21,6 +21,7 @@ import axios from "axios"
 
 import AiInterviewForm from "./aiInterviewForm"
 import { logoutUser } from "@/services/authService"
+import { useAuth } from "@/contexts/authContext"
 import InterviewCards from "./interviewCards"
 import InterviewQuizForm from "./interviewQuizForm"
 import QuizCards from "./quizCards"
@@ -47,30 +48,46 @@ const navItems = [
 ]
 
 const AfterLoginLayout = ({ theme, toggleTheme }) => {
+  const { user: authUser } = useAuth()
   const [activeTab, setActiveTab] = useState("Overview")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(
+    authUser
+      ? {
+          name: authUser.displayName,
+          photoURL: authUser.photoURL,
+          email: authUser.email,
+        }
+      : null
+  )
   const location = useLocation()
   const navigate = useNavigate()
 
   const tab = location.state?.tab
   const isStudyRoute = location.pathname === "/study"
-  const firebaseId = localStorage.getItem("userUid")
+  const firebaseId = authUser?.uid ?? localStorage.getItem("userUid")
 
-  // Fetch user profile for avatar
+  // Fetch user profile for avatar (enrichment only — auth user renders instantly)
   useEffect(() => {
+    if (!firebaseId) return
+
+    let cancelled = false
     const fetchUser = async () => {
       try {
         const res = await axios.get(`${API}/user/me`, {
           params: { firebaseId },
+          timeout: 10000,
         })
-        setUser(res.data.data)
+        if (!cancelled) setUser(res.data.data)
       } catch (err) {
         console.error("Failed to fetch user:", err)
       }
     }
 
-    if (firebaseId) fetchUser()
+    fetchUser()
+    return () => {
+      cancelled = true
+    }
   }, [firebaseId])
 
   useEffect(() => {
