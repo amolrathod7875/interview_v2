@@ -9,8 +9,7 @@ const hasFirebaseConfig = Boolean(
 )
 
 export const isLocalAuthMode =
-  import.meta.env.VITE_LOCAL_AUTH_MODE !== "false" &&
-  (import.meta.env.DEV || !hasFirebaseConfig)
+  import.meta.env.VITE_LOCAL_AUTH_MODE === "true"
 
 const firebaseConfig = hasFirebaseConfig
   ? {
