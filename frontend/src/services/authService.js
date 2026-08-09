@@ -46,6 +46,25 @@ export async function loginUser(email, password) {
   return result.user
 }
 
+export function getGoogleAuthErrorMessage(error) {
+  const code = error?.code || ""
+
+  if (code === "auth/configuration-not-found") {
+    return "Google sign-in isn't enabled for this Firebase project. Enable the Google provider in the Firebase console (Authentication → Sign-in method) or contact the admin."
+  }
+  if (code === "auth/popup-closed-by-user") {
+    return "Google sign-in was cancelled. Please try again."
+  }
+  if (code === "auth/popup-blocked") {
+    return "Google sign-in popup was blocked by the browser. Allow popups and try again."
+  }
+  if (code === "auth/network-request-failed") {
+    return "Network error during Google sign-in. Check your connection and try again."
+  }
+
+  return error?.message || "Google sign-in failed. Please try again."
+}
+
 export async function loginWithGoogle() {
   if (isLocalAuthMode) {
     const user = buildLocalUser("local@dev", "Local Google User")

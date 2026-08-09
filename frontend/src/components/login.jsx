@@ -4,7 +4,7 @@ import { Input } from "./ui/input"
 import { Label } from "@radix-ui/react-label"
 import { useAuth } from "@/contexts/authContext"
 import { FcGoogle } from "react-icons/fc"
-import { loginWithGoogle } from "@/services/authService"
+import { loginWithGoogle, getGoogleAuthErrorMessage } from "@/services/authService"
 import axios from "axios"
 import { Lock, Mail, ShieldCheck, Zap } from "lucide-react"
 
@@ -72,7 +72,7 @@ export default function Login() {
       navigate("/dashboard")
     } catch (error) {
       console.error("Google login failed:", error)
-      setErrorMessage(error?.message || "Google sign-in failed. Please try again.")
+      setErrorMessage(getGoogleAuthErrorMessage(error))
     } finally {
       setIsLoading(false)
     }

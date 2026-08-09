@@ -5,7 +5,7 @@ import { Label } from "@radix-ui/react-label"
 import { useAuth } from "@/contexts/authContext"
 import { Lock, Mail, ShieldCheck, User, Users, Zap } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
-import { loginWithGoogle } from "@/services/authService"
+import { loginWithGoogle, getGoogleAuthErrorMessage } from "@/services/authService"
 import axios from "axios"
 
 const RAW_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
@@ -97,7 +97,7 @@ export default function Signup() {
       navigate("/dashboard")
     } catch (error) {
       console.error("Google signup failed:", error)
-      setErrorMessage(error?.message || "Google signup failed. Please try again.")
+      setErrorMessage(getGoogleAuthErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
